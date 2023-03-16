@@ -3,8 +3,6 @@ Struct.new('Pair', 'x', 'y');
 
 class Event
   def initialize(timestamp, x, y, polarity, polarity_type)
-    raise "Bad timestamp" unless timestamp.is_a?(String)
-    
     @timestamp=timestamp.to_i
     @x=x.to_i
     @y=y.to_i
@@ -20,7 +18,7 @@ class Event
                   end
 
                 when 'float'
-                  polarity.to_f
+                  polarity.to_i
 
                 end
 
@@ -74,7 +72,7 @@ class CSV_Line
     when /^[a-zA-Z, ]+$/
       @linetype = :header
 
-    when /^[0-9, ]+$/
+    when /^[0-9]+ *, *[0-9]+ *, *[0-9]+ *, *[-0-9]+ *$/
       @linetype = :event
 
       fields = line.split(',')

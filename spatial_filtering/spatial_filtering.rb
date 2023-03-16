@@ -3,6 +3,9 @@
 load 'event_files.rb'
 
 class Image
+  #
+  # A simple class that implements a "sparse image"
+  #
   include Enumerable
   
   def initialize
@@ -18,6 +21,9 @@ class Image
   end
 
   def each
+    #
+    # Loop over all the non-zero pixel
+    #
     @pixels.each do |key, val|
       yield(key.x, key.y, val)
     end
@@ -62,7 +68,11 @@ end
 
 def load_filter(spec)
   #
-  # spec
+  # spec can be
+  #
+  #   filter_name:param1:param2:... (e.g., circle:10)
+  #
+  #   @filename
   #
   return load_filter_from_file(spec[1..-1]) if spec[0]=='@'
 
@@ -84,10 +94,13 @@ def process_frame(frame, filter)
 
   frame.each do |event|
     raise "Bad, bad, bad" unless t0 == event.timestamp
-    
+
     filter.each do |delta_x, delta_y, value|
-      if event.x+delta_x > 0 &&  event.y+delta_y> 0 
-        accumulator[event.x+delta_x, event.y+delta_y] += event.polarity * value
+      dst_x = event.x+delta_x
+      dst_y = event.y+delta_y
+
+      if dst_x > 0 && dst_y > 0
+        accumulator[dst_x, dst_y] += event.polarity * value
       end
     end
   end

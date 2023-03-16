@@ -3,6 +3,8 @@
 load 'event_files.rb'
 
 class Image
+  Struct.new('Pair', 'x', 'y');
+
   #
   # A simple class that implements a "sparse image"
   #

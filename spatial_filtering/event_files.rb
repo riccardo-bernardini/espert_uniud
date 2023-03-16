@@ -1,6 +1,3 @@
-Struct.new('Pair', 'x', 'y');
-
-
 class Event
   def initialize(timestamp, x, y, polarity, polarity_type)
     @timestamp=timestamp.to_i

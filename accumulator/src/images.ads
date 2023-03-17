@@ -13,6 +13,10 @@ package Images is
    function Load (Filename : String;
                   Format   : Format_Type := Raw_Image) return Image_Type;
 
+   function Zero (X_Size : Camera_Events.X_Coordinate_Type;
+                  Y_Size : Camera_Events.X_Coordinate_Type)
+                  return Image_Type;
+
    procedure Save (Filename : String;
                    Image    : Image_Type;
                    Format   : Format_Type := Raw_Image);

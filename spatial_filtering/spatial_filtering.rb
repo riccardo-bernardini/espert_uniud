@@ -165,13 +165,26 @@ end
 ###
 
 options = {:split => nil}
-OptionParser.new do |opts|
-  opts.banner = "Usage: #{$0} [options] filter"
+option_parser = OptionParser.new do |opts|
+  opts.banner = "Usage: #{File.basename($0)} [options] filter"
 
   opts.on("-sRADIX", "--split=RADIX", "Split by weight. %w is replaced by the weight. By default _%w is appended to the basename") do |radix|
     options[:split] = radix
   end
-end.parse!
+
+  opts.on("-h", "--help", "Prints this help") do
+    puts opts
+    exit
+  end
+end
+
+begin 
+  option_parser.parse!
+rescue OptionParser::ParseError => err
+  puts(err)
+  puts(option_parser)
+  exit(1)
+end
 
 
 

@@ -118,9 +118,9 @@ die if ARGV.size != 1
 
 filter = load_filter(ARGV.shift)
 
-input=$stdin
-output=$stdout
-log=$stderr
+input  = $stdin
+output = $stdout
+log    = $stderr
 
 event_data = load_event_file(input, log)
 

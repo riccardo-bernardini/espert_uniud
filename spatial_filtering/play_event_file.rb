@@ -2,7 +2,9 @@
 
 require 'tk'
 
-load 'event_files.rb'
+my_dir=File.dirname(File.realpath($0))
+
+load(File.join(my_dir, 'event_files.rb'))
 
 def die(msg=nil)
   if msg

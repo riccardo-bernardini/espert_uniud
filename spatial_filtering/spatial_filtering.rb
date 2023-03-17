@@ -1,6 +1,10 @@
 #!/usr/bin/env ruby
 
-load 'event_files.rb'
+require 'optparse'
+
+my_dir=File.dirname(File.realpath($0))
+
+load(File.join(my_dir, 'event_files.rb'))
 
 class Image
   Struct.new('Pair', 'x', 'y');

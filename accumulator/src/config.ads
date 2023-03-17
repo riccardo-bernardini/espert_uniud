@@ -11,6 +11,8 @@ package Config is
 
    function Forgetting_Method return  Memory_Dynamic.Dynamic_Type;
 
+   function Radix return String;
+
    function Has_Start_Image return Boolean;
 
    function Start_Image_Filename return String

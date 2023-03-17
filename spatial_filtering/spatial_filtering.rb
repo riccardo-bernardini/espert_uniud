@@ -41,7 +41,7 @@ def die(msg=nil)
   if msg
     $stderr.puts(msg)
   else
-    $stderr.puts "Usage: #{$0} filter"
+    $stderr.puts "Usage: #{$0} [options] filter"
     $stderr.puts "Read stdin, write stdout"
   end
   
@@ -116,9 +116,64 @@ def process_frame(frame, filter)
   end
 end
 
+def parse_radix_spec(radix)
+  extension_pos = radix.rindex('.')
+  
+  if extension_pos.nil?
+    extension = 'csv'
+    basename = radix
+  else
+    extension = radix[extension_pos+1 .. -1];
+    basename  = radix[0 .. extension_pos-1]
+  end
+
+  head, tail, excess = basename.split('%w')
+
+  raise "Too many %w" unless excess.nil?
+
+  if tail.nil?
+    tail = ''
+    head = head + '_'
+  end
+
+  return [head, tail + '.' + extension]
+end
+
+def split_by_weight(event_file, radix)
+  radix_head, radix_tail = parse_radix_spec(radix)
+
+  files = collect_by_weight(event_file)
+
+  files.each do |weight, events|
+    events.each { |event| event.polarity = event.polarity > 0 ? 1 : 0 }
+    
+    output_event_file = Event_File.new(event_file)
+    output_event_file.metadata['weight'] = weight
+    output_event_file.metadata['polarity'] = 'boolean'
+    output_event_file.events.concat(events)
+    
+    filename = "#{radix_head}%04d#{radix_tail}" % weight
+
+    File.open(filename, 'w') do |output|
+      output_event_file.write_to(output)      
+    end
+  end
+end
+
 ###
 ###  MAIN
 ###
+
+options = {:split => nil}
+OptionParser.new do |opts|
+  opts.banner = "Usage: #{$0} [options] filter"
+
+  opts.on("-sRADIX", "--split=RADIX", "Split by weight. %w is replaced by the weight. By default _%w is appended to the basename") do |radix|
+    options[:split] = radix
+  end
+end.parse!
+
+
 
 input  = $stdin
 output = $stdout
@@ -146,5 +201,9 @@ end
 output_event_file.metadata['max_polarity'] =
   output_event_file.events.map {|ev| ev.polarity.abs}.max
 
-output_event_file.write_to(output)
+if options[:split].nil?
+  output_event_file.write_to(output)
+else
+  split_by_weight(output_event_file, options[:split])
+end
 

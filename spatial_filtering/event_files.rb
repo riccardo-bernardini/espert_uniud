@@ -41,6 +41,7 @@ class Event
   end
 
   attr_reader :timestamp, :x, :y, :polarity
+  attr_writer :polarity
 end
 
 def parse_metadata(line)
@@ -200,4 +201,21 @@ def collect_by_timestamp(event_data)
   collection << current_frame unless current_frame.empty?
 
   return collection
+end
+
+
+def collect_by_weight(event_data)
+  result = Hash.new
+
+  t0 = event_data.events[0].timestamp
+
+  event_data.events.each do |event|
+    if result[event.polarity].nil?
+      result[event.polarity] = [ Event.new(t0, 0, 0, 1, 'boolean') ]
+    end
+
+    result[event.polarity] << event
+  end
+
+  return result
 end

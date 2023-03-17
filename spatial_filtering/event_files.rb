@@ -117,17 +117,22 @@ def parse_line(input, polarity_type)
 end
 
 class Event_File
-  def initialize
+  def initialize(parent_data = nil)
     @events = Array.new
-    @label  = nil
+    @header  = nil
     @metadata = {'polarity' => 'boolean'}
+
+    unless parent_data.nil?
+      @metadata.update (parent_data.metadata)
+      @header = parent_data.header
+    end
   end
 
   def write_to(stream)
     meta_line = '# ' + @metadata.map {|key, value| "#{key}: #{value}"}.join(' ')
     stream.puts(meta_line)
 
-    stream.puts(@label) if @label
+    stream.puts(@header) if @header
 
     @events.each do |event|
       stream.puts(event.to_s)
@@ -135,10 +140,10 @@ class Event_File
   end
 
   def header=(s)
-    @label=s
+    @header=s
   end
 
-  attr_reader :events, :metadata
+  attr_reader :events, :metadata, :header
 end
 
 def load_event_file(input, log=$stderr)

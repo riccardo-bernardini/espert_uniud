@@ -112,43 +112,32 @@ def process_frame(frame, filter)
   end
 end
 
-  
-
-die if ARGV.size != 1
-
-filter = load_filter(ARGV.shift)
+###
+###  MAIN
+###
 
 input  = $stdin
 output = $stdout
 log    = $stderr
 
+
+die if ARGV.size != 1
+
+filter = load_filter(ARGV.shift)
+
+
 event_data = load_event_file(input, log)
 
-output_event_file = Event_File.new
-output_event_file.metadata.update (event_data.metadata)
+output_event_file = Event_File.new(event_data)
 output_event_file.metadata['polarity']='float'
 
-current_timestamp = -1
-current_frame = []
+frames = collect_by_timestamp(event_data);
 
-event_data.events.each do |event|
-  if event.timestamp == current_timestamp
-    current_frame << event
-  else
-    unless current_frame.empty?
-      new_events = process_frame(current_frame, filter)
-      output_event_file.events.concat(new_events)
-    end
-      
-    current_frame = [ event ];
-    timestamp = event.timestamp
-  end
+frames.each do |frame|
+  new_events = process_frame(frame, filter)
+  output_event_file.events.concat(new_events)  
 end
 
-unless current_frame.empty?
-  new_events = process_frame(current_frame, filter)
-  output_event_file.events.concat(new_events)
-end
 
 output_event_file.metadata['max_polarity'] =
   output_event_file.events.map {|ev| ev.polarity.abs}.max

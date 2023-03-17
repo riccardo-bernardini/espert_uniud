@@ -6,8 +6,8 @@ package Camera_Events is
 
    function "<" (X, Y : Timestamp) return Boolean;
 
-   type X_Coordinate_Type is range 0 .. 2048;
-   type Y_Coordinate_Type is range 0 .. 2048;
+   type X_Coordinate_Type is mod 2 ** 16;
+   type Y_Coordinate_Type is mod 2 ** 16;
 
    type Weight_Type is range -2 ** 31 .. 2 ** 31 - 1;
 

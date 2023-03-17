@@ -3,6 +3,5 @@ with Config;
 procedure Main is
 
 begin
-   --  Insert code here.
-   null;
+   Config.Parse_Command_Line;
 end Main;

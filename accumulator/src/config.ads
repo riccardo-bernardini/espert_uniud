@@ -5,9 +5,15 @@ with Memory_Dynamic;
 package Config is
    procedure Parse_Command_Line;
 
-   Input : Ada.Text_IO.File_Access;
+   function Input return Ada.Text_IO.File_Access;
 
-   Sampling_Period : Camera_Event.Duration;
+   function Sampling_Period return Camera_Events.Duration;
 
-   Time_Constant : Memory_Dynamic.Time_Constant_Type;
+   function Forgetting_Method return  Memory_Dynamic.Dynamic_Type;
+
+   function Has_Start_Image return Boolean;
+
+   function Start_Image_Filename return String
+     with
+       Pre => Has_Start_Image;
 end Config;

@@ -43,7 +43,6 @@ package Tokenize is
 
    subtype Token_List is String_Vectors.Vector;
    type    Token_Array is array (Positive range <>) of Unbounded_String;
-   use type Token_List;
 
    --
    -- Split string To_Be_Splitted in substring separated by

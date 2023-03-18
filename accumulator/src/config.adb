@@ -20,7 +20,6 @@ package body Config is
 
    Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
 
-   type File_Pt is access all Ada.Text_IO.File_Type;
 
    Input_Stream : File_Access := null;
 
@@ -42,7 +41,6 @@ package body Config is
                    Side   => Both));
 
    procedure Parse_Command_Line is
-      use type Ada.Text_Io.File_Access;
       use Ada.Command_Line;
 
       Argument_Counter : Positive := 1;
@@ -228,7 +226,7 @@ package body Config is
       Frame_Filename_Spec := Parse_Radix (Current_Argument);
       Next_Argument;
 
-      if Input_Filename_Given and Current_Argument /= "-"  then
+      if Input_Filename_Given and then Current_Argument /= "-"  then
          Input_Stream := new Ada.Text_IO.File_Type;
 
          Ada.Text_IO.Open (File => Input_Stream.all,

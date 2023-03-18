@@ -46,8 +46,6 @@ package body Images is
                              Name => Filename);
 
          declare
-            use Interfaces;
-
             X_Size : constant X_Coordinate_Type :=
                        X_Coordinate_Type (Get_Unsigned_16 (Input));
 

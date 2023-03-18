@@ -1,8 +1,9 @@
 pragma Ada_2012;
 with Images;
-
+with ada.text_io;   use ada.text_io;
 package body Event_Sequences is
-
+   use type Camera_Events.X_Coordinate_Type;
+   use type Camera_Events.y_Coordinate_Type;
    ---------
    -- "<" --
    ---------
@@ -16,6 +17,8 @@ package body Event_Sequences is
    ----------------------
    -- Collect_By_Point --
    ----------------------
+   Result : Point_Event_Map (0 .. Images.Default_X_Size - 1, 0 .. Images.Default_Y_Size - 1) :=
+              (others => (others => Event_Vectors.Empty_List));
 
    function Collect_By_Point
      (Events         : Event_Sequence;
@@ -24,13 +27,16 @@ package body Event_Sequences is
    is
       use Camera_Events;
 
-      Result : Point_Event_Map
-        (0 .. Images.Default_X_Size - 1, 0 .. Images.Default_Y_Size - 1) :=
-                 (others => (others => Event_Vectors.Empty_List));
    begin
+      Put_Line ("[12]");
+      Result := (others => (others => Event_Vectors.Empty_List));
+      Put_Line ("[13]");
+
       for Ev of Events loop
          Result (X (Ev), Y (Ev)).Append (Ev);
       end loop;
+
+      Put_Line ("[44]");
 
       for X in Result'Range (1) loop
          for Y in Result'Range (2) loop
@@ -40,6 +46,8 @@ package body Event_Sequences is
                                              Weight => 0));
          end loop;
       end loop;
+
+      Put_Line ("[99]");
 
       return Result;
    end Collect_By_Point;

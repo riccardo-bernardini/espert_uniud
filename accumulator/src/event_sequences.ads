@@ -1,5 +1,4 @@
 with Ada.Containers.Doubly_Linked_Lists;
-with Ada.Containers.Ordered_Maps;
 
 with Camera_Events;
 
@@ -11,7 +10,6 @@ package Event_Sequences is
    package Event_Vectors is
      new Ada.Containers.Doubly_Linked_Lists (Element_Type => Camera_Events.Event_Type);
 
-   use type Event_Vectors.List;
 
    subtype Event_Sequence is Event_Vectors.List;
 
@@ -29,6 +27,6 @@ package Event_Sequences is
      of Event_Sequence;
 
    function Collect_By_Point (Events         : Event_Sequence;
-      Last_Timestamp : Camera_Events.Timestamp)
+                              Last_Timestamp : Camera_Events.Timestamp)
                               return Point_Event_Map;
 end Event_Sequences;

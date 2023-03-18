@@ -6,6 +6,7 @@ with Images;
 with Memory_Dynamic;
 
 with Ada.Containers;
+with Ada.Text_IO; use Ada.Text_IO;
 
 procedure Main is
    use type Camera_Events.Timestamp;
@@ -55,6 +56,8 @@ procedure Main is
                                          Delta_T => T (Ev) - Current_Time);
 
          Pixel := Pixel + Pixel_Value (Weight (Ev));
+
+         Current_Time := T (Ev);
       end loop;
    end Update_Pixel;
 
@@ -63,7 +66,6 @@ begin
 
    declare
       use type Camera_Events.Duration;
-      use type Camera_Events.Timestamp;
       use type Config.Frame_Index;
 
       Events : Event_Sequences.Event_Sequence :=
@@ -89,15 +91,23 @@ begin
                           Events  => Events,
                           To      => Next_Time);
 
+         Put_Line ("[zz]" & Segment.Length'Image);
+
          declare
-            Event_By_Point : constant Event_Sequences.Point_Event_Map :=
-                               Event_Sequences.Collect_By_Point (Segment, Next_Time);
+            use Event_Sequences;
+
+            Event_By_Point : constant Point_Event_Map :=
+                               Collect_By_Point (Segment, Next_Time);
          begin
+            Put_Line ("[qq]");
             for X in Event_By_Point'Range (1) loop
                for Y in Event_By_Point'Range (2) loop
                   Update_Pixel (Current_Time, Status (X, Y), Event_By_Point (X, Y));
                end loop;
             end loop;
+
+            Put_Line ("[rr]");
+
          end;
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),

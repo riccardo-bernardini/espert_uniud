@@ -17,6 +17,13 @@ package Camera_Events is
    type X_Coordinate_Type is mod 2 ** 16;
    type Y_Coordinate_Type is mod 2 ** 16;
 
+   type Point_Type is
+      record
+         X : X_Coordinate_Type;
+         Y : Y_Coordinate_Type;
+      end record;
+
+
    type Weight_Type is range -2 ** 31 .. 2 ** 31 - 1;
 
    type Event_Type is private;
@@ -30,6 +37,9 @@ package Camera_Events is
    function T (Event : Event_Type) return Timestamp;
    function X (Event : Event_Type) return X_Coordinate_Type;
    function Y (Event : Event_Type) return Y_Coordinate_Type;
+
+   function Position (Event : Event_Type) return Point_Type;
+
    function Weight (Event : Event_Type) return Weight_Type;
 private
    type Duration is mod 2 ** 64;

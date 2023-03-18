@@ -322,4 +322,17 @@ package body Config is
    function Start_Image_Filename return String
    is (To_String (First_Image_Filename));
 
+
+   function Start_Image return Images.Image_Type
+   is
+   begin
+      if Has_Start_Image then
+         return Images.Load (Start_Image_Filename);
+
+      else
+         return Images.Zero (Images.Default_X_Size, Images.Default_Y_Size);
+
+      end if;
+   end Start_Image;
+
 end Config;

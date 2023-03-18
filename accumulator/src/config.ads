@@ -1,6 +1,7 @@
 with Ada.Text_IO;
 with Camera_Events;
 with Memory_Dynamic;
+with Images;
 
 package Config is
    function Package_Ready return Boolean;
@@ -33,11 +34,7 @@ package Config is
        Pre => Package_Ready;
 
 
-   function Has_Start_Image return Boolean
+   function Start_Image return Images.Image_Type
      with
        Pre => Package_Ready;
-
-   function Start_Image_Filename return String
-     with
-       Pre => Package_Ready and then Has_Start_Image;
 end Config;

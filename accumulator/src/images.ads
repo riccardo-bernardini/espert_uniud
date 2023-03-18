@@ -8,6 +8,9 @@ package Images is
             Camera_Events.Y_Coordinate_Type range <>)
      of Pixel_Value;
 
+   Default_X_Size : constant Camera_Events.X_Coordinate_Type := 640;
+   Default_y_Size : constant Camera_Events.y_Coordinate_Type := 480;
+
    type Format_Type is (Raw_Image_8);
 
    function Load (Filename : String;

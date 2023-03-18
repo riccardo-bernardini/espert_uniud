@@ -12,6 +12,8 @@ package Camera_Events is
 
    function "+" (T : Timestamp; D : Duration) return Timestamp;
 
+   function "-" (A, B : Timestamp) return Duration;
+
    function ">" (X, Y : Timestamp) return Boolean;
 
    type X_Coordinate_Type is mod 2 ** 16;
@@ -48,6 +50,9 @@ private
 
    function "+" (T : Timestamp; D : Duration) return Timestamp
    is (T + Timestamp (D));
+
+   function "-" (A, B : Timestamp) return Duration
+   is (Duration (A)-Duration (B));
 
    function ">" (X, Y : Timestamp) return Boolean
    is (Duration (X) > Duration (Y));

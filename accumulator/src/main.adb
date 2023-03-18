@@ -3,44 +3,61 @@ with Camera_Events;
 with Event_Sequences;
 with Event_Streams;
 with Images;
+with Memory_Dynamic;
+
+with Ada.Containers;
 
 procedure Main is
-   use type Event_Sequences.Event_Index;
    use type Camera_Events.Timestamp;
+   use type Ada.Containers.Count_Type;
+
+   function "<=" (A, B : Camera_Events.Timestamp) return Boolean
+   is (not (A > B));
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
-                              Events  : in  Event_Sequences.Event_Sequence;
-                              From    : in out Event_Sequences.Event_Index;
-                              To      : in Event_Sequences.Event_Index)
-   is
-   begin
-      raise Program_Error;
-   end Extract_Segment;
+                              Events  : in out Event_Sequences.Event_Sequence;
+                              To      : in Camera_Events.Timestamp)
+     with
+       Pre => not Events.Is_Empty,
+       Post =>
+         (Events.Is_Empty or else Camera_Events.T (Events.First_Element) > To)
+         and
+           (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) <= To)
+           and
+             (Segment.Length + Events.Length = Events.Length'Old);
 
-   procedure Update_Pixel (Current_Time : Camera_Events.Timestamp;
-                           Pixel        : in out Images.Pixel_Value;
-                           Events       : Event_Sequences.Event_Sequence)
+   procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
+                              Events  : in out Event_Sequences.Event_Sequence;
+                              To      : in Camera_Events.Timestamp)
    is
       use Camera_Events;
    begin
-      raise Program_Error;
+      Segment.Clear;
+
+      while not Events.Is_Empty and then T (Events.First_Element) <= To loop
+         Segment.Append (Events.First_Element);
+         Events.Delete_First;
+      end loop;
+   end Extract_Segment;
+
+   procedure Update_Pixel (Start  : Camera_Events.Timestamp;
+                           Pixel  : in out Images.Pixel_Value;
+                           Events : Event_Sequences.Event_Sequence)
+   is
+      use Camera_Events;
+      use Images;
+
+      Current_Time : Timestamp := Start;
+   begin
+      for Ev of Events loop
+         Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
+                                         Dynamic => Config.Forgetting_Method,
+                                         Delta_T => T (Ev) - Current_Time);
+
+         Pixel := Pixel + Pixel_Value (Weight (Ev));
+      end loop;
    end Update_Pixel;
 
-   function Time_To_Index (Events     : Event_Sequences.Event_Sequence;
-                           Timestamp  : Camera_Events.Timestamp;
-                           Start_From : Event_Sequences.Event_Index)
-                           return Event_Sequences.Event_Index
-   is
-
-   begin
-      for I in Start_From .. Events.Last_Index loop
-         if Camera_Events.T (Events (I)) > Timestamp then
-            return I;
-         end if;
-      end loop;
-
-      return Events.Last_Index + 1;
-   end Time_To_Index;
 begin
    Config.Parse_Command_Line;
 
@@ -49,7 +66,7 @@ begin
       use type Camera_Events.Timestamp;
       use type Config.Frame_Index;
 
-      Events : constant Event_Sequences.Event_Sequence :=
+      Events : Event_Sequences.Event_Sequence :=
                  Event_Streams.Parse_Event_Stream (Config.Input.all);
 
       Status : Images.Image_Type := Config.Start_Image;
@@ -57,9 +74,6 @@ begin
       Current_Time : Camera_Events.Timestamp :=
                        Camera_Events.T (Events.First_Element);
 
-      Current_Index : Event_Sequences.Event_Index := Events.First_Index;
-
-      Next_Index : Event_Sequences.Event_Index;
       Next_Time  : Camera_Events.Timestamp;
 
       Segment : Event_Sequences.Event_Sequence;
@@ -70,12 +84,10 @@ begin
       loop
          Next_Time := Current_Time + Config.Sampling_Period;
 
-         Next_Index := Time_To_Index (Events, Next_Time, Current_Index);
 
          Extract_Segment (Segment => Segment,
                           Events  => Events,
-                          From    => Current_Index,
-                          To      => Next_Index);
+                          To      => Next_Time);
 
          declare
             Event_By_Point : constant Event_Sequences.Point_Event_Map :=

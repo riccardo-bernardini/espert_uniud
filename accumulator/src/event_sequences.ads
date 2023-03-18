@@ -1,4 +1,4 @@
-with Ada.Containers.Vectors;
+with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Containers.Ordered_Maps;
 
 with Camera_Events;
@@ -6,15 +6,14 @@ with Camera_Events;
 package Event_Sequences is
    use type Camera_Events.Event_Type;
 
-   type Event_Index is new Positive;
+   --  type Event_Index is new Positive;
 
    package Event_Vectors is
-     new Ada.Containers.Vectors (Index_Type   => Event_Index,
-                                 Element_Type => Camera_Events.Event_Type);
+     new Ada.Containers.Doubly_Linked_Lists (Element_Type => Camera_Events.Event_Type);
 
-   use type Event_Vectors.Vector;
+   use type Event_Vectors.List;
 
-   subtype Event_Sequence is Event_Vectors.Vector;
+   subtype Event_Sequence is Event_Vectors.List;
 
    function "<" (A, B : Camera_Events.Point_Type) return Boolean;
 

@@ -26,7 +26,7 @@ package body Event_Sequences is
 
       Result : Point_Event_Map
         (0 .. Images.Default_X_Size - 1, 0 .. Images.Default_Y_Size - 1) :=
-                 (others => (others => Event_Vectors.Empty_Vector));
+                 (others => (others => Event_Vectors.Empty_List));
    begin
       for Ev of Events loop
          Result (X (Ev), Y (Ev)).Append (Ev);

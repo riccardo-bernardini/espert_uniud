@@ -5,23 +5,43 @@ with Event_Streams;
 with Images;
 
 procedure Main is
+   use type Event_Sequences.Event_Index;
+   use type Camera_Events.Timestamp;
+
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in  Event_Sequences.Event_Sequence;
-                              From    : in out Positive;
-                              To      : in Camera_Events.Timestamp)
+                              From    : in out Event_Sequences.Event_Index;
+                              To      : in Event_Sequences.Event_Index)
    is
    begin
       null;
    end Extract_Segment;
+
+   function Time_To_Index (Events     : Event_Sequences.Event_Sequence;
+                           Timestamp  : Camera_Events.Timestamp;
+                           Start_From : Event_Sequences.Event_Index)
+                           return Event_Sequences.Event_Index
+   is
+
+   begin
+      for I in Start_From .. Events.Last_Index loop
+         if Camera_Events.T (Events (I)) > Timestamp then
+            return I;
+         end if;
+      end loop;
+
+      return Events.Last_Index + 1;
+   end Time_To_Index;
 begin
    Config.Parse_Command_Line;
 
    declare
       use type Camera_Events.Duration;
       use type Camera_Events.Timestamp;
+      use type Config.Frame_Index;
 
       Events : constant Event_Sequences.Event_Sequence :=
-                 Event_Streams.Parse_Event_Stream (Config.Input);
+                 Event_Streams.Parse_Event_Stream (Config.Input.all);
 
       Status : Images.Image_Type := (if Config.Has_Start_Image then
                                         Images.Load (Config.Start_Image_Filename)
@@ -31,13 +51,14 @@ begin
       Current_Time : Camera_Events.Timestamp :=
                        Camera_Events.T (Events.First_Element);
 
-      Current_Index : Positive := Events.First_Index;
+      Current_Index : Event_Sequences.Event_Index := Events.First_Index;
 
-      Next_Time : Camera_Events.Timestamp;
+      Next_Index : Event_Sequences.Event_Index;
+      Next_Time  : Camera_Events.Timestamp;
 
       Segment : Event_Sequences.Event_Sequence;
 
-      Frame_Number : Natural := 0;
+      Frame_Number : Config.Frame_Index := 0;
    begin
       loop
          Next_Time := Current_Time + Config.Sampling_Period;
@@ -47,9 +68,9 @@ begin
          Extract_Segment (Segment => Segment,
                           Events  => Events,
                           From    => Current_Index,
-                          To      => Next_Time);
+                          To      => Next_Index);
 
-         Images.Save (Filename => Frame_Name (Config.Radix, Frame_Number),
+         Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Status);
 
          Current_Time := Next_Time;

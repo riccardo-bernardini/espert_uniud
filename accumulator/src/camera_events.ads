@@ -6,11 +6,13 @@ package Camera_Events is
 
    function To_Duration (Seconds : Float) return Duration;
 
+   function "/" (X, Y : Duration) return Float;
+
    function Value (S : String) return Timestamp;
 
    function "+" (T : Timestamp; D : Duration) return Timestamp;
 
-   function "<" (X, Y : Timestamp) return Boolean;
+   function ">" (X, Y : Timestamp) return Boolean;
 
    type X_Coordinate_Type is mod 2 ** 16;
    type Y_Coordinate_Type is mod 2 ** 16;
@@ -37,8 +39,8 @@ private
    function "+" (T : Timestamp; D : Duration) return Timestamp
    is (T + Timestamp (D));
 
-   function "<" (X, Y : Timestamp) return Boolean
-   is (Duration (X) < Duration (Y));
+   function ">" (X, Y : Timestamp) return Boolean
+   is (Duration (X) > Duration (Y));
 
    type Event_Type is
       record

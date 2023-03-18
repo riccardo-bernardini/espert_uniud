@@ -63,56 +63,7 @@ package body Config is
          Argument_Counter := Argument_Counter + 1;
       end Next_Argument;
 
-      function Parse_Memory_Spec (Spec : String)
-                                  return Memory_Dynamic.Dynamic_Type
-      is
-         use Ada.Strings.Fixed;
-         use Ada.Characters.Handling;
-
-         Colon_Pos : constant Natural := Index (Source  => Spec,
-                                                Pattern => ":");
-
-         Method : constant String :=
-                    Strip_Spaces (To_Lower ((if Colon_Pos = 0
-                                  then
-                                     Spec
-                                  else
-                                     Spec (Spec'First .. Colon_Pos - 1))));
-
-         Parameter : constant String :=
-                       Strip_Spaces ((if Colon_Pos = 0
-                                     then
-                                        ""
-                                     else
-                                        Spec (Colon_Pos + 1 .. Spec'Last)));
-      begin
-         if Method = "step" or Method = "s" then
-            if Parameter /= "" then
-               raise Bad_Command_Line with "'step' with parameter";
-            end if;
-
-            return Memory_Dynamic.Step;
-
-         elsif Method = "linear" or Method = "lin" or Method = "l" then
-            if Parameter = "" then
-               raise Bad_Command_Line with "'linear' needs a parameter";
-            end if;
-
-            return Memory_Dynamic.Linear (Camera_Events.Value (Parameter));
-
-         elsif Method = "exponential" or Method = "exp" or Method = "e" then
-            if Parameter = "" then
-               raise Bad_Command_Line with "'exponential' needs a parameter";
-            end if;
-
-            return Memory_Dynamic.Exponential (Camera_Events.Value (Parameter));
-
-         else
-            raise Bad_Command_Line with "Unknown dynamic '" & Method & "'";
-         end if;
-      end Parse_Memory_Spec;
-
-      function Parse_Sampling_Spec (Spec : String) return Camera_Events.Duration
+      function Parse_Time_Spec (Spec : String) return Camera_Events.Duration
       is
          use Ada.Strings.Fixed;
          use Ada.Strings.Maps.Constants;
@@ -147,13 +98,71 @@ package body Config is
          elsif Unit = "ms" then
             return Camera_Events.To_Duration (1.0e-3 * Float (Integer'Value (Value)));
 
+         elsif Unit = "us" then
+            return Camera_Events.To_Duration (1.0e-6 * Float (Integer'Value (Value)));
+
+         elsif Unit = "ns" then
+            return Camera_Events.To_Duration (1.0e-9 * Float (Integer'Value (Value)));
+
          elsif Unit = "fps" then
             return Camera_Events.To_Duration (1.0 / Float (Integer'Value (Value)));
 
          else
             raise Bad_Command_Line with "Unknown unit '" & Unit & "'";
          end if;
-      end Parse_Sampling_Spec;
+      end Parse_Time_Spec;
+
+      function Parse_Memory_Spec (Spec : String)
+                                  return Memory_Dynamic.Dynamic_Type
+      is
+         use Ada.Strings.Fixed;
+         use Ada.Characters.Handling;
+
+         Colon_Pos : constant Natural := Index (Source  => Spec,
+                                                Pattern => ":");
+
+         Method : constant String :=
+                    Strip_Spaces (To_Lower ((if Colon_Pos = 0
+                                  then
+                                     Spec
+                                  else
+                                     Spec (Spec'First .. Colon_Pos - 1))));
+
+         Parameter : constant String :=
+                       Strip_Spaces ((if Colon_Pos = 0
+                                     then
+                                        ""
+                                     else
+                                        Spec (Colon_Pos + 1 .. Spec'Last)));
+      begin
+         if Method = "step" or Method = "s" then
+            if Parameter /= "" then
+               raise Bad_Command_Line with "'step' with parameter";
+            end if;
+
+            return Memory_Dynamic.Step;
+
+         elsif Method = "linear" or Method = "lin" or Method = "l" then
+            if Parameter = "" then
+               raise Bad_Command_Line with "'linear' needs a time constant";
+            end if;
+
+            return Memory_Dynamic.Linear (Parse_Time_Spec (Parameter));
+
+         elsif Method = "exponential" or Method = "exp" or Method = "e" then
+            if Parameter = "" then
+               raise Bad_Command_Line with "'exponential' needs a time constant";
+            end if;
+
+            return Memory_Dynamic.Exponential (Parse_Time_Spec (Parameter));
+
+         else
+            raise Bad_Command_Line with "Unknown dynamic '" & Method & "'";
+         end if;
+      end Parse_Memory_Spec;
+
+      function Parse_Sampling_Spec (Spec : String) return Camera_Events.Duration
+      is (Parse_Time_Spec (Spec));
 
       function Parse_Radix (Spec : String) return Radix_Spec
       is

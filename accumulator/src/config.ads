@@ -18,7 +18,9 @@ package Config is
      with
        Pre => Package_Ready;
 
-   function Input return Ada.Text_IO.File_Access
+   type File_Access is access all Ada.Text_IO.File_Type;
+
+   function Input return File_Access
      with
        Pre => Package_Ready;
 

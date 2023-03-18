@@ -2,6 +2,10 @@ package Camera_Events is
    type Duration is private;
    type Timestamp is private;
 
+   function Value (S : String) return Duration;
+
+   function Value (S : String) return Timestamp;
+
    function "+" (T : Timestamp; D : Duration) return Timestamp;
 
    function "<" (X, Y : Timestamp) return Boolean;

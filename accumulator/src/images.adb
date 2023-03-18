@@ -12,9 +12,9 @@ package body Images is
    ----------
 
    function Load
-     (Filename : String; Format : Format_Type := Raw_Image) return Image_Type
+     (Filename : String; Format : Format_Type := Raw_Image_8) return Image_Type
    is
-      function Load_Raw_Image (Filename : String) return Image_Type
+      function Load_Raw_Image_8 (Filename : String) return Image_Type
       is
          use Camera_Events;
          use Interfaces;
@@ -67,11 +67,11 @@ package body Images is
 
             return Result;
          end;
-      end Load_Raw_Image;
+      end Load_Raw_Image_8;
    begin
       case Format is
-         when Raw_Image =>
-            return Load_Raw_Image (Filename);
+         when Raw_Image_8 =>
+            return Load_Raw_Image_8 (Filename);
       end case;
    end Load;
 
@@ -97,9 +97,9 @@ package body Images is
    ----------
 
    procedure Save
-     (Filename : String; Image : Image_Type; Format : Format_Type := Raw_Image)
+     (Filename : String; Image : Image_Type; Format : Format_Type := Raw_Image_8)
    is
-      procedure Save_Raw_Image (Filename : String; Image : Image_Type)
+      procedure Save_Raw_Image_8 (Filename : String; Image : Image_Type)
       is
          use Interfaces;
          use Camera_Events;
@@ -137,11 +137,11 @@ package body Images is
                                     Item => Unsigned_8 (Image (X, Y)));
             end loop;
          end loop;
-      end Save_Raw_Image;
+      end Save_Raw_Image_8;
    begin
       case Format is
-         when Raw_Image =>
-            Save_Raw_Image (Filename, Image);
+         when Raw_Image_8 =>
+            Save_Raw_Image_8 (Filename, Image);
       end case;
    end Save;
 

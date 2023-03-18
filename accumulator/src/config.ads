@@ -3,19 +3,39 @@ with Camera_Events;
 with Memory_Dynamic;
 
 package Config is
-   procedure Parse_Command_Line;
+   function Package_Ready return Boolean;
 
-   function Input return Ada.Text_IO.File_Access;
+   procedure Parse_Command_Line
+     with
+       Pre => not Package_Ready,
+       Post => Package_Ready;
 
-   function Sampling_Period return Camera_Events.Duration;
+   Bad_Command_Line : exception;
 
-   function Forgetting_Method return  Memory_Dynamic.Dynamic_Type;
+   type Frame_Index is range 0 .. Integer'Last;
 
-   function Radix return String;
+   function Frame_Filename (N : Frame_Index) return String
+     with
+       Pre => Package_Ready;
 
-   function Has_Start_Image return Boolean;
+   function Input return Ada.Text_IO.File_Access
+     with
+       Pre => Package_Ready;
+
+   function Sampling_Period return Camera_Events.Duration
+     with
+       Pre => Package_Ready;
+
+   function Forgetting_Method return  Memory_Dynamic.Dynamic_Type
+     with
+       Pre => Package_Ready;
+
+
+   function Has_Start_Image return Boolean
+     with
+       Pre => Package_Ready;
 
    function Start_Image_Filename return String
      with
-       Pre => Has_Start_Image;
+       Pre => Package_Ready and then Has_Start_Image;
 end Config;

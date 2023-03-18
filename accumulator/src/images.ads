@@ -8,10 +8,10 @@ package Images is
             Camera_Events.Y_Coordinate_Type range <>)
      of Pixel_Value;
 
-   type Format_Type is (Raw_Image);
+   type Format_Type is (Raw_Image_8);
 
    function Load (Filename : String;
-                  Format   : Format_Type := Raw_Image) return Image_Type;
+                  Format   : Format_Type := Raw_Image_8) return Image_Type;
 
    function Zero (X_Size : Camera_Events.X_Coordinate_Type;
                   Y_Size : Camera_Events.Y_Coordinate_Type)
@@ -19,5 +19,5 @@ package Images is
 
    procedure Save (Filename : String;
                    Image    : Image_Type;
-                   Format   : Format_Type := Raw_Image);
+                   Format   : Format_Type := Raw_Image_8);
 end Images;

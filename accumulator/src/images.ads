@@ -1,7 +1,7 @@
 with Camera_Events;
 
 package Images is
-   type Pixel_Value is mod 2 ** 16;
+   type Pixel_Value is new Float;
 
    type Image_Type is
      array (Camera_Events.X_Coordinate_Type range <>,

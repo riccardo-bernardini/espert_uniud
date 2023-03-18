@@ -112,7 +112,7 @@ package body Images is
          X_Size : constant X_Coordinate_Type := Image'Length (1);
          Y_Size : constant Y_Coordinate_Type := Image'Length (2);
       begin
-         Unsigned_8_IO.Open (File => Output,
+         Unsigned_8_IO.Create (File => Output,
                              Mode => Unsigned_8_IO.Out_File,
                              Name => Filename);
 

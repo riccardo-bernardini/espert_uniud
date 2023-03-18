@@ -21,10 +21,12 @@ package Event_Sequences is
    --
    --  subtype Point_Event_Map is Point_Event_Maps.Map;
 
-   type Point_Event_Map is
+   type Point_Event_Matrix is
      array (Camera_Events.X_Coordinate_Type range <>,
             Camera_Events.Y_Coordinate_Type range <>)
      of Event_Sequence;
+
+   type Point_Event_Map is access Point_Event_Matrix;
 
    function Collect_By_Point (Events         : Event_Sequence;
                               Last_Timestamp : Camera_Events.Timestamp)

@@ -17,8 +17,10 @@ package body Event_Sequences is
    ----------------------
    -- Collect_By_Point --
    ----------------------
-   Result : Point_Event_Map (0 .. Images.Default_X_Size - 1, 0 .. Images.Default_Y_Size - 1) :=
-              (others => (others => Event_Vectors.Empty_List));
+   Result : constant Point_Event_Map :=
+              new Point_Event_Matrix
+                (0 .. Images.Default_X_Size - 1,
+                 0 .. Images.Default_Y_Size - 1);
 
    function Collect_By_Point
      (Events         : Event_Sequence;
@@ -29,7 +31,13 @@ package body Event_Sequences is
 
    begin
       Put_Line ("[12]");
-      Result := (others => (others => Event_Vectors.Empty_List));
+
+      for X in Result'Range (1) loop
+         for Y in Result'Range (2) loop
+            Result (X, Y).Clear;
+         end loop;
+      end loop;
+
       Put_Line ("[13]");
 
       for Ev of Events loop

@@ -13,7 +13,10 @@ procedure Main is
    use type Ada.Containers.Count_Type;
 
    function "<=" (A, B : Camera_Events.Timestamp) return Boolean
-   is (not (A > B));
+   is
+   begin
+      return  not (A > B);
+   end "<=";
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
@@ -83,7 +86,7 @@ begin
       Frame_Number : Config.Frame_Index := 0;
 
    begin
-      loop
+      while not Events.Is_Empty loop
          Next_Time := Current_Time + Config.Sampling_Period;
 
 

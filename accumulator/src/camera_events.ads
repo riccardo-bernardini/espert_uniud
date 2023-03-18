@@ -72,4 +72,19 @@ private
    function Weight (Event : Event_Type) return Weight_Type
    is (Event.Weight);
 
+   function "/" (X, Y : Duration) return Float
+   is (Float (X) / Float (Y));
+
+   function Value (S : String) return Duration
+   is (Duration'Value (S));
+
+   function Value (S : String) return Timestamp
+   is (Timestamp'Value (S));
+
+   Timestamps_Per_Second : constant Float := 1.0e9;
+
+   function To_Duration (Seconds : Float) return Duration
+   is (Duration (Seconds * Timestamps_Per_Second));
+
+
 end Camera_Events;

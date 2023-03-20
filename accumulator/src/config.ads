@@ -13,6 +13,8 @@ package Config is
 
    Bad_Command_Line : exception;
 
+   function Help_Text return String;
+
    type Frame_Index is range 0 .. Integer'Last;
 
    function Frame_Filename (N : Frame_Index) return String

@@ -7,6 +7,8 @@ with Ada.Strings.Fixed;        use Ada.Strings;
 with Ada.Characters.Handling;
 with Ada.Strings.Maps.Constants;
 
+with Ada.Characters.Latin_9;
+
 package body Config is
    type Radix_Spec is
       record
@@ -332,5 +334,35 @@ package body Config is
 
       end if;
    end Start_Image;
+
+   function Help_Text return String
+   is
+      use Ada.Characters.Latin_9;
+   begin
+      return "Usage: "
+        & Ada.Command_Line.Command_Name
+        & " memory-spec  sampling  radix  [event-filename] [first-image]"
+        & LF
+        & LF
+        & "memory-spec: " & LF
+        & "   step (or s)" & LF
+        & "   linear:t (or lin:t or l:t)" & LF
+        & "   exponential:t (or exp:t or e:t)" & LF
+        & LF
+        & "sampling: sampling period (framerate). Examples" & LF
+        & "  in timestamp units    : 1234 (no unit specified)" & LF
+        & "  in seconds, ms, etc   : 1s   1ms  1000ns" & LF
+        & "  in frame per seconds  : 1000fps" & LF
+        & LF
+        & "Note: NO SPACE between number and unit" & LF
+        & LF
+        & "radix: used to generate the filenames of the frames." & LF
+        & "'%d' is replaced by the frame number" & LF
+        & "(5 digits, left padded with zeros)" & LF
+        & LF
+        & "event-filename: optional, the file with the camera events." & LF
+        & "If missing the standard input is read"
+        & LF;
+   end Help_Text;
 
 end Config;

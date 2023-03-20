@@ -4,9 +4,11 @@ with Event_Sequences;
 with Event_Streams;
 with Images;
 with Memory_Dynamic;
+with Ada.Command_Line;
 
 with Ada.Containers;
 with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Exceptions; use Ada.Exceptions;
 
 procedure Main is
    use type Camera_Events.Timestamp;
@@ -100,8 +102,8 @@ begin
             Events_At : constant Point_Event_Map :=
                           Collect_By_Point (Segment, Next_Time);
          begin
-            for X in Event_By_Point'Range (1) loop
-               for Y in Event_By_Point'Range (2) loop
+            for X in Events_At'Range (1) loop
+               for Y in Events_At'Range (2) loop
                   Update_Pixel (Current_Time, Status (X, Y), Events_At (X, Y));
                end loop;
             end loop;
@@ -115,4 +117,11 @@ begin
          Frame_Number := Frame_Number + 1;
       end loop;
    end;
+exception
+   when E: Config.Bad_Command_Line =>
+      Put_Line (Standard_Error, Exception_Message (E));
+
+      Put_Line (Standard_Error, Config.Help_Text);
+
+      Ada.Command_Line.Set_Exit_Status(Ada.Command_Line.Failure);
 end Main;

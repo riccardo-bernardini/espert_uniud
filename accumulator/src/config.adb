@@ -18,6 +18,12 @@ package body Config is
          Padding_Char       : Character;
       end record;
 
+   Frame_Number_Marker : constant String := "%d";
+
+   Frame_Number_Padding_Char : constant Character := '0';
+
+   Frame_Number_Default_Width : constant Positive := 5;
+
    I_Am_Ready : Boolean := False;
 
    Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
@@ -171,7 +177,6 @@ package body Config is
          function To_Unbounded (X : String) return Unbounded_String
                                 renames To_Unbounded_String;
 
-         Frame_Number_Marker : constant String := "%d";
 
          Frame_Number_Position : constant Natural :=
                                    Index (Source  => Spec,
@@ -187,13 +192,27 @@ package body Config is
               To_Unbounded (Spec (Spec'First .. Frame_Number_Position - 1)),
             Tail               =>
               To_Unbounded (Spec (Frame_Number_Position + Frame_Number_Marker'Length .. Spec'Last)),
-            Frame_Number_Width => 5,
-            Padding_Char       => '0');
+            Frame_Number_Width => Frame_Number_Default_Width,
+            Padding_Char       => Frame_Number_Padding_Char);
       end Parse_Radix;
 
-      Input_Filename_Given : Boolean := False;
+      function Help_Asked return Boolean
+      is (Argument_Count = 0 or else
+            (Argument_Count = 1 and then
+               (Argument (1) = "help"
+                or Argument (1) = "h"
+                or Argument (1) = "-h"
+                or Argument (1) = "--help"
+                or Argument (1) = "?")));
+
+
+          Input_Filename_Given : Boolean := False;
       First_Image_Given : Boolean := False;
    begin
+      if Help_Asked then
+         raise Full_Help_Asked;
+      end if;
+
       --
       -- CL syntax
       --
@@ -335,13 +354,16 @@ package body Config is
       end if;
    end Start_Image;
 
-   function Help_Text return String
+   function Short_Help_Text return String
+   is ("Usage: "
+       & Ada.Command_Line.Command_Name
+       & " memory-spec  sampling  radix  [event-filename] [first-image]");
+
+   function Long_Help_Text return String
    is
       use Ada.Characters.Latin_9;
    begin
-      return "Usage: "
-        & Ada.Command_Line.Command_Name
-        & " memory-spec  sampling  radix  [event-filename] [first-image]"
+      return Short_Help_Text
         & LF
         & LF
         & "memory-spec: " & LF
@@ -357,12 +379,13 @@ package body Config is
         & "Note: NO SPACE between number and unit" & LF
         & LF
         & "radix: used to generate the filenames of the frames." & LF
-        & "'%d' is replaced by the frame number" & LF
-        & "(5 digits, left padded with zeros)" & LF
+        & "'" & Frame_Number_Marker & "' is replaced by the frame number" & LF
+        & "(" & Strip_Spaces (Frame_Number_Default_Width'Image) & " digits"
+        & " left padded with '" & Frame_Number_Padding_Char & "')" & LF
         & LF
         & "event-filename: optional, the file with the camera events." & LF
         & "If missing the standard input is read"
         & LF;
-   end Help_Text;
+   end Long_Help_Text;
 
 end Config;

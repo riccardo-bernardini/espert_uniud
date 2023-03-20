@@ -120,8 +120,20 @@ begin
 exception
    when E: Config.Bad_Command_Line =>
       Put_Line (Standard_Error, Exception_Message (E));
+      New_Line (Standard_Error);
 
-      Put_Line (Standard_Error, Config.Help_Text);
+      Put_Line (Standard_Error, Config.Short_Help_Text);
+      New_Line (Standard_Error);
 
-      Ada.Command_Line.Set_Exit_Status(Ada.Command_Line.Failure);
+      Put_Line (Standard_Error,
+                "Use " & Ada.Command_Line.Command_Name & " --help for more help");
+      New_Line (Standard_Error);
+
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+
+   when Config.Full_Help_Asked =>
+      Put_Line (Standard_Error, Config.Long_Help_Text);
+
+      Ada.Command_Line.Set_Exit_Status(Ada.Command_Line.Success);
+
 end Main;

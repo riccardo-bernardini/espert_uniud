@@ -94,23 +94,17 @@ begin
                           Events  => Events,
                           To      => Next_Time);
 
-         Put_Line ("[zz]" & Segment.Length'Image);
-
          declare
             use Event_Sequences;
 
-            Event_By_Point : constant Point_Event_Map :=
-                               Collect_By_Point (Segment, Next_Time);
+            Events_At : constant Point_Event_Map :=
+                          Collect_By_Point (Segment, Next_Time);
          begin
-            Put_Line ("[qq]");
             for X in Event_By_Point'Range (1) loop
                for Y in Event_By_Point'Range (2) loop
-                  Update_Pixel (Current_Time, Status (X, Y), Event_By_Point (X, Y));
+                  Update_Pixel (Current_Time, Status (X, Y), Events_At (X, Y));
                end loop;
             end loop;
-
-            Put_Line ("[rr]");
-
          end;
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),

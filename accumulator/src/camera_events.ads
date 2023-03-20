@@ -4,6 +4,8 @@ package Camera_Events is
 
    function Value (S : String) return Duration;
 
+   function Image (X : Duration) return String;
+
    function To_Duration (Seconds : Float) return Duration;
 
    function "/" (X, Y : Duration) return Float;
@@ -93,10 +95,13 @@ private
    function Value (S : String) return Duration
    is (Duration'Value (S));
 
+   function Image (X : Duration) return String
+   is (Duration'Image (X));
+
    function Value (S : String) return Timestamp
    is (Timestamp'Value (S));
 
-   Timestamps_Per_Second : constant Float := 1.0e9;
+   Timestamps_Per_Second : constant Float := 1.0e6;
 
    function To_Duration (Seconds : Float) return Duration
    is (Duration (Seconds * Timestamps_Per_Second));

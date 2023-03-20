@@ -13,8 +13,20 @@ package body Event_Streams is
    type Line_Type is (Comment, Header, Data);
 
 
+   function Chomp (S : String) return String
+   is
+      use Ada.Strings.Maps.Constants;
+
+      Last : constant Natural := Fixed.Index (Source => S,
+                                              Set    => Control_Set,
+                                              Test   => Outside,
+                                              Going  => Backward);
+   begin
+      return S (S'First .. Last);
+   end Chomp;
+
    function Strip_Spaces (S : String) return String
-   is (Fixed.Trim (Source => S,
+   is (Fixed.Trim (Source => Chomp (S),
                    Side   => Both));
 
 
@@ -72,8 +84,9 @@ package body Event_Streams is
    begin
       while not End_Of_File (Input) loop
          declare
-            Line : constant String := Get_Line (Input);
+            Line : constant String := Strip_Spaces (Get_Line (Input));
          begin
+            --  Put_Line (Type_Of (Line)'Image);
             case Type_Of (Line) is
                when Comment =>
                   null;

@@ -244,6 +244,8 @@ package body Config is
       Sampling_Step := Parse_Sampling_Spec (Current_Argument);
       Next_Argument;
 
+      Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
+
       Frame_Filename_Spec := Parse_Radix (Current_Argument);
       Next_Argument;
 

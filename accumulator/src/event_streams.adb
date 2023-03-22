@@ -61,7 +61,30 @@ package body Event_Streams is
    is
       use Ada.Text_Io;
 
-      function Parse_Data_Line (Line : String) return Camera_Events.Event_Type
+      type Polarity_Format_Type is (Bool, Number);
+
+      function Polarity_Format (Metadata : Event_Sequences.Metadata_Map)
+                                return Polarity_Format_Type
+      is
+         use type Event_Sequences.Metadata_Value;
+
+         Format : constant Event_Sequences.Metadata_Value :=
+                    Metadata.Value_Of ("polarity", "boolean");
+      begin
+         if Format = "boolean" then
+            return Bool;
+
+         elsif Format = "float" then
+            return Number;
+
+         else
+            raise Bad_Data_Line with "Unknown polarity format '" & String (Format) & "'";
+         end if;
+      end Polarity_Format;
+
+      function Parse_Data_Line (Line            : String;
+                                Polarity_Format : Polarity_Format_Type)
+                                return Camera_Events.Event_Type
       is
          use type Ada.Containers.Count_Type;
 
@@ -70,15 +93,23 @@ package body Event_Streams is
 
          Fields : constant Token_List := Split (To_Be_Splitted => Line,
                                                 Separator      => ',');
+
+         Weight : Weight_Type;
       begin
          if Fields.Length /= 4 then
             raise Bad_Data_Line with Line;
          end if;
 
+         Weight := Weight_Type'Value (Fields (4));
+
+         if Polarity_Format = Bool and Weight = 0 then
+            Weight := -1;
+         end if;
+
          return New_Event (T      => Value (Fields (1)),
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
-                           Weight => Weight_Type'Value (Fields (4)));
+                           Weight => Weight);
       end Parse_Data_Line;
 
       procedure Parse_Metadata
@@ -246,7 +277,11 @@ package body Event_Streams is
                   Header_Seen := True;
 
                when Data =>
-                  Result.Append (Parse_Data_Line (Line));
+                  if not Header_Seen then
+                     raise Bad_Data_Line with "Missing header";
+                  end if;
+
+                  Result.Append (Parse_Data_Line (Line, Polarity_Format (Metadata)));
 
             end case;
          end;

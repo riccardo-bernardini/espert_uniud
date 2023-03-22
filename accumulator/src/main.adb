@@ -1,3 +1,4 @@
+with Ada.IO_Exceptions;
 with Config;
 with Camera_Events;
 with Event_Sequences;
@@ -110,7 +111,8 @@ begin
          end;
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
-                      Image    => Status);
+                      Image    => Status,
+                      Format   => Config.Output_Format);
 
          Current_Time := Next_Time;
 
@@ -134,6 +136,10 @@ exception
    when Config.Full_Help_Asked =>
       Put_Line (Standard_Error, Config.Long_Help_Text);
 
-      Ada.Command_Line.Set_Exit_Status(Ada.Command_Line.Success);
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
 
+   when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
+      Put_Line (Standard_Error, Exception_Message (E));
+
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 end Main;

@@ -24,7 +24,9 @@ package body Config is
 
    Frame_Number_Default_Width : constant Positive := 5;
 
-   I_Am_Ready : Boolean := False;
+   Frame_Format : Images.Format_Type;
+
+   I_Am_Ready   : Boolean := False;
 
    Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
 
@@ -181,11 +183,40 @@ package body Config is
          Frame_Number_Position : constant Natural :=
                                    Index (Source  => Spec,
                                           Pattern => Frame_Number_Marker);
+
+         function Extract_Format (Filename : String) return Images.Format_Type
+         is
+            subtype Extension is String (1 .. 3);
+
+            Format_To_Extension   : constant array (Images.Format_Type) of Extension :=
+                                      (Images.Raw_Image_8 => "raw",
+                                       Images.PGM         => "pgm",
+                                       Images.PNG         => "png");
+         begin
+            if Filename'Length < 5 or else Filename (Filename'Last - 3) /= '.' then
+               return Images.Raw_Image_8;
+            end if;
+
+            declare
+               Ext : constant Extension := Tail (Spec, 3);
+            begin
+               for Fmt in Format_To_Extension'Range loop
+                  if Ext = Format_To_Extension (Fmt) then
+                     return Fmt;
+                  end if;
+               end loop;
+
+               raise Bad_Command_Line
+                 with "Unknown extension: '" & Ext & "'";
+            end;
+         end Extract_Format;
       begin
          if Frame_Number_Position = 0 then
             raise Bad_Command_Line
               with "Missing '" & Frame_Number_Marker & "' in frame filename radix";
          end if;
+
+         Frame_Format := Extract_Format (Spec);
 
          return Radix_Spec'
            (Head               =>
@@ -206,8 +237,8 @@ package body Config is
                 or Argument (1) = "?")));
 
 
-          Input_Filename_Given : Boolean := False;
-      First_Image_Given : Boolean := False;
+      Input_Filename_Given : Boolean := False;
+      First_Image_Given    : Boolean := False;
    begin
       if Help_Asked then
          raise Full_Help_Asked;
@@ -244,7 +275,7 @@ package body Config is
       Sampling_Step := Parse_Sampling_Spec (Current_Argument);
       Next_Argument;
 
-      Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
+      --  Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
 
       Frame_Filename_Spec := Parse_Radix (Current_Argument);
       Next_Argument;
@@ -297,6 +328,13 @@ package body Config is
 
    function Forgetting_Method return Memory_Dynamic.Dynamic_Type
    is (Memory_Dynamic_Spec);
+
+   -------------------
+   -- Output_Format --
+   -------------------
+
+   function Output_Format return Images.Format_Type
+   is (Frame_Format);
 
    -----------
    -- Radix --

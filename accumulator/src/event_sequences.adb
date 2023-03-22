@@ -1,6 +1,7 @@
 pragma Ada_2012;
 with Images;
-with ada.text_io;   use ada.text_io;
+--  with ada.text_io;   use ada.text_io;
+
 package body Event_Sequences is
    use type Camera_Events.X_Coordinate_Type;
    use type Camera_Events.y_Coordinate_Type;
@@ -30,7 +31,7 @@ package body Event_Sequences is
       use Camera_Events;
 
    begin
-      Put_Line ("[12]");
+      --  Put_Line ("[12]");
 
       for X in Result'Range (1) loop
          for Y in Result'Range (2) loop
@@ -38,13 +39,13 @@ package body Event_Sequences is
          end loop;
       end loop;
 
-      Put_Line ("[13]");
+      --  Put_Line ("[13]");
 
       for Ev of Events loop
          Result (X (Ev), Y (Ev)).Append (Ev);
       end loop;
 
-      Put_Line ("[44]");
+      --  Put_Line ("[44]");
 
       for X in Result'Range (1) loop
          for Y in Result'Range (2) loop
@@ -55,7 +56,7 @@ package body Event_Sequences is
          end loop;
       end loop;
 
-      Put_Line ("[99]");
+      --  Put_Line ("[99]");
 
       return Result;
    end Collect_By_Point;

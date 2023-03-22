@@ -11,7 +11,7 @@ package Images is
    Default_X_Size : constant Camera_Events.X_Coordinate_Type := 640;
    Default_y_Size : constant Camera_Events.y_Coordinate_Type := 480;
 
-   type Format_Type is (Raw_Image_8);
+   type Format_Type is (Raw_Image_8, Pgm, Png);
 
    function Load (Filename : String;
                   Format   : Format_Type := Raw_Image_8) return Image_Type;

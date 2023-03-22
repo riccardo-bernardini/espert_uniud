@@ -1,11 +1,36 @@
 pragma Ada_2012;
+with Ada.Strings.Fixed;
 
 with Interfaces;
 with Ada.Sequential_IO;
+with Ada.Streams;
+with Ada.Text_IO.Text_Streams;
+with Ada.Characters.Latin_9;
 
 package body Images is
    package Unsigned_8_IO is
      new Ada.Sequential_IO (Interfaces.Unsigned_8);
+
+
+   function Strip_Spaces (X : String) return String
+   is (Ada.Strings.Fixed.Trim (Source => X,
+                               Side   => Ada.Strings.Both));
+
+   type Byte is mod 2 ** 8;
+
+   function To_Byte (X : Pixel_Value) return Byte
+   is
+   begin
+      if X < 0.0 then
+         return 0;
+
+      elsif X > Pixel_Value (Byte'Last) then
+         return Byte'Last;
+
+      else
+         return Byte (X);
+      end if;
+   end To_Byte;
 
    ----------
    -- Load --
@@ -70,6 +95,10 @@ package body Images is
       case Format is
          when Raw_Image_8 =>
             return Load_Raw_Image_8 (Filename);
+
+         when Pgm | Png =>
+            raise Constraint_Error
+              with "Loading format " & Format'Image & " not implemented";
       end case;
    end Load;
 
@@ -113,8 +142,8 @@ package body Images is
          Y_Size : constant Y_Coordinate_Type := Image'Length (2);
       begin
          Unsigned_8_IO.Create (File => Output,
-                             Mode => Unsigned_8_IO.Out_File,
-                             Name => Filename);
+                               Mode => Unsigned_8_IO.Out_File,
+                               Name => Filename);
 
 
          Unsigned_8_IO.Write (File => Output,
@@ -136,10 +165,61 @@ package body Images is
             end loop;
          end loop;
       end Save_Raw_Image_8;
+
+      procedure Save_Pgm (Filename : String;
+                          Image    : Image_Type)
+      is
+         use Ada.Text_IO;
+         use Ada.Streams;
+         use Ada.Characters;
+
+         pragma Compile_Time_Error (Stream_Element'Size /= 8,
+                                    "Stream_Element must be 8 bit long");
+
+
+
+         Output : File_Type;
+      begin
+         Create (File => Output,
+                 Mode => Out_File,
+                 Name => Filename);
+
+         Put (Output, "P5"
+              & " " & Strip_Spaces (Image'Length (2)'Image)
+              & " " & Strip_Spaces (Image'Length (1)'Image)
+              & " 255"
+              & Latin_9.LF);
+
+         declare
+            S : constant Text_Streams.Stream_Access :=
+                  Text_Streams.Stream (Output);
+         begin
+            for Row in Image'Range (1) loop
+               for Col in Image'Range (2) loop
+                  Byte'Write (S, To_Byte (Image (Row, Col)));
+               end loop;
+            end loop;
+         end;
+
+         Close (Output);
+      end Save_Pgm;
+
+      procedure Save_Png (Filename : String;
+                          Image    : Image_Type)
+      is
+      begin
+         raise Program_Error with "Save_PNG not implemented";
+      end Save_Png;
    begin
       case Format is
          when Raw_Image_8 =>
             Save_Raw_Image_8 (Filename, Image);
+
+         when PGM =>
+            Save_Pgm (Filename, Image);
+
+         when PNG =>
+            Save_PNG (Filename, Image);
       end case;
    end Save;
 

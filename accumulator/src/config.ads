@@ -26,6 +26,10 @@ package Config is
      with
        Pre => Package_Ready;
 
+   function Output_Format return Images.Format_Type
+     with
+       Pre => Package_Ready;
+
    type File_Access is access all Ada.Text_IO.File_Type;
 
    function Input return File_Access

@@ -161,7 +161,7 @@ package body Images is
          for X in Image'Range (1) loop
             for Y in Image'Range (2) loop
                Unsigned_8_IO.Write (File => Output,
-                                    Item => Unsigned_8 (Image (X, Y)));
+                                    Item => Unsigned_8 (To_Byte (Image (X, Y))));
             end loop;
          end loop;
       end Save_Raw_Image_8;

@@ -42,7 +42,7 @@ Durations can be specified as
 * **seconds** (and sub-multiples); in this case the number is followed by `s` or `ms` or `us` or `ns`, e.g., `1ms`
 * **frame rate**; in this case the number is followed by `fps`, e.g., `1000fps` (which is equivalent to `1ms`)
 
-**NO SPACE** must be between the number and the unit; that is, `12ms` is OK, `12 ms` is **NOT**
+**Note:** number and unit **must not be** separated by space, that is, `12ms` is OK, `12 ms` is **NOT**
 
 ## Raw image format
 

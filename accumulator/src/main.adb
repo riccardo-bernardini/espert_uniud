@@ -110,9 +110,7 @@ begin
 
       Segment      : Event_Sequences.Event_Sequence;
 
-      Events_At    : constant Event_Sequences.Point_Event_Map :=
-                       new Event_Sequences.Point_Event_Matrix
-                         (0 .. Metadata.Size_X - 1, 0 .. Metadata.Size_Y - 1);
+      Events_At    : Event_Sequences.Point_Event_Map;
    begin
       pragma Assert (Camera_Events.Is_Finite (Start_Time));
       pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
@@ -137,7 +135,7 @@ begin
          begin
             Collect_By_Point (Events         => Segment,
                               Last_Timestamp => Next_Time,
-                              Result         => Events_At.all);
+                              Result         => Events_At);
 
             for X in Events_At'Range (1) loop
                for Y in Events_At'Range (2) loop
@@ -145,7 +143,7 @@ begin
 
                   Update_Pixel (Start  => Current_Time,
                                 Pixel  => Current_Frame (X, Y),
-                                Events => Events_At (X, Y));
+                                Events => Events_At ((X, Y)));
                end loop;
             end loop;
          end;

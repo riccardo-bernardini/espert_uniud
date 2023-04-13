@@ -1,5 +1,5 @@
 pragma Ada_2012;
-with ada.Text_IO;
+with Ada.Text_IO;
 --  with ada.text_io;   use ada.text_io;
 
 package body Event_Sequences is
@@ -13,7 +13,7 @@ package body Event_Sequences is
    procedure Wipe_Out (Map : in out Metadata_Map)
    is
    begin
-      map.Clear;
+      Map.Clear;
    end Wipe_Out;
 
    ---------
@@ -29,33 +29,25 @@ package body Event_Sequences is
    procedure Collect_By_Point
      (Events         : Event_Sequence;
       Last_Timestamp : Camera_Events.Timestamp;
-      Result         : out Point_Event_Matrix)
+      Result         : out Point_Event_Map)
    is
       use Camera_Events;
    begin
-      --  Put_Line ("[12]");
-
-      for X in Result'Range (1) loop
-         for Y in Result'Range (2) loop
-            Result (X, Y).Clear;
-         end loop;
-      end loop;
-
-      --  Put_Line ("[13]");
+      Result.Clear;
 
       for Ev of Events loop
-         Result (X (Ev), Y (Ev)).Append (Ev);
+         Result.Append (Ev);
       end loop;
 
-      --  Put_Line ("[44]");
-
-      for X in Result'Range (1) loop
-         for Y in Result'Range (2) loop
-            Result (X, Y).Append (New_Event (T      => Last_Timestamp,
-                                             X      => X,
-                                             Y      => Y,
-                                             Weight => 0));
-         end loop;
+      for Pos in Result.M.Iterate loop
+         declare
+            P : constant Camera_Events.Point_Type := Point_Maps.Key (Pos);
+         begin
+            Result (P).Append (New_Event (T      => Last_Timestamp,
+                                          X      => P.X,
+                                          Y      => P.Y,
+                                          Weight => 0));
+         end;
       end loop;
    end Collect_By_Point;
 
@@ -78,7 +70,7 @@ package body Event_Sequences is
 
    procedure Dump (Map : Metadata_Map) is
       use Metadata_Maps;
-      use ada.Text_IO;
+      use Ada.Text_IO;
    begin
       for Pos in Map.Iterate loop
          Put (Standard_Error, "[" & String (Key (Pos)) & "]");
@@ -165,5 +157,35 @@ package body Event_Sequences is
 
    function Size_Y (Map : Metadata_Map) return Camera_Events.Y_Coordinate_Type
    is (Camera_Events.Y_Coordinate_Type (Integer_Value (Map, "sizeY")));
+
+   function Events (Map   : Point_Event_Map;
+                    Point : Camera_Events.Point_Type)
+                    return Event_Sequence
+   is (if Map.M.Contains (Point) then
+          Map.M (Point)
+
+       else
+          raise Constraint_Error);
+
+   procedure Clear (Map : in out Point_Event_Map)
+   is
+   begin
+      Map.M.Clear;
+   end Clear;
+   procedure Append (Map   : in out Point_Event_Map;
+                     Event : Camera_Events.Event_Type)
+   is
+      P : constant Camera_Events.Point_Type := (X => Camera_Events.X (Event),
+                                                Y => Camera_Events.Y (Event));
+   begin
+      if not Map.M.Contains (P) then
+         Map.M.Insert (Key      => P,
+                       New_Item => Event_Vectors.Empty_List);
+      end if;
+
+      Map.M (P).Append (Event);
+   end Append;
+
+
 
 end Event_Sequences;

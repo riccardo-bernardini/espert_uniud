@@ -1,5 +1,6 @@
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Containers.Indefinite_Ordered_Maps;
+with Ada.Containers.Ordered_Maps;
 
 with Camera_Events;
 
@@ -107,6 +108,15 @@ private
                      Event : Camera_Events.Event_Type);
 
 
-   type Point_Event_Map is tagged null record;
+   use type Event_Vectors.List;
+
+   package Point_Maps is
+     new Ada.Containers.Ordered_Maps (Key_Type     => Camera_Events.Point_Type,
+                                      Element_Type => Event_Sequence);
+   type Point_Event_Map is tagged
+      record
+         M : Point_Maps.Map;
+      end record;
+
 
 end Event_Sequences;

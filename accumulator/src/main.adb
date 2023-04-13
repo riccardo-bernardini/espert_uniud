@@ -27,12 +27,12 @@ procedure Main is
                               To      : in Camera_Events.Timestamp)
      with
        Pre => not Events.Is_Empty and From < To,
-       Post =>
-         (Events.Is_Empty or else Camera_Events.T (Events.First_Element) > To)
+     Post =>
+       (Events.Is_Empty or else Camera_Events.T (Events.First_Element) > To)
+       and
+         (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) <= To)
          and
-           (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) <= To)
-           and
-             (Segment.Length + Events.Length = Events.Length'Old);
+           (Segment.Length + Events.Length = Events.Length'Old);
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
@@ -62,6 +62,7 @@ procedure Main is
       Current_Time : Timestamp := Start;
    begin
       for Ev of Events loop
+         --  Put_Line ("++" & Image (T (Ev)) & Image (Current_Time));
          Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
                                          Dynamic => Config.Forgetting_Method,
                                          Delta_T => T (Ev) - Current_Time);
@@ -100,7 +101,7 @@ begin
                         Config.Stop_At (Event_Sequences.T_Max (Events));
 
       Current_Time : Camera_Events.Timestamp := Start_Time;
-      Next_Time  : Camera_Events.Timestamp;
+      Next_Time    : Camera_Events.Timestamp;
 
 
       Current_Frame : Images.Image_Type :=
@@ -124,29 +125,27 @@ begin
             Next_Time := Stopping_Time;
          end if;
 
-
          Extract_Segment (Segment => Segment,
                           Events  => Events,
                           From    => Current_Time,
                           To      => Next_Time);
 
-         declare
-            use Event_Sequences;
-         begin
-            Collect_By_Point (Events         => Segment,
-                              Last_Timestamp => Next_Time,
-                              Result         => Events_At);
+         Event_Sequences.Collect_By_Point (Events         => Segment,
+                                           Last_Timestamp => Next_Time,
+                                           Result         => Events_At);
 
-            for X in Events_At'Range (1) loop
-               for Y in Events_At'Range (2) loop
-                  Put_Line (X'Image & Y'Image);
+         for Pos in Events_At.Iterate loop
+            declare
+               Pixel : constant Camera_Events.Point_Type :=
+                         Event_Sequences.Point (Pos);
+            begin
+               --  Put_Line (Pixel.X'Image & Pixel.Y'Image);
 
-                  Update_Pixel (Start  => Current_Time,
-                                Pixel  => Current_Frame (X, Y),
-                                Events => Events_At ((X, Y)));
-               end loop;
-            end loop;
-         end;
+               Update_Pixel (Start  => Current_Time,
+                             Pixel  => Current_Frame (Pixel.X, Pixel.Y),
+                             Events => Events_At (Pixel));
+            end;
+         end loop;
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Current_Frame,

@@ -41,7 +41,7 @@ package Camera_Events is
 
    function "-" (A, B : Timestamp) return Duration
      with
-       Pre => Is_Finite (A) and Is_Finite (B) and A > B;
+       Pre => Is_Finite (A) and Is_Finite (B) and A >= B;
 
    function ">" (X, Y : Timestamp) return Boolean;
 

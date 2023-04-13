@@ -186,6 +186,21 @@ package body Event_Sequences is
       Map.M (P).Append (Event);
    end Append;
 
+   function Has_Element (Pos : Cursor) return Boolean
+   is (Point_Maps.Has_Element (Pos.C));
 
+   function Iterate (Container : in Point_Event_Map)
+                     return Point_event_map_Interfaces.Forward_Iterator'Class
+   is (Point_Map_Iterator'(C => Container.M.First));
+
+   function First (Object : Point_Map_Iterator) return Cursor
+   is ((C => Object.C));
+
+   function Next (Object : Point_Map_Iterator; Position : Cursor) return Cursor
+   is ((C => Point_Maps.Next (Position.C)));
+
+
+   function Point (Position : Cursor) return Camera_Events.Point_Type
+   is (Point_Maps.Key (Position.C));
 
 end Event_Sequences;

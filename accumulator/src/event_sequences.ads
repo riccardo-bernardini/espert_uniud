@@ -1,6 +1,7 @@
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Containers.Ordered_Maps;
+with Ada.Iterator_Interfaces;
 
 with Camera_Events;
 
@@ -70,9 +71,23 @@ package Event_Sequences is
    --
    --  subtype Point_Event_Map is Point_Event_Maps.Map;
 
+
+   type Cursor is private;
+
+   function Has_Element (Pos : Cursor) return Boolean;
+
+   package Point_Event_Map_Interfaces is new
+     Ada.Iterator_Interfaces (Cursor, Has_Element);
+
    type Point_Event_Map is tagged private
      with
-       Constant_Indexing => Events;
+       Constant_Indexing => Events,
+       Default_Iterator => Iterate;
+
+   function Iterate (Container : in Point_Event_Map)
+                     return Point_Event_Map_Interfaces.Forward_Iterator'Class;
+
+   function Point (Position : Cursor) return Camera_Events.Point_Type;
 
    function Events (Map   : Point_Event_Map;
                     Point : Camera_Events.Point_Type)
@@ -95,7 +110,7 @@ private
 
    function Has_Key (Map : Metadata_Map;
                      Key : Metadata_Name)
-                                       return Boolean
+                     return Boolean
    is (Map.Contains (Key));
 
    function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp
@@ -113,10 +128,25 @@ private
    package Point_Maps is
      new Ada.Containers.Ordered_Maps (Key_Type     => Camera_Events.Point_Type,
                                       Element_Type => Event_Sequence);
+
    type Point_Event_Map is tagged
       record
          M : Point_Maps.Map;
       end record;
 
+   type Cursor is
+      record
+         C : Point_Maps.Cursor;
+      end record;
+
+   type Point_Map_Iterator is
+     new Point_Event_Map_Interfaces.Forward_Iterator
+   with
+      record
+         C : Point_Maps.Cursor;
+      end record;
+
+   function First (Object : Point_Map_Iterator) return Cursor;
+   function Next (Object : Point_Map_Iterator; Position : Cursor) return Cursor;
 
 end Event_Sequences;

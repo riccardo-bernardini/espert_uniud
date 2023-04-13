@@ -1,6 +1,7 @@
 pragma Ada_2012;
 
 with Ada.Command_Line;
+with Ada.Containers;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Fixed;        use Ada.Strings;
 
@@ -8,14 +9,25 @@ with Ada.Characters.Handling;
 with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Latin_9;
+with Tokenize;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Config is
+   use type Camera_Events.Timestamp;
+
    type Radix_Spec is
       record
          Head               : Unbounded_String;
          Tail               : Unbounded_String;
          Frame_Number_Width : Positive;
          Padding_Char       : Character;
+      end record;
+
+   type Sampling_Spec is
+      record
+         Start : Camera_Events.Timestamp;
+         Stop  : Camera_Events.Timestamp;
+         Sampling_Period : Camera_Events.Duration;
       end record;
 
    Frame_Number_Marker : constant String := "%d";
@@ -33,7 +45,7 @@ package body Config is
 
    Input_Stream : File_Access := null;
 
-   Sampling_Step : Camera_Events.Duration;
+   Sampling_info : Sampling_Spec;
 
    Frame_Filename_Spec : Radix_Spec;
 
@@ -71,7 +83,7 @@ package body Config is
          Argument_Counter := Argument_Counter + 1;
       end Next_Argument;
 
-      function Parse_Time_Spec (Spec : String) return Camera_Events.Duration
+      function Parse_Time_Spec (Spec : String) return Float
       is
          use Ada.Strings.Fixed;
          use Ada.Strings.Maps.Constants;
@@ -98,27 +110,33 @@ package body Config is
                        Stripped (Stripped'First .. End_Of_Number - 1));
       begin
          if Unit = "" then
-            return Camera_Events.Value (Value);
+            return Float (Integer'Value (Value)) * Camera_Events.Timestamps_Per_Second;
 
          elsif Unit = "s" then
-            return Camera_Events.To_Duration (Float (Integer'Value (Value)));
+            return Float (Integer'Value (Value));
 
          elsif Unit = "ms" then
-            return Camera_Events.To_Duration (1.0e-3 * Float (Integer'Value (Value)));
+            return 1.0e-3 * Float (Integer'Value (Value));
 
          elsif Unit = "us" then
-            return Camera_Events.To_Duration (1.0e-6 * Float (Integer'Value (Value)));
+            return 1.0e-6 * Float (Integer'Value (Value));
 
          elsif Unit = "ns" then
-            return Camera_Events.To_Duration (1.0e-9 * Float (Integer'Value (Value)));
+            return 1.0e-9 * Float (Integer'Value (Value));
 
          elsif Unit = "fps" then
-            return Camera_Events.To_Duration (1.0 / Float (Integer'Value (Value)));
+            return 1.0 / Float (Integer'Value (Value));
 
          else
             raise Bad_Command_Line with "Unknown unit '" & Unit & "'";
          end if;
       end Parse_Time_Spec;
+
+      function Parse_Time_Spec (Spec : String) return Camera_Events.Duration
+      is (Camera_Events.To_Duration (Parse_Time_Spec (Spec)));
+
+      function Parse_Time_Spec (Spec : String) return Camera_Events.Timestamp
+      is (Camera_Events.To_Timestamp (Parse_Time_Spec (Spec)));
 
       function Parse_Memory_Spec (Spec : String)
                                   return Memory_Dynamic.Dynamic_Type
@@ -169,8 +187,47 @@ package body Config is
          end if;
       end Parse_Memory_Spec;
 
-      function Parse_Sampling_Spec (Spec : String) return Camera_Events.Duration
-      is (Parse_Time_Spec (Spec));
+      function Parse_Sampling_Spec (Spec : String) return Sampling_Spec
+      is
+      begin
+         if 0 = Fixed.Index (Source  => spec, Pattern => ":") then
+            --  Put_Line ("99(" & Spec & ")");
+            return Sampling_Spec'(Start           => Camera_Events.Minus_Infinity,
+                                  Stop            => Camera_Events.Infinity,
+                                  Sampling_Period => Parse_Time_Spec (Spec));
+
+         else
+            --  Put_Line ("88(" & Spec & ")");
+            declare
+               use type Ada.Containers.Count_Type;
+               use Ada.Strings.Fixed;
+
+               Pieces : constant Tokenize.Token_List :=
+                          Tokenize.Split (To_Be_Splitted => spec,
+                                          Separator      => ':');
+
+               function Parse_Start_Time (spec : String) return Camera_Events.Timestamp
+               is (if Spec = "" then
+                      Camera_Events.Minus_Infinity
+                   else
+                      Parse_Time_Spec (Spec));
+
+               function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp
+               is (if Spec  = "" then
+                      Camera_Events.Infinity
+                   else
+                      Parse_Time_Spec (Spec));
+            begin
+               if Pieces.Length /= 3 then
+                  raise Bad_Command_Line with "Bad sampling syntax";
+               end if;
+
+               return (Start           => Parse_Start_Time (Trim (Pieces (1), Both)),
+                       Stop            => Parse_Stop_Time (Trim (Pieces (3), Both)),
+                       Sampling_Period => Parse_Time_Spec (Trim (Pieces (2), Both)));
+            end;
+         end if;
+      end Parse_Sampling_Spec;
 
       function Parse_Radix (Spec : String) return Radix_Spec
       is
@@ -272,7 +329,7 @@ package body Config is
       Memory_Dynamic_Spec := Parse_Memory_Spec (Current_Argument);
       Next_Argument;
 
-      Sampling_Step := Parse_Sampling_Spec (Current_Argument);
+      Sampling_info := Parse_Sampling_Spec (Current_Argument);
       Next_Argument;
 
       --  Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
@@ -320,7 +377,29 @@ package body Config is
    ---------------------
 
    function Sampling_Period return Camera_Events.Duration
-   is (Sampling_Step);
+   is (Sampling_Info.Sampling_Period);
+
+   --------------
+   -- Start_At --
+   --------------
+
+   function Start_At (T_Min : Camera_Events.Timestamp) return Camera_Events.Timestamp
+   is (if Sampling_Info.Start > T_Min then
+          Sampling_Info.Start
+       else
+          T_Min);
+
+
+   -------------
+   -- Stop_At --
+   -------------
+
+   function Stop_At (T_Max : Camera_Events.Timestamp) return Camera_Events.Timestamp
+   is (if Sampling_Info.Stop > T_Max then
+          T_Max
+       else
+          Sampling_Info.Stop);
+
 
    -----------------------
    -- Forgetting_Method --

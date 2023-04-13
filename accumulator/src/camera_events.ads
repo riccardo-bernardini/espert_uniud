@@ -2,6 +2,11 @@ package Camera_Events is
    type Duration is private;
    type Timestamp is private;
 
+   Minus_Infinity : constant Timestamp;
+   Infinity       : constant Timestamp;
+
+   Timestamps_Per_Second : constant Float;
+
    function Value (S : String) return Duration;
 
    function Image (X : Duration) return String;
@@ -12,11 +17,17 @@ package Camera_Events is
 
    function Value (S : String) return Timestamp;
 
+   function To_Timestamp (Seconds : Float) return Timestamp;
+
    function "+" (T : Timestamp; D : Duration) return Timestamp;
 
    function "-" (A, B : Timestamp) return Duration;
 
    function ">" (X, Y : Timestamp) return Boolean;
+
+   function ">=" (X, Y : Timestamp) return Boolean;
+
+   function "<" (X, Y : Timestamp) return Boolean;
 
    type X_Coordinate_Type is mod 2 ** 16;
    type Y_Coordinate_Type is mod 2 ** 16;
@@ -47,17 +58,46 @@ package Camera_Events is
    function Weight (Event : Event_Type) return Weight_Type;
 private
    type Duration is mod 2 ** 64;
-   type Timestamp is mod 2 ** 64;
+   type Timestamp_Value is mod 2 ** 64;
 
+   type Timestamp is
+      record
+         T        : Timestamp_Value;
+         Infinite : Boolean;
+      end record;
+
+   Minus_Infinity : constant Timestamp := (T => -1, Infinite => True);
+   Infinity       : constant Timestamp := (T => 1, Infinite => True);
+
+   function Is_Finite (T : Timestamp) return Boolean
+   is (not T.Infinite);
 
    function "+" (T : Timestamp; D : Duration) return Timestamp
-   is (T + Timestamp (D));
+   is (if Is_Finite (T) then
+         (T        => T.T + Timestamp_Value (D),
+          Infinite => False)
+       else
+          T);
 
    function "-" (A, B : Timestamp) return Duration
-   is (Duration (A)-Duration (B));
+   is (if Is_Finite (A) and Is_Finite (B) then
+          Duration (A.T)-Duration (B.T)
+       else
+          raise Constraint_Error);
 
    function ">" (X, Y : Timestamp) return Boolean
-   is (Duration (X) > Duration (Y));
+   is (if X = Minus_Infinity or Y = Infinity then
+          False
+       elsif X = Infinity or Y = Minus_Infinity then
+          True
+       else
+          Duration (X.T) > Duration (Y.T));
+
+   function "<" (X, Y : Timestamp) return Boolean
+   is (Y > X);
+
+   function ">=" (X, Y : Timestamp) return Boolean
+   is (not (X < Y));
 
    type Event_Type is
       record
@@ -99,12 +139,17 @@ private
    is (Duration'Image (X));
 
    function Value (S : String) return Timestamp
-   is (Timestamp'Value (S));
+   is ((T       => Timestamp_Value'Value (S),
+        Infinite => False));
 
    Timestamps_Per_Second : constant Float := 1.0e6;
 
    function To_Duration (Seconds : Float) return Duration
    is (Duration (Seconds * Timestamps_Per_Second));
+
+   function To_Timestamp (Seconds : Float) return Timestamp
+   is ((T       => Timestamp_Value (Seconds * Timestamps_Per_Second),
+        Infinite => False));
 
 
 end Camera_Events;

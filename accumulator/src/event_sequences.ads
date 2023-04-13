@@ -49,13 +49,17 @@ package Event_Sequences is
    procedure Dump (Map : Metadata_Map);
 
    procedure Update (Map : in out Metadata_Map;
-                     src : in     Metadata_Map);
+                     Src : in     Metadata_Map);
 
    package Event_Vectors is
      new Ada.Containers.Doubly_Linked_Lists (Element_Type => Camera_Events.Event_Type);
 
 
    subtype Event_Sequence is Event_Vectors.List;
+
+   function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp;
+
+   function T_Max (Events : Event_Sequence) return Camera_Events.Timestamp;
 
    function "<" (A, B : Camera_Events.Point_Type) return Boolean;
 
@@ -88,4 +92,12 @@ private
                      Key : Metadata_Name)
                      return Boolean
    is (Map.Contains (Key));
+
+   function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp
+   is (Camera_Events.T (Events.First_Element));
+
+   function T_Max (Events : Event_Sequence) return Camera_Events.Timestamp
+   is (Camera_Events.T (Events.Last_Element));
+
+
 end Event_Sequences;

@@ -23,9 +23,10 @@ procedure Main is
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
+                              From    : in Camera_Events.Timestamp;
                               To      : in Camera_Events.Timestamp)
      with
-       Pre => not Events.Is_Empty,
+       Pre => not Events.Is_Empty and From < To,
        Post =>
          (Events.Is_Empty or else Camera_Events.T (Events.First_Element) > To)
          and
@@ -35,6 +36,7 @@ procedure Main is
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
+                              From    : in Camera_Events.Timestamp;
                               To      : in Camera_Events.Timestamp)
    is
       use Camera_Events;
@@ -42,7 +44,10 @@ procedure Main is
       Segment.Clear;
 
       while not Events.Is_Empty and then T (Events.First_Element) <= To loop
-         Segment.Append (Events.First_Element);
+         if T (Events.First_Element) >= From then
+            Segment.Append (Events.First_Element);
+         end if;
+
          Events.Delete_First;
       end loop;
    end Extract_Segment;
@@ -67,67 +72,78 @@ procedure Main is
       end loop;
    end Update_Pixel;
 
+   Events   : Event_Sequences.Event_Sequence;
+   Metadata : Event_Sequences.Metadata_Map;
 begin
    Config.Parse_Command_Line;
+
+   Event_Streams.Parse_Event_Stream (Input    => Config.Input.all,
+                                     Events   => Events,
+                                     Metadata => Metadata);
+
+   if Events.Is_Empty then
+      Put_Line (Standard_Error, "Empty event stream");
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+      return;
+   end if;
 
    declare
       use type Camera_Events.Duration;
       use type Config.Frame_Index;
 
+      Start_Time : constant Camera_Events.Timestamp :=
+                     Config.Start_At (Event_Sequences.T_Min (Events));
 
-      Current_Time : Camera_Events.Timestamp;
+      Stopping_Time : constant Camera_Events.Timestamp :=
+                        Config.Stop_At (Event_Sequences.T_Min (Events));
 
+      Current_Time : Camera_Events.Timestamp := Start_Time;
       Next_Time  : Camera_Events.Timestamp;
 
-      Segment : Event_Sequences.Event_Sequence;
+
+      Current_Frame : Images.Image_Type :=
+                        Config.Start_Image (Metadata.Size_X, Metadata.Size_Y);
 
       Frame_Number : Config.Frame_Index := 0;
 
-      Events   : Event_Sequences.Event_Sequence;
-      Metadata : Event_Sequences.Metadata_Map;
+      Segment      : Event_Sequences.Event_Sequence;
    begin
-      Event_Streams.Parse_Event_Stream (Input    => Config.Input.all,
-                                        Events   => Events,
-                                        Metadata => Metadata);
+      while Current_Time < Stopping_Time loop
+         Next_Time := Current_Time + Config.Sampling_Period;
 
-      Current_Time := Camera_Events.T (Events.First_Element);
-
-      declare
-         Current_Frame : Images.Image_Type :=
-                           Config.Start_Image (Metadata.Size_X, Metadata.Size_Y);
-      begin
-         while not Events.Is_Empty loop
-            Next_Time := Current_Time + Config.Sampling_Period;
+         if Next_Time > Stopping_Time then
+            Next_Time := Stopping_Time;
+         end if;
 
 
-            Extract_Segment (Segment => Segment,
-                             Events  => Events,
-                             To      => Next_Time);
+         Extract_Segment (Segment => Segment,
+                          Events  => Events,
+                          From    => Current_Time,
+                          To      => Next_Time);
 
-            declare
-               use Event_Sequences;
+         declare
+            use Event_Sequences;
 
-               Events_At : constant Point_Event_Map :=
-                             Collect_By_Point (Segment, Next_Time);
-            begin
-               for X in Events_At'Range (1) loop
-                  for Y in Events_At'Range (2) loop
-                     Update_Pixel (Start => Current_Time,
-                                   Pixel  => Current_Frame (X, Y),
-                                   Events => Events_At (X, Y));
-                  end loop;
+            Events_At : constant Point_Event_Map :=
+                          Collect_By_Point (Segment, Next_Time);
+         begin
+            for X in Events_At'Range (1) loop
+               for Y in Events_At'Range (2) loop
+                  Update_Pixel (Start  => Current_Time,
+                                Pixel  => Current_Frame (X, Y),
+                                Events => Events_At (X, Y));
                end loop;
-            end;
+            end loop;
+         end;
 
-            Images.Save (Filename => Config.Frame_Filename (Frame_Number),
-                         Image    => Current_Frame,
-                         Format   => Config.Output_Format);
+         Images.Save (Filename => Config.Frame_Filename (Frame_Number),
+                      Image    => Current_Frame,
+                      Format   => Config.Output_Format);
 
-            Current_Time := Next_Time;
+         Current_Time := Next_Time;
 
-            Frame_Number := Frame_Number + 1;
-         end loop;
-      end;
+         Frame_Number := Frame_Number + 1;
+      end loop;
    end;
 exception
    when E : Config.Bad_Command_Line =>

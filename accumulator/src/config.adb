@@ -9,6 +9,7 @@ with Ada.Characters.Handling;
 with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Latin_9;
+with Gnat.Regpat;
 with Tokenize;
 with Ada.Text_IO; use Ada.Text_IO;
 
@@ -25,8 +26,8 @@ package body Config is
 
    type Sampling_Spec is
       record
-         Start : Camera_Events.Timestamp;
-         Stop  : Camera_Events.Timestamp;
+         Start           : Camera_Events.Timestamp;
+         Stop            : Camera_Events.Timestamp;
          Sampling_Period : Camera_Events.Duration;
       end record;
 
@@ -45,7 +46,7 @@ package body Config is
 
    Input_Stream : File_Access := null;
 
-   Sampling_info : Sampling_Spec;
+   Sampling_Info : Sampling_Spec;
 
    Frame_Filename_Spec : Radix_Spec;
 
@@ -87,12 +88,13 @@ package body Config is
       is
          use Ada.Strings.Fixed;
          use Ada.Strings.Maps.Constants;
+         use Ada.Strings.Maps;
 
          Stripped : constant String := Strip_Spaces (Spec);
 
          End_Of_Number : constant Natural :=
                            Index (Source => Stripped,
-                                  Set    => Decimal_Digit_Set,
+                                  Set    => Decimal_Digit_Set or To_Set ("._-+eE"),
                                   Test   => Outside);
 
          Unit : constant String :=
@@ -108,24 +110,49 @@ package body Config is
                        Stripped
                     else
                        Stripped (Stripped'First .. End_Of_Number - 1));
+
+         --------------
+         -- To_Float --
+         --------------
+
+         function To_Float (X : String) return Float
+         is
+            use Gnat.Regpat;
+
+            Integer_Regexp : constant Pattern_Matcher :=
+                               Compile ("^[-+]?[0-9_]+$");
+
+            Float_Regexp : constant Pattern_Matcher :=
+                             Compile ("^[-+]?[0-9_]+\.[0-9_]+([eE][-+]?[0-9_]+)?$");
+         begin
+            return (if Match (Integer_Regexp, X) then
+                       Float (Integer'Value (X))
+
+                    elsif Match (Float_Regexp, X) then
+                       Float'Value (X)
+
+                    else
+                       raise Bad_Command_Line
+                         with "Bad number '" & X & "'");
+         end To_Float;
       begin
          if Unit = "" then
-            return Float (Integer'Value (Value)) * Camera_Events.Timestamps_Per_Second;
+            return To_Float (Value) * Camera_Events.Timestamps_Per_Second;
 
          elsif Unit = "s" then
-            return Float (Integer'Value (Value));
+            return To_Float (Value);
 
          elsif Unit = "ms" then
-            return 1.0e-3 * Float (Integer'Value (Value));
+            return 1.0e-3 * To_Float (Value);
 
          elsif Unit = "us" then
-            return 1.0e-6 * Float (Integer'Value (Value));
+            return 1.0e-6 * To_Float (Value);
 
          elsif Unit = "ns" then
-            return 1.0e-9 * Float (Integer'Value (Value));
+            return 1.0e-9 * To_Float (Value);
 
          elsif Unit = "fps" then
-            return 1.0 / Float (Integer'Value (Value));
+            return 1.0 / To_Float (Value);
 
          else
             raise Bad_Command_Line with "Unknown unit '" & Unit & "'";
@@ -190,7 +217,7 @@ package body Config is
       function Parse_Sampling_Spec (Spec : String) return Sampling_Spec
       is
       begin
-         if 0 = Fixed.Index (Source  => spec, Pattern => ":") then
+         if 0 = Fixed.Index (Source  => Spec, Pattern => ":") then
             --  Put_Line ("99(" & Spec & ")");
             return Sampling_Spec'(Start           => Camera_Events.Minus_Infinity,
                                   Stop            => Camera_Events.Infinity,
@@ -203,10 +230,10 @@ package body Config is
                use Ada.Strings.Fixed;
 
                Pieces : constant Tokenize.Token_List :=
-                          Tokenize.Split (To_Be_Splitted => spec,
+                          Tokenize.Split (To_Be_Splitted => Spec,
                                           Separator      => ':');
 
-               function Parse_Start_Time (spec : String) return Camera_Events.Timestamp
+               function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp
                is (if Spec = "" then
                       Camera_Events.Minus_Infinity
                    else
@@ -222,9 +249,20 @@ package body Config is
                   raise Bad_Command_Line with "Bad sampling syntax";
                end if;
 
-               return (Start           => Parse_Start_Time (Trim (Pieces (1), Both)),
-                       Stop            => Parse_Stop_Time (Trim (Pieces (3), Both)),
-                       Sampling_Period => Parse_Time_Spec (Trim (Pieces (2), Both)));
+
+
+               return Result : constant Sampling_Spec :=
+                 (Start           => Parse_Start_Time (Trim (Pieces (1), Both)),
+                  Stop            => Parse_Stop_Time (Trim (Pieces (3), Both)),
+                  Sampling_Period => Parse_Time_Spec (Trim (Pieces (2), Both)))
+               do
+
+                  if Result.Stop < Result.Start then
+                     raise Bad_Command_Line
+                       with "Stopping time < start time";
+                  end if;
+
+               end return;
             end;
          end if;
       end Parse_Sampling_Spec;
@@ -234,7 +272,7 @@ package body Config is
          use Ada.Strings.Fixed;
 
          function To_Unbounded (X : String) return Unbounded_String
-                                renames To_Unbounded_String;
+                                   renames To_Unbounded_String;
 
 
          Frame_Number_Position : constant Natural :=
@@ -329,7 +367,7 @@ package body Config is
       Memory_Dynamic_Spec := Parse_Memory_Spec (Current_Argument);
       Next_Argument;
 
-      Sampling_info := Parse_Sampling_Spec (Current_Argument);
+      Sampling_Info := Parse_Sampling_Spec (Current_Argument);
       Next_Argument;
 
       --  Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
@@ -467,7 +505,7 @@ package body Config is
 
    function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
                          Size_Y : Camera_Events.Y_Coordinate_Type)
-                         return Images.Image_Type
+                            return Images.Image_Type
    is
       use Camera_Events;
    begin

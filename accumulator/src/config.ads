@@ -40,12 +40,25 @@ package Config is
      with
        Pre => Package_Ready;
 
+   function Start_At (T_Min : Camera_Events.Timestamp)
+                      return Camera_Events.Timestamp
+     with
+       Pre => Package_Ready;
+
+   function Stop_At (T_Max : Camera_Events.Timestamp)
+                     return Camera_Events.Timestamp
+     with
+       Pre => Package_Ready;
+
+
    function Forgetting_Method return  Memory_Dynamic.Dynamic_Type
      with
        Pre => Package_Ready;
 
 
-   function Start_Image return Images.Image_Type
+   function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
+                         Size_Y : Camera_Events.Y_Coordinate_Type)
+                         return Images.Image_Type
      with
        Pre => Package_Ready;
 end Config;

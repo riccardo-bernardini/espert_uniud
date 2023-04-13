@@ -2,8 +2,10 @@ with Ada.Text_IO;
 with Event_Sequences;
 
 package Event_Streams is
-   function Parse_Event_Stream (Input : Ada.Text_Io.File_Type)
-                                return Event_Sequences.Event_Sequence;
+   procedure Parse_Event_Stream
+     (Input    : in     Ada.Text_Io.File_Type;
+      Events   :    out Event_Sequences.Event_Sequence;
+      Metadata :    out Event_Sequences.Metadata_Map);
 
-   Bad_Data_Line : exception;
+   Bad_Event_Stream : exception;
 end Event_Streams;

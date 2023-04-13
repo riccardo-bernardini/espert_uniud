@@ -11,8 +11,8 @@ package Memory_Dynamic is
    function Exponential (T : Camera_Events.Duration) return Dynamic_Type;
 
    function Evolve (Start   : Images.Pixel_Value;
-      Dynamic : Dynamic_Type;
-      Delta_T : Camera_Events.Duration)
+                    Dynamic : Dynamic_Type;
+                    Delta_T : Camera_Events.Duration)
                     return Images.Pixel_Value;
 private
    type Dynamic_Class is (Step, Linear, Exponential);
@@ -30,7 +30,7 @@ private
       end record;
 
    function Step return Dynamic_Type
-   is (Dynamic_Type'(Class  => step));
+   is (Dynamic_Type'(Class  => Step));
 
    function Linear (T : Camera_Events.Duration) return Dynamic_Type
    is (Dynamic_Type'(Class => Linear, Time_Constant => T));

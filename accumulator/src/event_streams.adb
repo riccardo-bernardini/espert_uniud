@@ -56,8 +56,10 @@ package body Event_Streams is
    -- Parse_Event_Stream --
    ------------------------
 
-   function Parse_Event_Stream
-     (Input : Ada.Text_Io.File_Type) return Event_Sequences.Event_Sequence
+   procedure Parse_Event_Stream
+     (Input    : in     Ada.Text_Io.File_Type;
+      Events   :    out Event_Sequences.Event_Sequence;
+      Metadata :    out Event_Sequences.Metadata_Map)
    is
       use Ada.Text_Io;
 
@@ -78,7 +80,7 @@ package body Event_Streams is
             return Number;
 
          else
-            raise Bad_Data_Line with "Unknown polarity format '" & String (Format) & "'";
+            raise Bad_Event_Stream with "Unknown polarity format '" & String (Format) & "'";
          end if;
       end Polarity_Format;
 
@@ -97,7 +99,7 @@ package body Event_Streams is
          Weight : Weight_Type;
       begin
          if Fields.Length /= 4 then
-            raise Bad_Data_Line with Line;
+            raise Bad_Event_Stream with Line;
          end if;
 
          Weight := Weight_Type'Value (Fields (4));
@@ -145,10 +147,10 @@ package body Event_Streams is
                        others           => False
                       );
 
-         Status : Machine_Status := Looking_For_Hash;
+         Status       : Machine_Status := Looking_For_Hash;
          New_Metadata : Event_Sequences.Metadata_Map;
 
-         Key : Unbounded_String := Null_Unbounded_String;
+         Key   : Unbounded_String := Null_Unbounded_String;
          Value : Unbounded_String := Null_Unbounded_String;
       begin
          for Current_Char of Line loop
@@ -164,7 +166,10 @@ package body Event_Streams is
                         null;
 
                      when others =>
-                        -- We should never get here
+                        --
+                        --  We should never get here since the procedure
+                        --  is called for comment lines
+                        --
                         raise Program_Error;
                   end case;
 
@@ -254,9 +259,9 @@ package body Event_Streams is
          Metadata.Update (New_Metadata);
       end Parse_Metadata;
 
-      Result      : Event_Sequences.Event_Sequence;
-      Header_Seen : Boolean := False;
-      Metadata    : Event_Sequences.Metadata_Map;
+      Header_Seen     : Boolean := False;
+      First_Timestamp : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
+      Previous_Timestamp : Camera_Events.Timestamp;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -271,25 +276,48 @@ package body Event_Streams is
 
                when Header =>
                   if Header_Seen then
-                     raise Bad_Data_Line with "Double header";
+                     raise Bad_Event_Stream with "Double header";
                   end if;
 
                   Header_Seen := True;
 
                when Data =>
                   if not Header_Seen then
-                     raise Bad_Data_Line with "Missing header";
+                     raise Bad_Event_Stream with "Missing header";
                   end if;
 
-                  Result.Append (Parse_Data_Line (Line, Polarity_Format (Metadata)));
+                  declare
+                     use Camera_Events;
 
+                     Event : constant Event_Type :=
+                               Parse_Data_Line (Line, Polarity_Format (Metadata));
+                  begin
+                     if Events.Is_Empty then
+                        First_Timestamp := T (Event);
+                     else
+                        if Previous_Timestamp > T (Event) then
+                           raise Bad_Event_Stream
+                             with "Non monotonic timestamps";
+                        end if;
+                     end if;
+
+                     Previous_Timestamp := T (Event);
+
+                     pragma Assert (Is_Finite (First_Timestamp));
+
+                     Events.Append (Translate (Event, To_Duration (First_Timestamp)));
+                  end;
             end case;
          end;
       end loop;
 
-      Metadata.Dump;
-
-      return Result;
+      --  for Ev of Events loop
+      --     Put_Line (Camera_Events.Image (Ev));
+      --  end loop;
+      --
+      --  raise Program_Error;
+      --
+      --  Metadata.Dump;
    end Parse_Event_Stream;
 
 end Event_Streams;

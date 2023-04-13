@@ -1,0 +1,7 @@
+# Input: DVXplorer_DXA00332 sizeX: 64 sizeY: 64
+timestamp,x,y,polarity
+1000,10,10,1
+1000,15,15,1
+1050,10,10,1
+1100,10,10,1
+1301,10,10,1

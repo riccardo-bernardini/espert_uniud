@@ -144,6 +144,7 @@ package body Event_Sequences is
       return Natural'Value (String (Map.Value_Of (Key)));
    end Integer_Value;
 
+
    ------------
    -- Size_X --
    ------------
@@ -190,7 +191,7 @@ package body Event_Sequences is
    is (Point_Maps.Has_Element (Pos.C));
 
    function Iterate (Container : in Point_Event_Map)
-                     return Point_event_map_Interfaces.Forward_Iterator'Class
+                     return Point_Event_Map_Interfaces.Forward_Iterator'Class
    is (Point_Map_Iterator'(C => Container.M.First));
 
    function First (Object : Point_Map_Iterator) return Cursor
@@ -203,4 +204,41 @@ package body Event_Sequences is
    function Point (Position : Cursor) return Camera_Events.Point_Type
    is (Point_Maps.Key (Position.C));
 
-end Event_Sequences;
+   procedure Fill_Frame
+     (Events_At : in out Point_Event_Map;
+      Time      : Camera_Events.Timestamp;
+      Size_X    : Camera_Events.X_Coordinate_Type;
+      Size_Y    : Camera_Events.Y_Coordinate_Type)
+   is
+      use Camera_Events;
+
+      Last_X : constant X_Coordinate_Type :=
+                 Size_X + X_Coordinate_Type'First - 1;
+
+      Last_Y : constant Y_Coordinate_Type :=
+                 Size_Y + Y_Coordinate_Type'First - 1;
+   begin
+      for X in X_Coordinate_Type'First .. Last_X loop
+         for Y in Y_Coordinate_Type'First .. Last_Y loop
+            declare
+               P : constant Point_Type := (X, Y);
+
+               Zero_Event : constant Event_Type := New_Event (T      => Time,
+                                                              X      => X,
+                                                              Y      => Y,
+                                                              Weight => 0);
+            begin
+               if not (Events_At.M.Contains (P)
+                       and then
+                       T (Events_At (P).Last_Element) = Time)
+               then
+                  Events_At.Append (Zero_Event);
+               end if;
+            end;
+         end loop;
+      end loop;
+   end Fill_Frame;
+
+
+
+   end Event_Sequences;

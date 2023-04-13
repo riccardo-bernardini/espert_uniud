@@ -20,17 +20,18 @@ procedure Main is
    begin
       return  not (A > B);
    end "<=";
+   pragma Unreferenced ("<=");
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
                               From    : in Camera_Events.Timestamp;
                               To      : in Camera_Events.Timestamp)
      with
-       Pre => not Events.Is_Empty and From < To,
+       Pre => From < To,
      Post =>
-       (Events.Is_Empty or else Camera_Events.T (Events.First_Element) > To)
+       (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
        and
-         (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) <= To)
+         (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
          and
            (Segment.Length + Events.Length = Events.Length'Old);
 
@@ -43,7 +44,7 @@ procedure Main is
    begin
       Segment.Clear;
 
-      while not Events.Is_Empty and then T (Events.First_Element) <= To loop
+      while not Events.Is_Empty and then T (Events.First_Element) < To loop
          if T (Events.First_Element) >= From then
             Segment.Append (Events.First_Element);
          end if;
@@ -61,6 +62,8 @@ procedure Main is
 
       Current_Time : Timestamp := Start;
    begin
+      --  Put_Line ("IN " & Pixel'Image);
+
       for Ev of Events loop
          --  Put_Line ("++" & Image (T (Ev)) & Image (Current_Time));
          Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
@@ -71,6 +74,9 @@ procedure Main is
 
          Current_Time := T (Ev);
       end loop;
+
+      --  Put_Line ("OUT " & Pixel'Image);
+
    end Update_Pixel;
 
    Events   : Event_Sequences.Event_Sequence;
@@ -116,7 +122,7 @@ begin
       pragma Assert (Camera_Events.Is_Finite (Start_Time));
       pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
 
-      Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
+      --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
 
       while Current_Time < Stopping_Time loop
          Next_Time := Current_Time + Config.Sampling_Period;
@@ -124,6 +130,9 @@ begin
          if Next_Time > Stopping_Time then
             Next_Time := Stopping_Time;
          end if;
+
+         --  Put_Line (Camera_Events.Image (Current_Time) & Camera_Events.Image (Next_Time));
+         --  Put_Line (Events.Length'Image);
 
          Extract_Segment (Segment => Segment,
                           Events  => Events,
@@ -133,6 +142,11 @@ begin
          Event_Sequences.Collect_By_Point (Events         => Segment,
                                            Last_Timestamp => Next_Time,
                                            Result         => Events_At);
+
+         Event_Sequences.Fill_Frame (Events_At,
+                                     Next_Time,
+                                     Metadata.Size_X,
+                                     Metadata.Size_Y);
 
          for Pos in Events_At.Iterate loop
             declare

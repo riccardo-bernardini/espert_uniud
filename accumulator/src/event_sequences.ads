@@ -100,6 +100,12 @@ package Event_Sequences is
       Last_Timestamp : Camera_Events.Timestamp;
       Result         : out Point_Event_Map);
 
+   procedure fill_frame
+     (Events_At : in out Point_Event_Map;
+      Time      : Camera_Events.Timestamp;
+      Size_X    : Camera_Events.X_Coordinate_Type;
+      Size_Y    : Camera_Events.Y_Coordinate_Type);
+
 private
    package Metadata_Maps is
      new Ada.Containers.Indefinite_Ordered_Maps

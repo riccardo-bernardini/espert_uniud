@@ -395,8 +395,12 @@ package body Config is
    -------------
 
    function Stop_At (T_Max : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Sampling_Info.Stop > T_Max then
+   is (if Sampling_Info.Stop = Camera_Events.Infinity then
           T_Max
+
+       elsif Sampling_Info.Stop = Camera_Events.Minus_Infinity then
+          raise Constraint_Error
+
        else
           Sampling_Info.Stop);
 

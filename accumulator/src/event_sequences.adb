@@ -1,5 +1,4 @@
 pragma Ada_2012;
-with Images;
 with ada.Text_IO;
 --  with ada.text_io;   use ada.text_io;
 
@@ -27,21 +26,12 @@ package body Event_Sequences is
       return A.X  < B.X or else (A.X = B.X and A.Y < B.Y);
    end "<";
 
-   ----------------------
-   -- Collect_By_Point --
-   ----------------------
-   Result : constant Point_Event_Map :=
-              new Point_Event_Matrix
-                (0 .. Images.Default_X_Size - 1,
-                 0 .. Images.Default_Y_Size - 1);
-
-   function Collect_By_Point
+   procedure Collect_By_Point
      (Events         : Event_Sequence;
-      Last_Timestamp : Camera_Events.Timestamp)
-      return Point_Event_Map
+      Last_Timestamp : Camera_Events.Timestamp;
+      Result         : out Point_Event_Matrix)
    is
       use Camera_Events;
-
    begin
       --  Put_Line ("[12]");
 
@@ -67,10 +57,6 @@ package body Event_Sequences is
                                              Weight => 0));
          end loop;
       end loop;
-
-      --  Put_Line ("[99]");
-
-      return Result;
    end Collect_By_Point;
 
    --------------

@@ -89,13 +89,15 @@ begin
 
    declare
       use type Camera_Events.Duration;
+      use type Camera_Events.X_Coordinate_Type;
+      use type Camera_Events.Y_Coordinate_Type;
       use type Config.Frame_Index;
 
       Start_Time : constant Camera_Events.Timestamp :=
                      Config.Start_At (Event_Sequences.T_Min (Events));
 
       Stopping_Time : constant Camera_Events.Timestamp :=
-                        Config.Stop_At (Event_Sequences.T_Min (Events));
+                        Config.Stop_At (Event_Sequences.T_Max (Events));
 
       Current_Time : Camera_Events.Timestamp := Start_Time;
       Next_Time  : Camera_Events.Timestamp;
@@ -107,7 +109,16 @@ begin
       Frame_Number : Config.Frame_Index := 0;
 
       Segment      : Event_Sequences.Event_Sequence;
+
+      Events_At    : constant Event_Sequences.Point_Event_Map :=
+                       new Event_Sequences.Point_Event_Matrix
+                         (0 .. Metadata.Size_X - 1, 0 .. Metadata.Size_Y - 1);
    begin
+      pragma Assert (Camera_Events.Is_Finite (Start_Time));
+      pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
+
+      Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
+
       while Current_Time < Stopping_Time loop
          Next_Time := Current_Time + Config.Sampling_Period;
 
@@ -123,12 +134,15 @@ begin
 
          declare
             use Event_Sequences;
-
-            Events_At : constant Point_Event_Map :=
-                          Collect_By_Point (Segment, Next_Time);
          begin
+            Collect_By_Point (Events         => Segment,
+                              Last_Timestamp => Next_Time,
+                              Result         => Events_At.all);
+
             for X in Events_At'Range (1) loop
                for Y in Events_At'Range (2) loop
+                  Put_Line (X'Image & Y'Image);
+
                   Update_Pixel (Start  => Current_Time,
                                 Pixel  => Current_Frame (X, Y),
                                 Events => Events_At (X, Y));

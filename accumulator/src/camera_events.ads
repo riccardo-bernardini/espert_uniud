@@ -1,11 +1,22 @@
 package Camera_Events is
-   type Duration is private;
    type Timestamp is private;
 
    Minus_Infinity : constant Timestamp;
    Infinity       : constant Timestamp;
 
+   T0 : constant Timestamp;
+
+   function Is_Finite (T : Timestamp) return Boolean;
+
    Timestamps_Per_Second : constant Float;
+
+   function To_Timestamp (Seconds : Float) return Timestamp;
+
+   function Value (S : String) return Timestamp;
+
+   function Image(T : Timestamp) return String;
+
+   type Duration is private;
 
    function Value (S : String) return Duration;
 
@@ -13,21 +24,32 @@ package Camera_Events is
 
    function To_Duration (Seconds : Float) return Duration;
 
+   function To_Duration (T : Timestamp) return Duration
+     with
+       Pre => Is_Finite (t),
+       Post => T = T0 + To_Duration'Result;
+
    function "/" (X, Y : Duration) return Float;
 
-   function Value (S : String) return Timestamp;
+   function "+" (T : Timestamp; D : Duration) return Timestamp
+     with
+       Post => (if not Is_Finite (T) then "+"'Result = T);
 
-   function To_Timestamp (Seconds : Float) return Timestamp;
+   function "-" (T : Timestamp; D : Duration) return Timestamp
+     with
+       Post => (if not Is_Finite (T) then "-"'Result = T);
 
-   function "+" (T : Timestamp; D : Duration) return Timestamp;
-
-   function "-" (A, B : Timestamp) return Duration;
+   function "-" (A, B : Timestamp) return Duration
+     with
+       Pre => Is_Finite (A) and Is_Finite (B) and A > B;
 
    function ">" (X, Y : Timestamp) return Boolean;
 
    function ">=" (X, Y : Timestamp) return Boolean;
 
    function "<" (X, Y : Timestamp) return Boolean;
+
+   function "<=" (X, Y : Timestamp) return Boolean;
 
    type X_Coordinate_Type is mod 2 ** 16;
    type Y_Coordinate_Type is mod 2 ** 16;
@@ -49,6 +71,13 @@ package Camera_Events is
                        Weight : Weight_Type)
                        return Event_Type;
 
+   function Translate (Event   : Event_Type;
+                       Delta_T : Duration)
+                       return Event_Type
+     with
+       Pre => T (Event) >= T0 + Delta_T,
+       Post => T (Translate'Result) = T (Event)-Delta_T;
+
    function T (Event : Event_Type) return Timestamp;
    function X (Event : Event_Type) return X_Coordinate_Type;
    function Y (Event : Event_Type) return Y_Coordinate_Type;
@@ -56,18 +85,24 @@ package Camera_Events is
    function Position (Event : Event_Type) return Point_Type;
 
    function Weight (Event : Event_Type) return Weight_Type;
+
+   function Image (Event : Event_Type) return String;
 private
    type Duration is mod 2 ** 64;
    type Timestamp_Value is mod 2 ** 64;
 
    type Timestamp is
       record
-         T        : Timestamp_Value;
-         Infinite : Boolean;
-      end record;
+         T        : Timestamp_Value := 0;
+         Infinite : Boolean := False;
+      end record
+     with
+       Dynamic_Predicate => (if Infinite then T = 1 or T = -1);
 
    Minus_Infinity : constant Timestamp := (T => -1, Infinite => True);
    Infinity       : constant Timestamp := (T => 1, Infinite => True);
+
+   T0 : constant Timestamp := (T => 0, Infinite => False);
 
    function Is_Finite (T : Timestamp) return Boolean
    is (not T.Infinite);
@@ -75,6 +110,13 @@ private
    function "+" (T : Timestamp; D : Duration) return Timestamp
    is (if Is_Finite (T) then
          (T        => T.T + Timestamp_Value (D),
+          Infinite => False)
+       else
+          T);
+
+   function "-" (T : Timestamp; D : Duration) return Timestamp
+   is (if Is_Finite (T) then
+         (T        => T.T - Timestamp_Value (D),
           Infinite => False)
        else
           T);
@@ -98,6 +140,9 @@ private
 
    function ">=" (X, Y : Timestamp) return Boolean
    is (not (X < Y));
+
+   function "<=" (X, Y : Timestamp) return Boolean
+   is (not (X > Y));
 
    type Event_Type is
       record

@@ -147,10 +147,10 @@ package body Event_Streams is
                        others           => False
                       );
 
-         Status : Machine_Status := Looking_For_Hash;
+         Status       : Machine_Status := Looking_For_Hash;
          New_Metadata : Event_Sequences.Metadata_Map;
 
-         Key : Unbounded_String := Null_Unbounded_String;
+         Key   : Unbounded_String := Null_Unbounded_String;
          Value : Unbounded_String := Null_Unbounded_String;
       begin
          for Current_Char of Line loop
@@ -259,7 +259,9 @@ package body Event_Streams is
          Metadata.Update (New_Metadata);
       end Parse_Metadata;
 
-      Header_Seen : Boolean := False;
+      Header_Seen     : Boolean := False;
+      First_Timestamp : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
+      Previous_Timestamp : Camera_Events.Timestamp;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -284,13 +286,38 @@ package body Event_Streams is
                      raise Bad_Event_Stream with "Missing header";
                   end if;
 
-                  Events.Append (Parse_Data_Line (Line, Polarity_Format (Metadata)));
+                  declare
+                     use Camera_Events;
 
+                     Event : constant Event_Type :=
+                               Parse_Data_Line (Line, Polarity_Format (Metadata));
+                  begin
+                     if Events.Is_Empty then
+                        First_Timestamp := T (Event);
+                     else
+                        if Previous_Timestamp > T (Event) then
+                           raise Bad_Event_Stream
+                             with "Non monotonic timestamps";
+                        end if;
+                     end if;
+
+                     Previous_Timestamp := T (Event);
+
+                     pragma Assert (Is_Finite (First_Timestamp));
+
+                     Events.Append (Translate (Event, To_Duration (First_Timestamp)));
+                  end;
             end case;
          end;
       end loop;
 
-      Metadata.Dump;
+      --  for Ev of Events loop
+      --     Put_Line (Camera_Events.Image (Ev));
+      --  end loop;
+      --
+      --  raise Program_Error;
+      --
+      --  Metadata.Dump;
    end Parse_Event_Stream;
 
 end Event_Streams;

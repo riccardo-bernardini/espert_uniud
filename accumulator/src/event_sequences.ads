@@ -69,16 +69,20 @@ package Event_Sequences is
    --
    --  subtype Point_Event_Map is Point_Event_Maps.Map;
 
-   type Point_Event_Matrix is
-     array (Camera_Events.X_Coordinate_Type range <>,
-            Camera_Events.Y_Coordinate_Type range <>)
-     of Event_Sequence;
+   type Point_Event_Map is tagged private
+     with
+       Constant_Indexing => Events;
 
-   type Point_Event_Map is access Point_Event_Matrix;
+   function Events (Map   : Point_Event_Map;
+                    Point : Camera_Events.Point_Type)
+                    return Event_Sequence;
 
-   function Collect_By_Point (Events         : Event_Sequence;
-                              Last_Timestamp : Camera_Events.Timestamp)
-                              return Point_Event_Map;
+   procedure Clear (Map : in out Point_Event_Map);
+
+   procedure Collect_By_Point
+     (Events         : Event_Sequence;
+      Last_Timestamp : Camera_Events.Timestamp;
+      Result         : out Point_Event_Map);
 
 private
    package Metadata_Maps is
@@ -90,7 +94,7 @@ private
 
    function Has_Key (Map : Metadata_Map;
                      Key : Metadata_Name)
-                     return Boolean
+                                       return Boolean
    is (Map.Contains (Key));
 
    function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp
@@ -99,5 +103,10 @@ private
    function T_Max (Events : Event_Sequence) return Camera_Events.Timestamp
    is (Camera_Events.T (Events.Last_Element));
 
+   procedure Append (Map   : in out Point_Event_Map;
+                     Event : Camera_Events.Event_Type);
+
+
+   type Point_Event_Map is tagged null record;
 
 end Event_Sequences;

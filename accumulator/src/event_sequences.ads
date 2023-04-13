@@ -20,6 +20,17 @@ package Event_Sequences is
      with
        Pre => Map.Has_Key (Key);
 
+   function Size_X (Map : Metadata_Map) return Camera_Events.X_Coordinate_Type
+     with
+       Pre => Map.Has_Key ("sizeX") and then
+       (for all C of Map.Value_Of ("sizeX") => C in'0' .. '9');
+
+   function Size_Y (Map : Metadata_Map) return Camera_Events.Y_Coordinate_Type
+     with
+       Pre => Map.Has_Key ("sizeY") and then
+       (for all C of Map.Value_Of ("sizeY") => C in'0' .. '9');
+
+
    function Value_Of (Map     : Metadata_Map;
                       Key     : Metadata_Name;
                       Default : Metadata_Value)

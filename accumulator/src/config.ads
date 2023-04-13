@@ -45,7 +45,9 @@ package Config is
        Pre => Package_Ready;
 
 
-   function Start_Image return Images.Image_Type
+   function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
+                         Size_Y : Camera_Events.Y_Coordinate_Type)
+                         return Images.Image_Type
      with
        Pre => Package_Ready;
 end Config;

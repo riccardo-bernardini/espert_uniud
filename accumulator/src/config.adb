@@ -382,14 +382,24 @@ package body Config is
    is (To_String (First_Image_Filename));
 
 
-   function Start_Image return Images.Image_Type
+   function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
+                         Size_Y : Camera_Events.Y_Coordinate_Type)
+                         return Images.Image_Type
    is
+      use Camera_Events;
    begin
       if Has_Start_Image then
-         return Images.Load (Start_Image_Filename);
+         return Result : constant Images.Image_Type :=
+           Images.Load (Start_Image_Filename) do
+
+            if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
+               raise Constraint_Error
+                 with "Non-compatible start image size";
+            end if;
+         end return;
 
       else
-         return Images.Zero (Images.Default_X_Size, Images.Default_Y_Size);
+         return Images.Zero (Size_X, Size_Y);
 
       end if;
    end Start_Image;

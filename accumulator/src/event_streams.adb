@@ -56,8 +56,10 @@ package body Event_Streams is
    -- Parse_Event_Stream --
    ------------------------
 
-   function Parse_Event_Stream
-     (Input : Ada.Text_Io.File_Type) return Event_Sequences.Event_Sequence
+   procedure Parse_Event_Stream
+     (Input    : in     Ada.Text_Io.File_Type;
+      Events   :    out Event_Sequences.Event_Sequence;
+      Metadata :    out Event_Sequences.Metadata_Map)
    is
       use Ada.Text_Io;
 
@@ -78,7 +80,7 @@ package body Event_Streams is
             return Number;
 
          else
-            raise Bad_Data_Line with "Unknown polarity format '" & String (Format) & "'";
+            raise Bad_Event_Stream with "Unknown polarity format '" & String (Format) & "'";
          end if;
       end Polarity_Format;
 
@@ -97,7 +99,7 @@ package body Event_Streams is
          Weight : Weight_Type;
       begin
          if Fields.Length /= 4 then
-            raise Bad_Data_Line with Line;
+            raise Bad_Event_Stream with Line;
          end if;
 
          Weight := Weight_Type'Value (Fields (4));
@@ -164,7 +166,10 @@ package body Event_Streams is
                         null;
 
                      when others =>
-                        -- We should never get here
+                        --
+                        --  We should never get here since the procedure
+                        --  is called for comment lines
+                        --
                         raise Program_Error;
                   end case;
 
@@ -254,9 +259,7 @@ package body Event_Streams is
          Metadata.Update (New_Metadata);
       end Parse_Metadata;
 
-      Result      : Event_Sequences.Event_Sequence;
       Header_Seen : Boolean := False;
-      Metadata    : Event_Sequences.Metadata_Map;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -271,25 +274,23 @@ package body Event_Streams is
 
                when Header =>
                   if Header_Seen then
-                     raise Bad_Data_Line with "Double header";
+                     raise Bad_Event_Stream with "Double header";
                   end if;
 
                   Header_Seen := True;
 
                when Data =>
                   if not Header_Seen then
-                     raise Bad_Data_Line with "Missing header";
+                     raise Bad_Event_Stream with "Missing header";
                   end if;
 
-                  Result.Append (Parse_Data_Line (Line, Polarity_Format (Metadata)));
+                  Events.Append (Parse_Data_Line (Line, Polarity_Format (Metadata)));
 
             end case;
          end;
       end loop;
 
       Metadata.Dump;
-
-      return Result;
    end Parse_Event_Stream;
 
 end Event_Streams;

@@ -144,4 +144,40 @@ package body Event_Sequences is
       end loop;
    end Update;
 
+   -------------------
+   -- Integer_Value --
+   -------------------
+
+   function Integer_Value (Map : Metadata_Map;
+                           Key : Metadata_Name)
+                           return Natural
+   is
+   begin
+      if not Map.Has_Key (Key) then
+         raise Constraint_Error
+           with "Missing key '" & String (Key) & "'";
+      end if;
+
+      if not (for all C of Map.Value_Of (Key) => C in '0' .. '9') then
+         raise Constraint_Error
+           with "'" & String (Map.Value_Of (Key)) & "' is not a valid integer";
+      end if;
+
+      return Natural'Value (String (Map.Value_Of (Key)));
+   end Integer_Value;
+
+   ------------
+   -- Size_X --
+   ------------
+
+   function Size_X (Map : Metadata_Map) return Camera_Events.X_Coordinate_Type
+   is (Camera_Events.X_Coordinate_Type (Integer_Value (Map, "sizeX")));
+
+   ------------
+   -- Size_Y --
+   ------------
+
+   function Size_Y (Map : Metadata_Map) return Camera_Events.Y_Coordinate_Type
+   is (Camera_Events.Y_Coordinate_Type (Integer_Value (Map, "sizeY")));
+
 end Event_Sequences;

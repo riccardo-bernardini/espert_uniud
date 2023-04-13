@@ -5,7 +5,7 @@ project Accumulator is
    for Main use ("main.adb");
 
    package Compiler is
-      for Switches ("ada") use ("-g", "-gnata", "-fstack-check", "-gnatE", "-gnatVa", "-gnatwa");
+      for Switches ("ada") use ("-g", "-gnata", "-fstack-check", "-gnatE", "-O3", "-gnatVa", "-gnatwa");
    end Compiler;
 
    package Builder is
@@ -15,6 +15,9 @@ project Accumulator is
    package Binder is
       for Switches ("ada") use ("-E");
    end Binder;
+
+   package Linker is
+   end Linker;
 
 end Accumulator;
 

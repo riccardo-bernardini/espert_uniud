@@ -11,7 +11,14 @@ with Ada.Containers;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Exceptions; use Ada.Exceptions;
 
+with Profiling;
+
 procedure Main is
+   type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
+
+   package My_Profiler is
+     new Profiling (Program_Sections);
+
    use type Camera_Events.Timestamp;
    use type Ada.Containers.Count_Type;
 
@@ -81,8 +88,12 @@ procedure Main is
 
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
+
+   profiler : My_Profiler.Profiler_Type;
 begin
    Config.Parse_Command_Line;
+
+   Profiler.Entering (Parse_Stream);
 
    Event_Streams.Parse_Event_Stream (Input    => Config.Input.all,
                                      Events   => Events,
@@ -121,6 +132,7 @@ begin
    begin
       pragma Assert (Camera_Events.Is_Finite (Start_Time));
       pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
+      pragma Assert (Start_Time < Stopping_Time);
 
       --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
 
@@ -134,19 +146,27 @@ begin
          --  Put_Line (Camera_Events.Image (Current_Time) & Camera_Events.Image (Next_Time));
          --  Put_Line (Events.Length'Image);
 
+         Profiler.Entering (Extract);
+
          Extract_Segment (Segment => Segment,
                           Events  => Events,
                           From    => Current_Time,
                           To      => Next_Time);
 
+         Profiler.Entering (Collect);
+
          Event_Sequences.Collect_By_Point (Events         => Segment,
                                            Last_Timestamp => Next_Time,
                                            Result         => Events_At);
+
+         Profiler.Entering (Fill);
 
          Event_Sequences.Fill_Frame (Events_At,
                                      Next_Time,
                                      Metadata.Size_X,
                                      Metadata.Size_Y);
+
+         Profiler.Entering (Update);
 
          for Pos in Events_At.Iterate loop
             declare
@@ -161,6 +181,8 @@ begin
             end;
          end loop;
 
+         Profiler.Entering (Save);
+
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Current_Frame,
                       Format   => Config.Output_Format);
@@ -169,6 +191,8 @@ begin
 
          Frame_Number := Frame_Number + 1;
       end loop;
+
+      profiler.Dump;
    end;
 exception
    when E : Config.Bad_Command_Line =>
@@ -185,7 +209,7 @@ exception
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
    when E : Event_Streams.Bad_Event_Stream =>
-      Put_Line (Standard_Error, "Error while parsing event stream:"
+      Put_Line (Standard_Error, "Erroqqqqqqqqqr while parsing event stream:"
                 & Exception_Message (E));
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);

@@ -1,14 +1,19 @@
 pragma Ada_2012;
+with Ada.Text_IO;
+
 with Ada.Containers;
+
+with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;
-
-with Camera_Events;
-
-with Ada.Strings.Fixed;  use Ada.Strings;
-
 with Ada.Strings.Maps.Constants;
 
+with Ada.Characters.Handling;
+
 with Tokenize;
+with Camera_Events;
+
+use Ada;
+use Ada.Strings;
 
 package body Event_Streams is
    type Line_Type is (Comment, Header, Data);
@@ -53,11 +58,11 @@ package body Event_Streams is
    end Type_Of;
 
    ------------------------
-   -- Parse_Event_Stream --
+   -- Read_Event_Stream --
    ------------------------
 
-   procedure Parse_Event_Stream
-     (Input    : in     Ada.Text_Io.File_Type;
+   procedure Read_CSV_Event_Stream
+     (Input    : in     Ada.Text_IO.File_Type;
       Events   :    out Event_Sequences.Event_Sequence;
       Metadata :    out Event_Sequences.Metadata_Map)
    is
@@ -84,9 +89,9 @@ package body Event_Streams is
          end if;
       end Polarity_Format;
 
-      function Parse_Data_Line (Line            : String;
-                                Polarity_Format : Polarity_Format_Type)
-                                return Camera_Events.Event_Type
+      function Read_Data_Line (Line            : String;
+                               Polarity_Format : Polarity_Format_Type)
+                               return Camera_Events.Event_Type
       is
          use type Ada.Containers.Count_Type;
 
@@ -112,15 +117,15 @@ package body Event_Streams is
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
                            Weight => Weight);
-      end Parse_Data_Line;
+      end Read_Data_Line;
 
-      procedure Parse_Metadata
+      procedure Read_Metadata
         (Metadata : in out Event_Sequences.Metadata_Map;
          Line     : String)
         with
           Pre => Type_Of (Line) = Comment;
 
-      procedure Parse_Metadata
+      procedure Read_Metadata
         (Metadata : in out Event_Sequences.Metadata_Map;
          Line     : String)
       is
@@ -257,10 +262,10 @@ package body Event_Streams is
          end if;
 
          Metadata.Update (New_Metadata);
-      end Parse_Metadata;
+      end Read_Metadata;
 
-      Header_Seen     : Boolean := False;
-      First_Timestamp : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
+      Header_Seen        : Boolean := False;
+      First_Timestamp    : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
       Previous_Timestamp : Camera_Events.Timestamp;
    begin
       while not End_Of_File (Input) loop
@@ -271,7 +276,7 @@ package body Event_Streams is
             case Type_Of (Line) is
                when Comment =>
                   if not Header_Seen then
-                     Parse_Metadata (Metadata, Line);
+                     Read_Metadata (Metadata, Line);
                   end if;
 
                when Header =>
@@ -290,7 +295,7 @@ package body Event_Streams is
                      use Camera_Events;
 
                      Event : constant Event_Type :=
-                               Parse_Data_Line (Line, Polarity_Format (Metadata));
+                               Read_Data_Line (Line, Polarity_Format (Metadata));
                   begin
                      if Events.Is_Empty then
                         First_Timestamp := T (Event);
@@ -318,6 +323,53 @@ package body Event_Streams is
       --  raise Program_Error;
       --
       --  Metadata.Dump;
-   end Parse_Event_Stream;
+   end Read_CSV_Event_Stream;
 
+   procedure Read_Event_Stream
+     (Input    : in     String;
+      Events   :    out Event_Sequences.Event_Sequence;
+      Metadata :    out Event_Sequences.Metadata_Map)
+   is
+      use Ada.Strings.Fixed;
+      use Ada.Characters.Handling;
+
+      Extension : constant String :=
+                    (if Input'Length > 4 and then Input (Input'Last - 3) = '.'
+                     then
+                        To_Lower (Tail (Input, 4))
+                     else
+                        "");
+   begin
+      if Input = "-" then
+         Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
+                                Events   => Events,
+                                Metadata => Metadata);
+
+      elsif Extension = ".csv" or Extension = "" then
+         declare
+            use Ada.Text_IO;
+
+            File : Ada.Text_IO.File_Type;
+         begin
+            Open (File     => File,
+                  Mode     => In_File,
+                  Name     => Input);
+
+            Read_CSV_Event_Stream (Input    => File,
+                                   Events   => Events,
+                                   Metadata => Metadata);
+
+            Close (File);
+         end;
+
+      elsif Extension = ".evt" then
+         Read_Binary_Event_Stream (Input    => Input,
+                                   Events   => Events,
+                                   Metadata => Metadata);
+
+      else
+         raise Bad_Event_Stream
+           with "Unrecognized extension '" & Extension & "'";
+      end if;
+   end Read_Event_Stream;
 end Event_Streams;

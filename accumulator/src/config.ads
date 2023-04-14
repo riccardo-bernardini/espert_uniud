@@ -1,4 +1,3 @@
-with Ada.Text_IO;
 with Camera_Events;
 with Memory_Dynamic;
 with Images;
@@ -30,9 +29,7 @@ package Config is
      with
        Pre => Package_Ready;
 
-   type File_Access is access all Ada.Text_IO.File_Type;
-
-   function Input return File_Access
+   function Input return String
      with
        Pre => Package_Ready;
 

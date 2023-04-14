@@ -35,12 +35,12 @@ procedure Main is
                               To      : in Camera_Events.Timestamp)
      with
        Pre => From < To,
-     Post =>
-       (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
-       and
-         (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
+       Post =>
+         (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
          and
-           (Segment.Length + Events.Length = Events.Length'Old);
+           (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
+           and
+             (Segment.Length + Events.Length = Events.Length'Old);
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
@@ -89,15 +89,15 @@ procedure Main is
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
 
-   profiler : My_Profiler.Profiler_Type;
+   Profiler : My_Profiler.Profiler_Type;
 begin
    Config.Parse_Command_Line;
 
    Profiler.Entering (Parse_Stream);
 
-   Event_Streams.Parse_Event_Stream (Input    => Config.Input.all,
-                                     Events   => Events,
-                                     Metadata => Metadata);
+   Event_Streams.Read_Event_Stream (Input    => Config.Input,
+                                    Events   => Events,
+                                    Metadata => Metadata);
 
    if Events.Is_Empty then
       Put_Line (Standard_Error, "Empty event stream");
@@ -193,7 +193,7 @@ begin
          Frame_Number := Frame_Number + 1;
       end loop;
 
-      profiler.Dump;
+      Profiler.Dump;
    end;
 exception
    when E : Config.Bad_Command_Line =>

@@ -11,7 +11,7 @@ with Ada.Strings.Maps.Constants;
 with Ada.Characters.Latin_9;
 with Gnat.Regpat;
 with Tokenize;
-with Ada.Text_IO; use Ada.Text_IO;
+--  with Ada.Text_IO; use Ada.Text_IO;
 
 package body Config is
    use type Camera_Events.Timestamp;
@@ -44,7 +44,7 @@ package body Config is
    Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
 
 
-   Input_Stream : File_Access := null;
+   Input_Filename : Unbounded_String := Null_Unbounded_String;
 
    Sampling_Info : Sampling_Spec;
 
@@ -375,16 +375,12 @@ package body Config is
       Frame_Filename_Spec := Parse_Radix (Current_Argument);
       Next_Argument;
 
-      if Input_Filename_Given and then Current_Argument /= "-"  then
-         Input_Stream := new Ada.Text_IO.File_Type;
-
-         Ada.Text_IO.Open (File => Input_Stream.all,
-                           Mode => Ada.Text_IO.In_File,
-                           Name => Current_Argument);
+      if Input_Filename_Given  then
+         Input_Filename := To_Unbounded_String (Current_Argument);
 
          Next_Argument;
       else
-         Input_Stream := new Ada.Text_IO.File_Type'(Ada.Text_IO.Standard_Input);
+         Input_Filename := To_Unbounded_String ("-");
 
       end if;
 
@@ -395,9 +391,7 @@ package body Config is
          First_Image_Filename := Null_Unbounded_String;
       end if;
 
-      pragma Assert (Input_Stream /= null
-                     and then
-                     Ada.Text_Io.Is_Open (Input_Stream.all));
+      pragma Assert (Input_Filename /= Null_Unbounded_String);
 
       I_Am_Ready := True;
 
@@ -407,8 +401,8 @@ package body Config is
    -- Input --
    -----------
 
-   function Input return File_Access
-   is (Input_Stream);
+   function Input return String
+   is (To_String (Input_Filename));
 
    ---------------------
    -- Sampling_Period --

@@ -62,7 +62,8 @@ procedure Main is
 
    procedure Update_Pixel (Start  : Camera_Events.Timestamp;
                            Pixel  : in out Images.Pixel_Value;
-                           Events : Event_Sequences.Event_Sequence)
+                           Events : Event_Sequences.Event_Sequence;
+                           Decay  : Memory_Dynamic.Dynamic_Type'Class)
    is
       use Camera_Events;
       use Images;
@@ -73,9 +74,8 @@ procedure Main is
 
       for Ev of Events loop
          --  Put_Line ("++" & Image (T (Ev)) & Image (Current_Time));
-         Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
-                                         Dynamic => Config.Forgetting_Method,
-                                         Delta_T => T (Ev) - Current_Time);
+         Pixel := Decay.Evolve (Start   => Pixel,
+                                Delta_T => T (Ev) - Current_Time);
 
          Pixel := Pixel + Pixel_Value (Weight (Ev));
 

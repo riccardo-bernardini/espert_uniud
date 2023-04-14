@@ -2,40 +2,66 @@ with Camera_Events;
 with Images;
 
 package Memory_Dynamic is
-   type Dynamic_Type is private;
+   type Dynamic_Type is interface;
 
-   function Step return Dynamic_Type;
-
-   function Linear (T : Camera_Events.Duration) return Dynamic_Type;
-
-   function Exponential (T : Camera_Events.Duration) return Dynamic_Type;
-
-   function Evolve (Start   : Images.Pixel_Value;
-                    Dynamic : Dynamic_Type;
+   function Evolve (Dynamic : Dynamic_Type;
+                    Start   : Images.Pixel_Value;
                     Delta_T : Camera_Events.Duration)
-                    return Images.Pixel_Value;
+                    return Images.Pixel_Value
+                    is abstract;
+
+   function Step return Dynamic_Type'Class;
+
+   function Linear (T : Camera_Events.Duration) return Dynamic_Type'Class;
+
+   function Exponential (T : Camera_Events.Duration) return Dynamic_Type'Class;
 private
-   type Dynamic_Class is (Step, Linear, Exponential);
+   type Step_Dynamic is
+     new Dynamic_Type
+   with
+     null record;
 
-   type Dynamic_Type (Class : Dynamic_Class := Step) is
+
+   overriding function Evolve (Dynamic : Step_Dynamic;
+                               Start   : Images.Pixel_Value;
+                               Delta_T : Camera_Events.Duration)
+                               return Images.Pixel_Value;
+   type Linear_Dynamic is
+     new Dynamic_Type
+   with
       record
-         case Class is
-            when Step =>
-               null;
-
-            when Linear | Exponential =>
-               Time_Constant : Camera_Events.Duration;
-
-         end case;
+         Decay_Time : Camera_Events.Duration;
       end record;
 
-   function Step return Dynamic_Type
-   is (Dynamic_Type'(Class  => Step));
 
-   function Linear (T : Camera_Events.Duration) return Dynamic_Type
-   is (Dynamic_Type'(Class => Linear, Time_Constant => T));
+   overriding function Evolve (Dynamic : Linear_Dynamic;
+                               Start   : Images.Pixel_Value;
+                               Delta_T : Camera_Events.Duration)
+                               return Images.Pixel_Value;
 
-   function Exponential (T : Camera_Events.Duration) return Dynamic_Type
-   is (Dynamic_Type'(Class => Exponential, Time_Constant => T));
+   type Exponential_Dynamic is
+     new Dynamic_Type
+   with
+      record
+         Decay_Time : Camera_Events.Duration;
+      end record;
+
+
+   overriding function Evolve (Dynamic : Exponential_Dynamic;
+                               Start   : Images.Pixel_Value;
+                               Delta_T : Camera_Events.Duration)
+                               return Images.Pixel_Value;
+   --
+   --  type Dynamic_Type (Class : Dynamic_Class := Step) is
+   --     record
+   --        case Class is
+   --           when Step =>
+   --              null;
+   --
+   --           when Linear | Exponential =>
+   --              Time_Constant : Camera_Events.Duration;
+   --
+   --        end case;
+   --     end record;
 
 end Memory_Dynamic;

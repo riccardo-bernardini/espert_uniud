@@ -240,30 +240,30 @@ package body Event_Sequences is
    is (Camera_Events.Point_Type'(X => Position.X,
                                  Y => Position.Y));
 
-   procedure Fill_Frame
-     (Events_At : in out Point_Event_Map;
-      Time      : Camera_Events.Timestamp;
-      Size_X    : Camera_Events.X_Coordinate_Type;
-      Size_Y    : Camera_Events.Y_Coordinate_Type)
-   is
-      use Camera_Events;
-
-   begin
-      for Pos in Events_At.Iterate loop
-         declare
-            Zero_Event : constant Event_Type := New_Event (T      => Time,
-                                                           X      => Pos.X,
-                                                           Y      => Pos.Y,
-                                                           Weight => 0);
-         begin
-            if Events_At.M (Pos.X, Pos.Y).Is_Empty or else
-              T (Events_At.M (Pos.X, Pos.Y).Last_Element) < Time
-            then
-               Events_At.Append (Zero_Event);
-            end if;
-         end;
-      end loop;
-   end Fill_Frame;
+   --  procedure Fill_Frame
+   --    (Events_At : in out Point_Event_Map;
+   --     Time      : Camera_Events.Timestamp;
+   --     Size_X    : Camera_Events.X_Coordinate_Type;
+   --     Size_Y    : Camera_Events.Y_Coordinate_Type)
+   --  is
+   --     use Camera_Events;
+   --
+   --  begin
+   --     for Pos in Events_At.Iterate loop
+   --        declare
+   --           Zero_Event : constant Event_Type := New_Event (T      => Time,
+   --                                                          X      => Pos.X,
+   --                                                          Y      => Pos.Y,
+   --                                                          Weight => 0);
+   --        begin
+   --           if Events_At.M (Pos.X, Pos.Y).Is_Empty or else
+   --             T (Events_At.M (Pos.X, Pos.Y).Last_Element) < Time
+   --           then
+   --              Events_At.Append (Zero_Event);
+   --           end if;
+   --        end;
+   --     end loop;
+   --  end Fill_Frame;
 
 
 

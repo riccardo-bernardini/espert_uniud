@@ -160,12 +160,12 @@ begin
                                            Last_Timestamp => Next_Time,
                                            Result         => Events_At);
 
-         Profiler.Entering (Fill);
-
-         Event_Sequences.Fill_Frame (Events_At,
-                                     Next_Time,
-                                     Metadata.Size_X,
-                                     Metadata.Size_Y);
+         --  Profiler.Entering (Fill);
+         --
+         --  Event_Sequences.Fill_Frame (Events_At,
+         --                              Next_Time,
+         --                              Metadata.Size_X,
+         --                              Metadata.Size_Y);
 
          Profiler.Entering (Update);
 

@@ -106,11 +106,12 @@ package Event_Sequences is
       Last_Timestamp : Camera_Events.Timestamp;
       Result         : out Point_Event_Map);
 
-   procedure Fill_Frame
-     (Events_At : in out Point_Event_Map;
-      Time      : Camera_Events.Timestamp;
-      Size_X    : Camera_Events.X_Coordinate_Type;
-      Size_Y    : Camera_Events.Y_Coordinate_Type);
+   -- Commented out, its role now is played by Collect_By_Point
+   --  procedure Fill_Frame
+   --    (Events_At : in out Point_Event_Map;
+   --     Time      : Camera_Events.Timestamp;
+   --     Size_X    : Camera_Events.X_Coordinate_Type;
+   --     Size_Y    : Camera_Events.Y_Coordinate_Type);
 
 private
    package Metadata_Maps is

@@ -240,6 +240,22 @@ package body Event_Sequences is
    is (Camera_Events.Point_Type'(X => Position.X,
                                  Y => Position.Y));
 
+   -------------
+   -- Iterate --
+   -------------
+
+   procedure Iterate (Map      : Metadata_Map;
+                      Callback : access procedure (Name : Metadata_Name;
+                                                   Value : Metadata_Value))
+   is
+   begin
+      for Pos in Map.Iterate loop
+         Callback (Metadata_Maps.Key (Pos),
+                   Metadata_Maps.Element (Pos));
+      end loop;
+   end Iterate;
+
+
    --  procedure Fill_Frame
    --    (Events_At : in out Point_Event_Map;
    --     Time      : Camera_Events.Timestamp;

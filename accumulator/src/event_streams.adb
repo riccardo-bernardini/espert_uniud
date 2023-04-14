@@ -4,7 +4,7 @@ with Ada.Text_IO;
 with Ada.Containers;
 
 with Ada.Strings.Fixed;
-with Ada.Strings.Unbounded;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Handling;
@@ -133,8 +133,6 @@ package body Event_Streams is
         (Metadata : in out Event_Sequences.Metadata_Map;
          Line     : String)
       is
-         use Ada.Strings.Unbounded;
-
          type Machine_Status is
            (
             Looking_For_Hash,
@@ -369,7 +367,7 @@ package body Event_Streams is
                Value : constant Metadata_Value :=
                          Metadata_Value'Input (Input_Stream);
             begin
-               Metadata.Set (Key   => name,
+               Metadata.Set (Key   => Name,
                              Value => Value);
             end;
          end loop;
@@ -429,4 +427,104 @@ package body Event_Streams is
            with "Unrecognized extension '" & Extension & "'";
       end if;
    end Read_Event_Stream;
+
+   ------------------------------
+   -- Save_Binary_Event_Stream --
+   ------------------------------
+
+   procedure Save_Binary_Event_Stream
+     (Filename : String;
+      Events   : Event_Sequences.Event_Sequence;
+      Metadata : Event_Sequences.Metadata_Map)
+   is
+      use Ada.Streams.Stream_IO;
+      use Camera_Events;
+      use Event_Sequences;
+
+      Output_File : File_Type;
+   begin
+      Create (File => Output_File,
+              Mode => Out_File,
+              Name => Filename);
+
+
+      declare
+         Output_Stream : constant Stream_Access := Stream (Output_File);
+      begin
+         Counter'Output (Output_Stream, Counter (Events.Length));
+
+         Counter'Output (Output_Stream, Counter (Metadata.N_Entries));
+
+         for Event of Events loop
+            Event_Type'Output (Output_Stream, Event);
+         end loop;
+
+         declare
+            procedure Save_Metadata (Name  : Metadata_Name;
+                                     Value : Metadata_Value)
+            is
+            begin
+               Metadata_Name'Output (Output_Stream, Name);
+               Metadata_Value'Output (Output_Stream, Value);
+            end Save_Metadata;
+         begin
+            Metadata.Iterate (Save_Metadata'Access);
+         end;
+      end;
+
+      Close (Output_File);
+   end Save_Binary_Event_Stream;
+
+   ---------------------------
+   -- Save_CVS_Event_Stream --
+   ---------------------------
+
+   procedure Save_CVS_Event_Stream
+     (Filename : String;
+      Events   : Event_Sequences.Event_Sequence;
+      Metadata : Event_Sequences.Metadata_Map)
+   is
+      use Ada.Text_IO;
+      use Camera_Events;
+      use Event_Sequences;
+
+      function Metadata_Line (Metadata : Event_Sequences.Metadata_Map)
+                              return String
+      is
+         Result : Unbounded_String := Null_Unbounded_String;
+
+         procedure Add_Metadata (Name  : Metadata_Name;
+                                 Value  : Metadata_Value)
+         is
+         begin
+            Result := Result & String (Name) & ": " & String (Value) & " ";
+         end Add_Metadata;
+      begin
+         Metadata.Iterate (Add_Metadata'Access);
+
+         return "#" & To_String (Result);
+      end Metadata_Line;
+
+      output : File_Type;
+   begin
+      Create (File => output,
+              Mode => Out_File,
+              Name => Filename);
+
+      Put_Line (Metadata_Line (Metadata));
+
+      Put_Line ("timestamp,x,y,polarity");
+
+      for Event of Events loop
+         Put_Line (Image (T (Event))
+                   & ","
+                   & X (Event)'Image
+                   & ","
+                   & Y (Event)'Image
+                   & (if Weight (Event) > 0 then "1" else "0"));
+      end loop;
+
+      Close (Output);
+   end Save_CVS_Event_Stream;
+
 end Event_Streams;

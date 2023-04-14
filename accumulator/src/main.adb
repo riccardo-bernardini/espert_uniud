@@ -95,7 +95,7 @@ begin
 
    Profiler.Entering (Parse_Stream);
 
-   Event_Streams.Read_Event_Stream (Input    => Config.Input,
+   Event_Streams.Read_Event_Stream (Filename => Config.Input,
                                     Events   => Events,
                                     Metadata => Metadata);
 

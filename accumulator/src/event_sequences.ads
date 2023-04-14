@@ -50,10 +50,16 @@ package Event_Sequences is
 
    procedure Wipe_Out (Map : in out Metadata_Map);
 
+   function N_Entries (Map : Metadata_Map) return Natural;
+
    procedure Dump (Map : Metadata_Map);
 
    procedure Update (Map : in out Metadata_Map;
                      Src : in     Metadata_Map);
+
+   procedure Iterate (Map : Metadata_Map;
+                      Callback : access procedure (Name : Metadata_Name;
+                                                   Value : Metadata_Value));
 
    package Event_Vectors is
      new Ada.Containers.Doubly_Linked_Lists (Element_Type => Camera_Events.Event_Type);
@@ -120,6 +126,10 @@ private
         Element_Type => Metadata_Value);
 
    type Metadata_Map is new Metadata_Maps.Map with null record;
+
+
+   function N_Entries (Map : Metadata_Map) return Natural
+   is (Natural (Map.Length));
 
    function Has_Key (Map : Metadata_Map;
                      Key : Metadata_Name)

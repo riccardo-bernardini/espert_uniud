@@ -16,6 +16,11 @@ package Event_Streams is
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map);
 
+   procedure Save_Event_Stream
+     (Filename : String;
+      Events   : Event_Sequences.Event_Sequence;
+      Metadata : Event_Sequences.Metadata_Map);
+
 
      Bad_Event_Stream : exception;
    end Event_Streams;

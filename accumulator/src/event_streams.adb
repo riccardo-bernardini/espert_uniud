@@ -22,6 +22,12 @@ package body Event_Streams is
 
    type Line_Type is (Comment, Header, Data);
 
+   function Get_Extension (Filename : String) return String
+   is (if Filename'Length > 4 and then Filename (Filename'Last - 3) = '.'
+       then
+          Characters.Handling.To_Lower (Fixed.Tail (Filename, 4))
+       else
+          "");
 
    function Chomp (S : String) return String
    is
@@ -385,15 +391,8 @@ package body Event_Streams is
       Events      :    out Event_Sequences.Event_Sequence;
       Metadata    :    out Event_Sequences.Metadata_Map)
    is
-      use Ada.Strings.Fixed;
-      use Ada.Characters.Handling;
+      Extension : constant String := Get_Extension (Filename);
 
-      Extension : constant String :=
-                    (if Filename'Length > 4 and then Filename (Filename'Last - 3) = '.'
-                     then
-                        To_Lower (Tail (Filename, 4))
-                     else
-                        "");
    begin
       if Filename = "-" then
          Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
@@ -480,7 +479,7 @@ package body Event_Streams is
    ---------------------------
 
    procedure Save_CVS_Event_Stream
-     (Filename : String;
+     (Output   : Ada.Text_Io.File_Type;
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map)
    is
@@ -493,7 +492,7 @@ package body Event_Streams is
       is
          Result : Unbounded_String := Null_Unbounded_String;
 
-         procedure Add_Metadata (Name  : Metadata_Name;
+         procedure Add_Metadata (Name   : Metadata_Name;
                                  Value  : Metadata_Value)
          is
          begin
@@ -502,29 +501,83 @@ package body Event_Streams is
       begin
          Metadata.Iterate (Add_Metadata'Access);
 
-         return "#" & To_String (Result);
+         return "# " & To_String (Result);
       end Metadata_Line;
-
-      output : File_Type;
    begin
-      Create (File => output,
-              Mode => Out_File,
-              Name => Filename);
+      Put_Line (Output, Metadata_Line (Metadata));
 
-      Put_Line (Metadata_Line (Metadata));
-
-      Put_Line ("timestamp,x,y,polarity");
+      Put_Line (Output, "timestamp,x,y,polarity");
 
       for Event of Events loop
-         Put_Line (Image (T (Event))
+         Put_Line (Output, Image (T (Event))
                    & ","
                    & X (Event)'Image
                    & ","
                    & Y (Event)'Image
+                   & ","
                    & (if Weight (Event) > 0 then "1" else "0"));
       end loop;
 
-      Close (Output);
    end Save_CVS_Event_Stream;
+
+   ---------------------------
+   -- Save_CVS_Event_Stream --
+   ---------------------------
+
+   procedure Save_CVS_Event_Stream
+     (Filename : String;
+      Events   : Event_Sequences.Event_Sequence;
+      Metadata : Event_Sequences.Metadata_Map)
+   is
+   begin
+      if Filename = "-" then
+         Save_CVS_Event_Stream (Output   => Ada.Text_IO.Standard_Output,
+                                Events   => Events,
+                                Metadata => Metadata);
+
+      else
+         declare
+            use Ada.Text_IO;
+
+            Output : File_Type;
+         begin
+            Create (File => Output,
+                    Mode => Out_File,
+                    Name => Filename);
+
+            Save_CVS_Event_Stream (Output   => Output,
+                                   Events   => Events,
+                                   Metadata => Metadata);
+
+            Close (Output);
+         end;
+      end if;
+   end Save_CVS_Event_Stream;
+
+   -----------------------
+   -- Save_Event_Stream --
+   -----------------------
+
+   procedure Save_Event_Stream
+     (Filename : String;
+      Events   : Event_Sequences.Event_Sequence;
+      Metadata : Event_Sequences.Metadata_Map)
+   is
+      Extension : constant String := Get_Extension (Filename);
+   begin
+      if Extension = ".csv" or Filename = "-" then
+         Save_CVS_Event_Stream (Filename => Filename,
+                                Events   => Events,
+                                Metadata => Metadata);
+
+      elsif Extension = ".evt" then
+         Save_Binary_Event_Stream (Filename => Filename,
+                                   Events   => Events,
+                                   Metadata => Metadata);
+      else
+         raise Constraint_Error
+           with "Unrecognized extension '" & Extension & "'";
+      end if;
+   end Save_Event_Stream;
 
 end Event_Streams;

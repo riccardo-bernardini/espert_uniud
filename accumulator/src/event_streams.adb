@@ -9,6 +9,8 @@ with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Handling;
 
+with Ada.Streams.Stream_IO;
+
 with Tokenize;
 with Camera_Events;
 
@@ -16,6 +18,8 @@ use Ada;
 use Ada.Strings;
 
 package body Event_Streams is
+   type Counter is mod 2 ** 64;
+
    type Line_Type is (Comment, Header, Data);
 
 
@@ -325,22 +329,75 @@ package body Event_Streams is
       --  Metadata.Dump;
    end Read_CSV_Event_Stream;
 
-   procedure Read_Event_Stream
-     (Input    : in     String;
+   ------------------------------
+   -- Read_Binary_Event_Stream --
+   ------------------------------
+
+   procedure Read_Binary_Event_Stream
+     (Filename : in     String;
       Events   :    out Event_Sequences.Event_Sequence;
       Metadata :    out Event_Sequences.Metadata_Map)
+   is
+      use Ada.Streams.Stream_IO;
+      use Camera_Events;
+      use Event_Sequences;
+
+      Input_File : File_Type;
+   begin
+      Open (File => Input_File,
+            Mode => In_File,
+            Name => Filename);
+
+
+      declare
+         Input_Stream : constant Stream_Access := Stream (Input_File);
+         N_Events     : constant Counter := Counter'Input (Input_Stream);
+         N_Metadata   : constant Counter := Counter'Input (Input_Stream);
+      begin
+         Events.Clear;
+         Metadata.Wipe_Out;
+
+         for I in 1 .. N_Events loop
+            Events.Append (Event_Type'Input (Input_Stream));
+         end loop;
+
+         for I in 1 .. N_Metadata loop
+            declare
+               Name : constant Metadata_Name :=
+                        Metadata_Name'Input (Input_Stream);
+
+               Value : constant Metadata_Value :=
+                         Metadata_Value'Input (Input_Stream);
+            begin
+               Metadata.Set (Key   => name,
+                             Value => Value);
+            end;
+         end loop;
+      end;
+
+      Close (Input_File);
+   end Read_Binary_Event_Stream;
+
+   -----------------------
+   -- Read_Event_Stream --
+   -----------------------
+
+   procedure Read_Event_Stream
+     (Filename    : in     String;
+      Events      :    out Event_Sequences.Event_Sequence;
+      Metadata    :    out Event_Sequences.Metadata_Map)
    is
       use Ada.Strings.Fixed;
       use Ada.Characters.Handling;
 
       Extension : constant String :=
-                    (if Input'Length > 4 and then Input (Input'Last - 3) = '.'
+                    (if Filename'Length > 4 and then Filename (Filename'Last - 3) = '.'
                      then
-                        To_Lower (Tail (Input, 4))
+                        To_Lower (Tail (Filename, 4))
                      else
                         "");
    begin
-      if Input = "-" then
+      if Filename = "-" then
          Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
                                 Events   => Events,
                                 Metadata => Metadata);
@@ -353,7 +410,7 @@ package body Event_Streams is
          begin
             Open (File     => File,
                   Mode     => In_File,
-                  Name     => Input);
+                  Name     => Filename);
 
             Read_CSV_Event_Stream (Input    => File,
                                    Events   => Events,
@@ -363,9 +420,9 @@ package body Event_Streams is
          end;
 
       elsif Extension = ".evt" then
-         Read_Binary_Event_Stream (Input    => Input,
-                                   Events   => Events,
-                                   Metadata => Metadata);
+         Read_Binary_Event_Stream (Filename    => Filename,
+                                   Events      => Events,
+                                   Metadata    => Metadata);
 
       else
          raise Bad_Event_Stream

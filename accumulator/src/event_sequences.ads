@@ -62,7 +62,7 @@ package Event_Sequences is
                                                    Value : Metadata_Value));
 
    package Event_Vectors is
-     new Ada.Containers.Doubly_Linked_Lists (Element_Type => Camera_Events.Event_Type);
+     new Ada.Containers.Doubly_Linked_Lists (Camera_Events.Event_Type);
 
 
    subtype Event_Sequence is Event_Vectors.List;
@@ -81,6 +81,14 @@ package Event_Sequences is
 
 
    type Cursor is private;
+
+   function X (C : Cursor) return Camera_Events.X_Coordinate_Type
+     with
+       Pre => Has_Element (C);
+
+   function Y (C : Cursor) return Camera_Events.Y_Coordinate_Type
+     with
+       Pre => Has_Element (C);
 
    function Has_Element (Pos : Cursor) return Boolean;
 
@@ -165,6 +173,11 @@ private
          Y : Camera_Events.Y_Coordinate_Type;
       end record;
 
+   function X (C : Cursor) return Camera_Events.X_Coordinate_Type
+   is (C.X);
+
+   function Y (C : Cursor) return Camera_Events.Y_Coordinate_Type
+   is (C.Y);
    function Next (C : Cursor) return Cursor;
 
    type Point_Map_Iterator is

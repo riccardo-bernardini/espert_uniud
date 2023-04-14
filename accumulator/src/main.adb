@@ -130,6 +130,9 @@ begin
 
       Events_At    : Event_Sequences.Point_Event_Map :=
                        Event_Sequences.Create (Metadata.Size_X, Metadata.Size_Y);
+
+      Decay : constant Memory_Dynamic.Dynamic_Type'Class :=
+                Config.Forgetting_Method;
    begin
       pragma Assert (Camera_Events.Is_Finite (Start_Time));
       pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
@@ -170,17 +173,10 @@ begin
          Profiler.Entering (Update);
 
          for Pos in Events_At.Iterate loop
-            declare
-               Pixel : constant Camera_Events.Point_Type :=
-                         Event_Sequences.Point (Pos);
-            begin
-               --  Put_Line (Pixel.X'Image & Pixel.Y'Image);
-
-               Update_Pixel (Start   => Current_Time,
-                             Pixel   => Current_Frame (Pixel.X, Pixel.Y),
-                             Events  => Events_At (Pixel),
-                             Dynamic => Config.Forgetting_Method);
-            end;
+            Update_Pixel (Start   => Current_Time,
+                          Pixel   => Current_Frame (Event_Sequences.X (Pos), Event_Sequences.Y (Pos)),
+                          Events  => Events_At (Event_Sequences.Point (Pos)),
+                          Decay   => Decay);
          end loop;
 
          Profiler.Entering (Save);

@@ -1,7 +1,9 @@
 with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Containers.Indefinite_Ordered_Maps;
-with Ada.Containers.Ordered_Maps;
+with Ada.Finalization;
 with Ada.Iterator_Interfaces;
+
+use Ada;
 
 with Camera_Events;
 
@@ -79,10 +81,14 @@ package Event_Sequences is
    package Point_Event_Map_Interfaces is new
      Ada.Iterator_Interfaces (Cursor, Has_Element);
 
-   type Point_Event_Map is tagged private
+   type Point_Event_Map (<>) is new Finalization.Limited_Controlled with private
      with
        Constant_Indexing => Events,
        Default_Iterator => Iterate;
+
+   function Create (X_Size : Camera_Events.X_Coordinate_Type;
+                    Y_Size : Camera_Events.Y_Coordinate_Type)
+                    return Point_Event_Map;
 
    function Iterate (Container : in Point_Event_Map)
                      return Point_Event_Map_Interfaces.Forward_Iterator'Class;
@@ -100,7 +106,7 @@ package Event_Sequences is
       Last_Timestamp : Camera_Events.Timestamp;
       Result         : out Point_Event_Map);
 
-   procedure fill_frame
+   procedure Fill_Frame
      (Events_At : in out Point_Event_Map;
       Time      : Camera_Events.Timestamp;
       Size_X    : Camera_Events.X_Coordinate_Type;
@@ -129,27 +135,32 @@ private
                      Event : Camera_Events.Event_Type);
 
 
-   use type Event_Vectors.List;
 
-   package Point_Maps is
-     new Ada.Containers.Ordered_Maps (Key_Type     => Camera_Events.Point_Type,
-                                      Element_Type => Event_Sequence);
+   type Event_Matrix is array (Camera_Events.X_Coordinate_Type range <>,
+                               Camera_Events.Y_Coordinate_Type range <>)
+     of Event_Vectors.List;
 
-   type Point_Event_Map is tagged
+   type Event_Matrix_Access is access Event_Matrix;
+
+   type Point_Event_Map is new Finalization.Limited_Controlled with
       record
-         M : Point_Maps.Map;
+         M : Event_Matrix_Access;
       end record;
 
    type Cursor is
       record
-         C : Point_Maps.Cursor;
+         M : Event_Matrix_Access;
+         X : Camera_Events.X_Coordinate_Type;
+         Y : Camera_Events.Y_Coordinate_Type;
       end record;
+
+   function Next (C : Cursor) return Cursor;
 
    type Point_Map_Iterator is
      new Point_Event_Map_Interfaces.Forward_Iterator
    with
       record
-         C : Point_Maps.Cursor;
+         C : Cursor;
       end record;
 
    function First (Object : Point_Map_Iterator) return Cursor;

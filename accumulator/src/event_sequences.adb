@@ -39,15 +39,11 @@ package body Event_Sequences is
          Result.Append (Ev);
       end loop;
 
-      for Pos in Result.M.Iterate loop
-         declare
-            P : constant Camera_Events.Point_Type := Point_Maps.Key (Pos);
-         begin
-            Result (P).Append (New_Event (T      => Last_Timestamp,
-                                          X      => P.X,
-                                          Y      => P.Y,
-                                          Weight => 0));
-         end;
+      for Pos in Result.Iterate loop
+         Result.M (Pos.X, Pos.Y).Append (New_Event (T      => Last_Timestamp,
+                                                    X      => Pos.X,
+                                                    Y      => Pos.Y,
+                                                    Weight => 0));
       end loop;
    end Collect_By_Point;
 
@@ -159,50 +155,90 @@ package body Event_Sequences is
    function Size_Y (Map : Metadata_Map) return Camera_Events.Y_Coordinate_Type
    is (Camera_Events.Y_Coordinate_Type (Integer_Value (Map, "sizeY")));
 
+   function Next (C : Cursor) return Cursor
+   is (if C.X < C.M.all'Last (1) then
+          Cursor'(M => C.M,
+                  X => C.X + 1,
+                  Y => C.Y)
+
+       elsif C.Y < C.M.all'Last (2) then
+          Cursor'(M => C.M,
+                  X => C.M.all'First (1),
+                  Y => C.Y + 1)
+
+       else
+          Cursor'(M => C.M,
+                  X => C.X,
+                  Y => C.M.all'Last (2)+1));
+
+
+   ------------
+   -- Create --
+   ------------
+
+   function Create (X_Size : Camera_Events.X_Coordinate_Type;
+                    Y_Size : Camera_Events.Y_Coordinate_Type)
+                    return Point_Event_Map
+   is
+      use Camera_Events;
+
+      Last_X : constant X_Coordinate_Type :=
+                 X_Coordinate_Type'First + X_Size - 1;
+
+      Last_Y : constant Y_Coordinate_Type :=
+                 Y_Coordinate_Type'First + Y_Size - 1;
+
+      M : constant Event_Matrix_Access :=
+            new Event_Matrix (X_Coordinate_Type'First .. Last_X,
+                              Y_Coordinate_Type'First .. Last_Y);
+   begin
+      pragma Assert (M.all'Length (1) = Natural (X_Size));
+      pragma Assert (M.all'Length (2) = Natural (Y_Size));
+
+      return Point_Event_Map '(Finalization.Limited_Controlled with
+                                 M => M);
+   end Create;
+
    function Events (Map   : Point_Event_Map;
                     Point : Camera_Events.Point_Type)
                     return Event_Sequence
-   is (if Map.M.Contains (Point) then
-          Map.M (Point)
-
-       else
-          raise Constraint_Error);
+   is (Map.M (Point.X, Point.Y));
 
    procedure Clear (Map : in out Point_Event_Map)
    is
    begin
-      Map.M.Clear;
+      for Pos in Map.Iterate loop
+         Map.M (Pos.X, Pos.Y).Clear;
+      end loop;
    end Clear;
+
    procedure Append (Map   : in out Point_Event_Map;
                      Event : Camera_Events.Event_Type)
    is
-      P : constant Camera_Events.Point_Type := (X => Camera_Events.X (Event),
-                                                Y => Camera_Events.Y (Event));
+      use Camera_Events;
    begin
-      if not Map.M.Contains (P) then
-         Map.M.Insert (Key      => P,
-                       New_Item => Event_Vectors.Empty_List);
-      end if;
-
-      Map.M (P).Append (Event);
+      Map.M (X (Event), Y (Event)).Append (Event);
    end Append;
 
    function Has_Element (Pos : Cursor) return Boolean
-   is (Point_Maps.Has_Element (Pos.C));
+   is (Pos.Y <= Pos.M.all'Last (2));
 
    function Iterate (Container : in Point_Event_Map)
                      return Point_Event_Map_Interfaces.Forward_Iterator'Class
-   is (Point_Map_Iterator'(C => Container.M.First));
+   is (Point_Map_Iterator'(C => Cursor'(M => Container.M,
+                                        X => Container.M.all'First (1),
+                                        Y => Container.M.all'First (2))));
 
    function First (Object : Point_Map_Iterator) return Cursor
-   is ((C => Object.C));
+   is (Object.C);
 
    function Next (Object : Point_Map_Iterator; Position : Cursor) return Cursor
-   is ((C => Point_Maps.Next (Position.C)));
+   is (Next (Position));
 
 
    function Point (Position : Cursor) return Camera_Events.Point_Type
-   is (Point_Maps.Key (Position.C));
+   is (Camera_Events.Point_Type'(X => Position.X,
+                                 Y => Position.Y));
 
    procedure Fill_Frame
      (Events_At : in out Point_Event_Map;
@@ -212,33 +248,23 @@ package body Event_Sequences is
    is
       use Camera_Events;
 
-      Last_X : constant X_Coordinate_Type :=
-                 Size_X + X_Coordinate_Type'First - 1;
-
-      Last_Y : constant Y_Coordinate_Type :=
-                 Size_Y + Y_Coordinate_Type'First - 1;
    begin
-      for X in X_Coordinate_Type'First .. Last_X loop
-         for Y in Y_Coordinate_Type'First .. Last_Y loop
-            declare
-               P : constant Point_Type := (X, Y);
-
-               Zero_Event : constant Event_Type := New_Event (T      => Time,
-                                                              X      => X,
-                                                              Y      => Y,
-                                                              Weight => 0);
-            begin
-               if not (Events_At.M.Contains (P)
-                       and then
-                       T (Events_At (P).Last_Element) = Time)
-               then
-                  Events_At.Append (Zero_Event);
-               end if;
-            end;
-         end loop;
+      for Pos in Events_At.Iterate loop
+         declare
+            Zero_Event : constant Event_Type := New_Event (T      => Time,
+                                                           X      => Pos.X,
+                                                           Y      => Pos.Y,
+                                                           Weight => 0);
+         begin
+            if Events_At.M (Pos.X, Pos.Y).Is_Empty or else
+              T (Events_At.M (Pos.X, Pos.Y).Last_Element) < Time
+            then
+               Events_At.Append (Zero_Event);
+            end if;
+         end;
       end loop;
    end Fill_Frame;
 
 
 
-   end Event_Sequences;
+end Event_Sequences;

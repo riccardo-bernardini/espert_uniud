@@ -128,7 +128,8 @@ begin
 
       Segment      : Event_Sequences.Event_Sequence;
 
-      Events_At    : Event_Sequences.Point_Event_Map;
+      Events_At    : Event_Sequences.Point_Event_Map :=
+                       Event_Sequences.Create (Metadata.Size_X, Metadata.Size_Y);
    begin
       pragma Assert (Camera_Events.Is_Finite (Start_Time));
       pragma Assert (Camera_Events.Is_Finite (Stopping_Time));

@@ -176,9 +176,10 @@ begin
             begin
                --  Put_Line (Pixel.X'Image & Pixel.Y'Image);
 
-               Update_Pixel (Start  => Current_Time,
-                             Pixel  => Current_Frame (Pixel.X, Pixel.Y),
-                             Events => Events_At (Pixel));
+               Update_Pixel (Start   => Current_Time,
+                             Pixel   => Current_Frame (Pixel.X, Pixel.Y),
+                             Events  => Events_At (Pixel),
+                             Dynamic => Config.Forgetting_Method);
             end;
          end loop;
 

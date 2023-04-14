@@ -48,7 +48,7 @@ package Config is
        Pre => Package_Ready;
 
 
-   function Forgetting_Method return  Memory_Dynamic.Dynamic_Type
+   function Forgetting_Method return  Memory_Dynamic.Dynamic_Type'Class
      with
        Pre => Package_Ready;
 

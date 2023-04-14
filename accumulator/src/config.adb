@@ -1,5 +1,7 @@
 pragma Ada_2012;
 
+with Ada.Containers.Indefinite_Holders;
+
 with Ada.Command_Line;
 with Ada.Containers;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
@@ -14,6 +16,15 @@ with Tokenize;
 --  with Ada.Text_IO; use Ada.Text_IO;
 
 package body Config is
+   use type Memory_Dynamic.Dynamic_Type;
+
+   package Forgetting_Holders is
+     new Ada.Containers.Indefinite_Holders (Memory_Dynamic.Dynamic_Type'Class);
+
+   Memory_Dynamic_Spec : Forgetting_Holders.Holder :=
+                           Forgetting_Holders.Empty_Holder;
+
+
    use type Camera_Events.Timestamp;
 
    type Radix_Spec is
@@ -41,7 +52,6 @@ package body Config is
 
    I_Am_Ready   : Boolean := False;
 
-   Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
 
 
    Input_Filename : Unbounded_String := Null_Unbounded_String;
@@ -166,7 +176,7 @@ package body Config is
       is (Camera_Events.To_Timestamp (Parse_Time_Spec (Spec)));
 
       function Parse_Memory_Spec (Spec : String)
-                                  return Memory_Dynamic.Dynamic_Type
+                                  return Memory_Dynamic.Dynamic_Type'class
       is
          use Ada.Strings.Fixed;
          use Ada.Characters.Handling;
@@ -364,7 +374,7 @@ package body Config is
       end if;
 
 
-      Memory_Dynamic_Spec := Parse_Memory_Spec (Current_Argument);
+      Memory_Dynamic_Spec.Replace_Element (Parse_Memory_Spec (Current_Argument));
       Next_Argument;
 
       Sampling_Info := Parse_Sampling_Spec (Current_Argument);
@@ -441,8 +451,8 @@ package body Config is
    -- Forgetting_Method --
    -----------------------
 
-   function Forgetting_Method return Memory_Dynamic.Dynamic_Type
-   is (Memory_Dynamic_Spec);
+   function Forgetting_Method return Memory_Dynamic.Dynamic_Type'Class
+   is (Memory_Dynamic_Spec.Element);
 
    -------------------
    -- Output_Format --

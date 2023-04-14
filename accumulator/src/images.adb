@@ -172,11 +172,17 @@ package body Images is
          use Ada.Text_IO;
          use Ada.Streams;
          use Ada.Characters;
+         use Camera_Events;
 
          pragma Compile_Time_Error (Stream_Element'Size /= 8,
                                     "Stream_Element must be 8 bit long");
 
 
+         Width : constant X_Coordinate_Type :=
+                   Image'Last (1)-Image'First (1)+1;
+
+         Heigth : constant Y_Coordinate_Type :=
+                    Image'Last (2)-Image'First (2)+1;
 
          Output : File_Type;
       begin
@@ -185,8 +191,8 @@ package body Images is
                  Name => Filename);
 
          Put (Output, "P5"
-              & " " & Strip_Spaces (Image'Length (2)'Image)
-              & " " & Strip_Spaces (Image'Length (1)'Image)
+              & " " & Strip_Spaces (Width'Image)
+              & " " & Strip_Spaces (Heigth'Image)
               & " 255"
               & Latin_9.LF);
 
@@ -194,8 +200,8 @@ package body Images is
             S : constant Text_Streams.Stream_Access :=
                   Text_Streams.Stream (Output);
          begin
-            for Row in Image'Range (1) loop
-               for Col in Image'Range (2) loop
+            for Col in Image'Range (2) loop
+               for Row in Image'Range (1) loop
                   Byte'Write (S, To_Byte (Image (Row, Col)));
                end loop;
             end loop;

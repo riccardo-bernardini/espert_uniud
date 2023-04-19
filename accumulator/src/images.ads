@@ -8,11 +8,14 @@ package Images is
             Camera_Events.Y_Coordinate_Type range <>)
      of Pixel_Value;
 
-   function Width (Image : Image_Type) return Camera_Events.X_Coordinate_Type
-   is (Image'Length (2));
+   use type Camera_Events.X_Coordinate_Type;
+   use type Camera_Events.Y_Coordinate_Type;
 
-   function Height (Image : Image_Type) return Camera_Events.y_Coordinate_Type
-   is (Image'Length (1));
+   function Width (Image : Image_Type) return Camera_Events.X_Coordinate_Type
+   is (Image'Last (1)-Image'First (1)+1);
+
+   function Height (Image : Image_Type) return Camera_Events.Y_Coordinate_Type
+   is (Image'Last (2)-Image'First (2)+1);
 
    --  Default_X_Size : constant Camera_Events.X_Coordinate_Type := 640;
    --  Default_y_Size : constant Camera_Events.y_Coordinate_Type := 480;

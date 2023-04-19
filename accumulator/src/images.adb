@@ -112,9 +112,6 @@ package body Images is
       Value  : Pixel_Value := 0.0)
       return Image_Type
    is
-      use type Camera_Events.X_Coordinate_Type;
-      use type Camera_Events.Y_Coordinate_Type;
-
       Result : constant Image_Type (0 .. X_Size - 1, 0 .. Y_Size - 1) :=
                  (others => (others => Value));
    begin
@@ -183,6 +180,10 @@ package body Images is
                  Mode => Out_File,
                  Name => Filename);
 
+         --  Put_Line ("W = " & X_Coordinate_Type'Image (Width (Image)));
+         --  Put_Line ("H = " & y_Coordinate_Type'Image (Height (Image)));
+
+
          Put (Output, "P5"
               & " " & Strip_Spaces (X_Coordinate_Type'Image (Width (Image)))
               & " " & Strip_Spaces (Y_Coordinate_Type'Image (Height (Image)))
@@ -193,9 +194,9 @@ package body Images is
             S : constant Text_Streams.Stream_Access :=
                   Text_Streams.Stream (Output);
          begin
-            for Row in Image'Range (1) loop
-               for Col in Image'Range (2) loop
-                  Byte'Write (S, To_Byte (Image (Row, Col)));
+            for Row in Image'Range (2) loop
+               for Col in Image'Range (1) loop
+                  Byte'Write (S, To_Byte (Image (Col, Row)));
                end loop;
             end loop;
          end;

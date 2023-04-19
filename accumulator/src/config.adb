@@ -520,7 +520,7 @@ package body Config is
          end return;
 
       else
-         return Images.Zero (Size_X, Size_Y);
+         return Images.Uniform (Size_X, Size_Y, 128.0);
 
       end if;
    end Start_Image;

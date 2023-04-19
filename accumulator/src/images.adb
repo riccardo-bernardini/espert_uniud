@@ -103,21 +103,23 @@ package body Images is
    end Load;
 
    ----------
-   -- Zero --
+   -- uniform --
    ----------
 
-   function Zero
+   function Uniform
      (X_Size : Camera_Events.X_Coordinate_Type;
-      Y_Size : Camera_Events.Y_Coordinate_Type) return Image_Type
+      Y_Size : Camera_Events.Y_Coordinate_Type;
+      Value  : Pixel_Value := 0.0)
+      return Image_Type
    is
       use type Camera_Events.X_Coordinate_Type;
       use type Camera_Events.Y_Coordinate_Type;
 
       Result : constant Image_Type (0 .. X_Size - 1, 0 .. Y_Size - 1) :=
-                 (others => (others => 0.0));
+                 (others => (others => Value));
    begin
       return Result;
-   end Zero;
+   end Uniform;
 
    ----------
    -- Save --
@@ -129,8 +131,6 @@ package body Images is
       procedure Save_Raw_Image_8 (Filename : String; Image : Image_Type)
       is
          use Interfaces;
-         use Camera_Events;
-
          function Hi (X : Unsigned_16) return Unsigned_8
          is (Unsigned_8 (X / 256));
 
@@ -138,8 +138,6 @@ package body Images is
          is (Unsigned_8 (X mod 256));
 
          Output : Unsigned_8_IO.File_Type;
-         X_Size : constant X_Coordinate_Type := Image'Length (1);
-         Y_Size : constant Y_Coordinate_Type := Image'Length (2);
       begin
          Unsigned_8_IO.Create (File => Output,
                                Mode => Unsigned_8_IO.Out_File,
@@ -147,16 +145,16 @@ package body Images is
 
 
          Unsigned_8_IO.Write (File => Output,
-                              Item => Hi (Unsigned_16 (X_Size)));
+                              Item => Hi (Unsigned_16 (Width (Image))));
 
          Unsigned_8_IO.Write (File => Output,
-                              Item => Lo (Unsigned_16 (X_Size)));
+                              Item => Lo (Unsigned_16 (Width (Image))));
 
          Unsigned_8_IO.Write (File => Output,
-                              Item => Hi (Unsigned_16 (Y_Size)));
+                              Item => Hi (Unsigned_16 (Height (Image))));
 
          Unsigned_8_IO.Write (File => Output,
-                              Item => Lo (Unsigned_16 (Y_Size)));
+                              Item => Lo (Unsigned_16 (Height (Image))));
 
          for X in Image'Range (1) loop
             for Y in Image'Range (2) loop
@@ -172,6 +170,7 @@ package body Images is
          use Ada.Text_IO;
          use Ada.Streams;
          use Ada.Characters;
+         use Camera_Events;
 
          pragma Compile_Time_Error (Stream_Element'Size /= 8,
                                     "Stream_Element must be 8 bit long");
@@ -185,8 +184,8 @@ package body Images is
                  Name => Filename);
 
          Put (Output, "P5"
-              & " " & Strip_Spaces (Image'Length (2)'Image)
-              & " " & Strip_Spaces (Image'Length (1)'Image)
+              & " " & Strip_Spaces (X_Coordinate_Type'Image (Width (Image)))
+              & " " & Strip_Spaces (Y_Coordinate_Type'Image (Height (Image)))
               & " 255"
               & Latin_9.LF);
 

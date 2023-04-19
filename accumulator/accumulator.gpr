@@ -19,5 +19,7 @@ project Accumulator is
    package Linker is
    end Linker;
 
+   for Languages use ("Ada", "C");
+
 end Accumulator;
 

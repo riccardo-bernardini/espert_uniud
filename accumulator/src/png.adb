@@ -1,9 +1,23 @@
 pragma Ada_2012;
 with Interfaces.C.Strings;
 
+with Png_H;
+
 use Interfaces;
 
+
 package body PNG is
+   Color_To_C : constant array (Color_Type) of C.Int :=
+                  (
+                   Gray         => Png_H.PNG_COLOR_TYPE_GRAY,
+                   Gray_Alpha   => Png_H.PNG_COLOR_TYPE_GRAY_ALPHA,
+                   Palette      => Png_H.PNG_COLOR_TYPE_PALETTE,
+                   Rgb          => Png_H.PNG_COLOR_TYPE_RGB,
+                   Rgb_Alpha    => Png_H.PNG_COLOR_TYPE_RGB_ALPHA,
+                   Mask_Palette => Png_H.PNG_COLOR_MASK_PALETTE,
+                   Mask_Color   => Png_H.PNG_COLOR_MASK_COLOR,
+                   Mask_Alpha   => Png_H.PNG_COLOR_MASK_ALPHA
+                  );
 
 
    ---------
@@ -46,11 +60,13 @@ package body PNG is
    --------------
 
    procedure Save_Png
-     (Filename : String; Image : Image_Buffer; Color : Color_Type;
+     (Filename : String;
+      Image    : Image_Buffer;
+      Color    : Color_Type;
       Depth    : Bit_Depth)
    is
       function Write_Png (Filename : C.Strings.Chars_Ptr;
-                          Rows     : Row_Pointers.Pointer;
+                          Image    : Pixel_Array;
                           Width    : Unsigned_32;
                           Heigth   : Unsigned_32;
                           Depth    : C.Int;
@@ -58,15 +74,49 @@ package body PNG is
                           return C.Int
         with
           Import => True,
-          Convention => C;
+          Convention => C,
+          External_Name => "write_png";
 
-      F_Name : C.Strings.Chars_Ptr := C.Strings.New_String (Filename);
+      F_Name   : C.Strings.Chars_Ptr := C.Strings.New_String (Filename);
+
+      ERR_OK     : constant := 0;
+      ERR_OPEN   : constant := -1;
+      ERR_ALLOC  : constant := -2;
+      ERR_SETJMP : constant := -3;
    begin
+      declare
+         Err_Code : constant C.Int :=
+                      Write_Png (Filename => F_Name,
+                                 Image    => Image.Pixels.all,
+                                 Width    => Unsigned_32 (Image.N_Cols),
+                                 Heigth   => Unsigned_32 (Image.N_Rows),
+                                 Depth    => C.Int (Depth),
+                                 Color    => Color_To_C (Color));
+      begin
 
-      C.Strings.Free (F_Name);
+         C.Strings.Free (F_Name);
 
-      pragma Compile_Time_Warning (Standard.True, "Save_Png unimplemented");
-      raise Program_Error with "Unimplemented procedure Save_Png";
+         case Err_Code is
+            when ERR_OK =>
+               null;
+
+            when ERR_OPEN =>
+               raise Program_Error
+                 with "Could not open file '" & Filename & "'";
+
+            when ERR_ALLOC =>
+               raise Program_Error
+                 with "Could not allocate PNG structures";
+
+            when ERR_SETJMP =>
+               raise Program_Error
+                 with "Error in PNG library";
+
+            when others =>
+               raise Program_Error
+                 with "Unknown error code: " & Err_Code'Image;
+         end case;
+      end;
    end Save_Png;
 
 end PNG;

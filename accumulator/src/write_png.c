@@ -20,6 +20,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+
 void
 fill_row_pointers (png_bytepp row_pointers, png_bytep image, png_uint_32 width,
                    png_uint_32 height)
@@ -33,15 +34,23 @@ fill_row_pointers (png_bytepp row_pointers, png_bytep image, png_uint_32 width,
     }
 }
 
+#define ERR_OK      0
+#define ERR_OPEN   -1
+#define ERR_ALLOC  -2
+#define ERR_SETJMP -3
+
 int
 write_png_file (char *filename, png_bytep image, png_uint_32 width,
                 png_uint_32 height, int depth, int color_type)
 {
   int y;
+  int error = ERR_OK;
 
   FILE *fp = fopen (filename, "wb");
   if (!fp)
     {
+      error = ERR_OPEN;
+
       goto die;
     }
 
@@ -49,17 +58,20 @@ write_png_file (char *filename, png_bytep image, png_uint_32 width,
     = png_create_write_struct (PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if (!png)
     {
+      error = ERR_ALLOC;
       goto die;
     }
 
   png_infop info = png_create_info_struct (png);
   if (!info)
     {
+      error = ERR_ALLOC;
       goto die;
     }
 
   if (setjmp (png_jmpbuf (png)))
     {
+      error = ERR_SETJMP;
       goto die;
     }
 
@@ -94,7 +106,7 @@ write_png_file (char *filename, png_bytep image, png_uint_32 width,
       png_destroy_write_struct (&png, &info);
     }
 
-  return 0;
+  return ERR_OK;
 
  die:
   if (png != NULL)
@@ -107,5 +119,5 @@ write_png_file (char *filename, png_bytep image, png_uint_32 width,
       fclose (fp);
     }
 
-  return -1;
+  return error;
 }

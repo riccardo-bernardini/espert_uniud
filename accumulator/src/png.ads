@@ -4,6 +4,8 @@ with Camera_Events;
 
 use Ada;
 
+
+
 package PNG is
    type Pixel_Value is mod 2 ** 8;
 

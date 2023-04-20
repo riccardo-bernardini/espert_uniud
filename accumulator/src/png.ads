@@ -50,19 +50,39 @@ package PNG is
                        Depth    : Bit_Depth);
 
 private
-   type Ref_Element (Data : access Pixel_Value) is limited null record;
+   use Camera_Events;
 
-   type Image_Row is
-     array (Camera_Events.X_Coordinate_Type range <>) of aliased Pixel_Value;
+   type Ref_Element(Data : access Pixel_Value) is limited null record;
 
-   type Row_Access is access Image_Row;
+   type Pixel_Index is range 1 .. 2 ** 32 - 1;
 
-   type Row_Array is
-     array (Camera_Events.Y_Coordinate_Type range <>) of aliased Row_Access;
+   type Pixel_Array is
+     array (Pixel_Index range <>) of aliased Pixel_Value;
 
-   type Image_Buffer (N_Rows : Camera_Events.Y_Coordinate_Type) is
+   type Pixel_Array_Access is not null access Pixel_Array;
+
+   function Index (Img : Image_Buffer;
+                   X   : x_Coordinate_Type;
+                   Y   : Y_Coordinate_Type)
+                   return Pixel_Index
+     with
+       Pre => X <= Img.N_Cols and Y <= Img.N_Rows;
+
+
+   type Image_Buffer (N_Pixel : Pixel_Index) is
      new Finalization.Limited_Controlled with
       record
-         Rows : Row_Array (1 .. N_Rows);
-      end record;
+         Pixels : Pixel_Array_Access;
+         N_Rows : Camera_Events.Y_Coordinate_Type;
+         N_Cols : Camera_Events.X_Coordinate_Type;
+      end record
+     with
+       Type_Invariant => N_Pixel = Pixel_Index (N_Cols) * Pixel_Index (N_Rows);
+
+   function Index (Img : Image_Buffer;
+                   X   : x_Coordinate_Type;
+                   Y   : Y_Coordinate_Type)
+                   return Pixel_Index
+   is (Pixel_Index (X - X_Coordinate_Type'First)
+       + Pixel_Index (Img.N_Cols) * Pixel_Index (Y - Y_Coordinate_Type'First));
 end PNG;

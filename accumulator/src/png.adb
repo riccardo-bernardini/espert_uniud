@@ -1,15 +1,11 @@
 pragma Ada_2012;
 with Interfaces.C.Strings;
-with Interfaces.C.Pointers;
 
 use Interfaces;
 
 package body PNG is
-   package Row_Pointers is
-     new Interfaces.C.Pointers (Index              => Camera_Events.Y_Coordinate_Type,
-                                Element            => Row_Access,
-                                Element_Array      => Row_Array,
-                                Default_Terminator => 0);
+
+
    ---------
    -- Ref --
    ---------
@@ -19,7 +15,7 @@ package body PNG is
       X   : Camera_Events.X_Coordinate_Type;
       Y   : Camera_Events.Y_Coordinate_Type)
       return Ref_Element
-   is (Ref_Element'(Data => Img.Rows (Y) (X)'Access));
+   is (Ref_Element'(Data => Img.Pixels (Img.Index (X, Y))'Access));
 
    ------------
    -- Create --
@@ -29,12 +25,20 @@ package body PNG is
      (Width  : Camera_Events.X_Coordinate_Type;
       Heigth : Camera_Events.Y_Coordinate_Type) return Image_Buffer
    is
+      use Finalization;
+
+      N_Pixel : constant Pixel_Index :=
+                  Pixel_Index (Width) * Pixel_Index (Heigth);
+
+      Buffer  : constant Pixel_Array_Access := new Pixel_Array (1 .. N_Pixel);
    begin
-      return Result : Image_Buffer (Heigth) do
-         for Row in Result.Rows'Range loop
-            Result.Rows (Row) := new Image_Row (1 .. Width);
-         end loop;
-      end return;
+      Buffer.all := (others => 0);
+
+      return Image_Buffer'(Limited_Controlled with
+                             N_Pixel => N_Pixel,
+                           Pixels  => Buffer,
+                           N_Rows  => Heigth,
+                           N_Cols  => Width);
    end Create;
 
    --------------

@@ -1,22 +1,31 @@
+with Ada.Command_Line;
+with Ada.Containers;
+with Ada.Text_IO; use Ada.Text_IO;
+with Ada.Exceptions; use Ada.Exceptions;
 with Ada.IO_Exceptions;
+with Ada.Strings.Fixed;
+
+with Interfaces.C;
+
 with Config;
 with Camera_Events;
 with Event_Sequences;
 with Event_Streams;
 with Images;
 with Memory_Dynamic;
-with Ada.Command_Line;
-
-with Ada.Containers;
-with Ada.Text_IO; use Ada.Text_IO;
-
-with Ada.Exceptions; use Ada.Exceptions;
-
-with Ada.Strings.Fixed;
 
 with Profiling;
 
+use Ada;
+use Interfaces;
+
 procedure Main is
+   function Terminal_Width return C.Int
+     with
+       Import => True,
+       Convention => C,
+       External_Name => "terminal_width";
+
    package Float_Formatting is new Float_IO (Float);
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
@@ -121,10 +130,10 @@ procedure Main is
       Done : constant Camera_Events.Duration := Current_Time - Start_Time;
       Fraction : constant Float := Done / Full;
 
-      N_Columns : constant Integer := 80;
+      N_Columns : constant Integer := Integer (Terminal_Width)-10;
 
       Done_Section_Length : constant Integer :=
-                              Integer (Fraction * Float (N_Columns));
+                              Integer (Fraction * Float (N_Columns - 1));
 
       Remaining_Section_Length : constant Integer :=
                                    N_Columns - Done_Section_Length - 1;

@@ -56,7 +56,7 @@ private
 
    type Ref_Element(Data : access Pixel_Value) is limited null record;
 
-   type Pixel_Index is range 1 .. 2 ** 32 - 1;
+   type Pixel_Index is mod 2 ** 32;
 
    type Pixel_Array is
      array (Pixel_Index range <>) of aliased Pixel_Value;
@@ -86,5 +86,5 @@ private
                    Y   : Y_Coordinate_Type)
                    return Pixel_Index
    is (Pixel_Index (X - X_Coordinate_Type'First)
-       + Pixel_Index (Img.N_Cols) * Pixel_Index (Y - Y_Coordinate_Type'First));
+       + Pixel_Index (Img.N_Cols) * Pixel_Index (Y - Y_Coordinate_Type'First) +1);
 end PNG_IO;

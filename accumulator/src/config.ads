@@ -3,6 +3,13 @@ with Memory_Dynamic;
 with Images;
 
 package Config is
+   type Verbosity is
+     (
+      Quiet,        -- no verbose at all
+      Logging,      -- Stuff that can go to a file
+      Interactive   -- Stuff that makes sense only on a terminal (e.g., progress bar)
+     );
+
    function Package_Ready return Boolean;
 
    procedure Parse_Command_Line
@@ -59,11 +66,17 @@ package Config is
      with
        Pre => Package_Ready;
 
+   function Verbosity_Level return Verbosity
+     with
+       Pre => Package_Ready;
+
    function Verbose return Boolean
+   is (Verbosity_Level > Quiet)
      with
        Pre => Package_Ready;
 
    function Show_Progress_Bar return Boolean
+   is (Verbosity_Level >= Interactive)
      with
        Pre => Package_Ready;
 

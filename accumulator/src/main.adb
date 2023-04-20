@@ -20,6 +20,8 @@ use Ada;
 use Interfaces;
 
 procedure Main is
+   use type Config.Verbosity;
+
    function Terminal_Width return C.Int
      with
        Import => True,
@@ -126,8 +128,8 @@ procedure Main is
       use Camera_Events;
       use Ada.Strings.Fixed;
 
-      Full : constant Camera_Events.Duration := Stop_Time - Start_Time;
-      Done : constant Camera_Events.Duration := Current_Time - Start_Time;
+      Full     : constant Camera_Events.Duration := Stop_Time - Start_Time;
+      Done     : constant Camera_Events.Duration := Current_Time - Start_Time;
       Fraction : constant Float := Done / Full;
 
       N_Columns : constant Integer := Integer (Terminal_Width)-10;
@@ -138,22 +140,23 @@ procedure Main is
       Remaining_Section_Length : constant Integer :=
                                    N_Columns - Done_Section_Length - 1;
    begin
-      Put (ASCII.CR);
-      Put (Done_Section_Length * "=");
-      Put (">");
+      Put (Standard_Error, ASCII.CR);
+      Put (Standard_Error, Done_Section_Length * "=");
+      Put (Standard_Error, ">");
 
       if Remaining_Section_Length > 0 then
-         Put (Remaining_Section_Length * '-');
+         Put (Standard_Error, Remaining_Section_Length * '-');
       end if;
 
-      Put (" ");
-      Float_Formatting.Put (Item => 100.0 * Fraction,
+      Put (Standard_Error, " ");
+      Float_Formatting.Put (File => Standard_Error,
+                            Item => 100.0 * Fraction,
                             Fore => 3,
                             Aft  => 1,
                             Exp  => 0);
 
-      Put ("%");
-      Flush;
+      Put (Standard_Error, "%");
+      Flush (Standard_Error);
    end Show_Progress_Bar;
 
    Events   : Event_Sequences.Event_Sequence;
@@ -163,7 +166,9 @@ procedure Main is
 begin
    Config.Parse_Command_Line;
 
-   Put_Maybe (Config.Verbose, "Reading event list...");
+   Put_Maybe (Config.Verbosity_Level = Config.Interactive,
+              "Reading event list...");
+
    Profiler.Entering (Parse_Stream);
 
    Event_Streams.Read_Event_Stream (Filename => Config.Input,
@@ -171,7 +176,7 @@ begin
                                     Metadata => Metadata);
 
 
-   Put_Line_Maybe (Config.Verbose, " Done");
+   Put_Line_Maybe (Config.Verbosity_Level = Config.Interactive, " Done");
 
    Put_Line_Maybe (Config.Verbose, "Size X = N. col =" & Metadata.Size_X'Image);
 

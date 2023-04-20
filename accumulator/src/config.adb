@@ -13,7 +13,24 @@ with Gnat.Regpat;
 with Tokenize;
 --  with Ada.Text_IO; use Ada.Text_IO;
 
+with Interfaces.C;
+
+use Interfaces;
+
 package body Config is
+   function Is_A_Tty (Descriptor : C.Int) return Boolean
+   is
+      use type C.int;
+
+      function C_Is_A_Tty (Descriptor : C.Int) return C.Int
+        with
+          Import => True,
+          Convention => C,
+          External_Name => "isatty";
+   begin
+      return (C_Is_A_Tty (Descriptor) = 1);
+   end Is_A_Tty;
+
    use type Camera_Events.Timestamp;
 
    type Radix_Spec is
@@ -43,6 +60,8 @@ package body Config is
 
    Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
 
+
+   Requested_Verbosity : Verbosity;
 
    Input_Filename : Unbounded_String := Null_Unbounded_String;
 
@@ -363,6 +382,10 @@ package body Config is
          raise Program_Error; -- We should never arrive here
       end if;
 
+      Requested_Verbosity := (if Is_A_Tty (2) then
+                                 Interactive
+                              else
+                                 Logging);
 
       Memory_Dynamic_Spec := Parse_Memory_Spec (Current_Argument);
       Next_Argument;
@@ -520,11 +543,9 @@ package body Config is
    end Start_Image;
 
 
-   function Verbose return Boolean
-   is (True);
+   function Verbosity_Level return Verbosity
+   is (Requested_Verbosity);
 
-   function Show_Progress_Bar return Boolean
-   is (True);
 
    function Short_Help_Text return String
    is ("Usage: "

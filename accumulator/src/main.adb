@@ -110,9 +110,9 @@ procedure Main is
       end if;
    end Put_Maybe;
 
-   procedure Write_Progress (Start_Time   : Camera_Events.Timestamp;
-                             Stop_Time    : Camera_Events.Timestamp;
-                             Current_Time : Camera_Events.Timestamp)
+   procedure Show_Progress_Bar (Start_Time   : Camera_Events.Timestamp;
+                                Stop_Time    : Camera_Events.Timestamp;
+                                Current_Time : Camera_Events.Timestamp)
    is
       use Camera_Events;
       use Ada.Strings.Fixed;
@@ -145,7 +145,7 @@ procedure Main is
 
       Put ("%");
       Flush;
-   end Write_Progress;
+   end Show_Progress_Bar;
 
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
@@ -208,8 +208,8 @@ begin
 
       while Current_Time < Stopping_Time loop
 
-         if Config.Verbose then
-            Write_Progress (Start_Time, Stopping_Time, Current_Time);
+         if Config.Show_Progress_Bar then
+            Show_Progress_Bar (Start_Time, Stopping_Time, Current_Time);
          end if;
 
          Next_Time := Current_Time + Config.Sampling_Period;
@@ -266,6 +266,10 @@ begin
 
          Frame_Number := Frame_Number + 1;
       end loop;
+
+      if Config.Show_Progress_Bar then
+         New_Line;
+      end if;
 
       Profiler.Dump;
    end;

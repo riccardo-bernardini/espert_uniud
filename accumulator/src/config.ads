@@ -59,6 +59,12 @@ package Config is
      with
        Pre => Package_Ready;
 
-   function Verbose return Boolean;
+   function Verbose return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Show_Progress_Bar return Boolean
+     with
+       Pre => Package_Ready;
 
 end Config;

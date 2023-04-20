@@ -93,11 +93,17 @@ procedure Main is
 begin
    Config.Parse_Command_Line;
 
+
    Profiler.Entering (Parse_Stream);
 
    Event_Streams.Read_Event_Stream (Filename => Config.Input,
                                     Events   => Events,
                                     Metadata => Metadata);
+
+
+   Put_Line ("Size X = N. col =" & Metadata.Size_X'Image);
+
+   Put_Line ("Size Y = N. row =" & Metadata.Size_Y'Image);
 
    if Events.Is_Empty then
       Put_Line (Standard_Error, "Empty event stream");

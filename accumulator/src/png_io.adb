@@ -6,7 +6,7 @@ with Png_H;
 use Interfaces;
 
 
-package body PNG is
+package body Png_IO is
    Color_To_C : constant array (Color_Type) of C.Int :=
                   (
                    Gray         => Png_H.PNG_COLOR_TYPE_GRAY,
@@ -75,7 +75,7 @@ package body PNG is
         with
           Import => True,
           Convention => C,
-          External_Name => "write_png";
+          External_Name => "write_png_file";
 
       F_Name   : C.Strings.Chars_Ptr := C.Strings.New_String (Filename);
 
@@ -118,5 +118,4 @@ package body PNG is
          end case;
       end;
    end Save_Png;
-
-end PNG;
+end Png_IO;

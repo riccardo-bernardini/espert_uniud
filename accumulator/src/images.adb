@@ -7,6 +7,8 @@ with Ada.Streams;
 with Ada.Text_IO.Text_Streams;
 with Ada.Characters.Latin_9;
 
+with Png_IO;
+
 package body Images is
    package Unsigned_8_IO is
      new Ada.Sequential_IO (Interfaces.Unsigned_8);
@@ -207,8 +209,20 @@ package body Images is
       procedure Save_Png (Filename : String;
                           Image    : Image_Type)
       is
+         Buffer : Png_IO.Image_Buffer :=
+                    Png_IO.Create (Width (Image), Height (Image));
+
       begin
-         raise Program_Error with "Save_PNG not implemented";
+         for X in Image'Range(1) loop
+            for Y in Image'Range (2) loop
+               Buffer (X, Y) := Png_Io.Pixel_Value (To_Byte (Image (X, Y)));
+            end loop;
+         end loop;
+
+         Png_Io.Save_Png (Filename => Filename,
+                          Image    => Buffer,
+                          Color    => PNG_IO.Gray,
+                          Depth    => 8);
       end Save_Png;
    begin
       case Format is

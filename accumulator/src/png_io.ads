@@ -6,7 +6,7 @@ use Ada;
 
 
 
-package PNG is
+package PNG_IO is
    type Pixel_Value is mod 2 ** 8;
 
    type Bit_Depth is range 1 .. 16
@@ -87,4 +87,4 @@ private
                    return Pixel_Index
    is (Pixel_Index (X - X_Coordinate_Type'First)
        + Pixel_Index (Img.N_Cols) * Pixel_Index (Y - Y_Coordinate_Type'First));
-end PNG;
+end PNG_IO;

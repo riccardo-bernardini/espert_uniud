@@ -519,6 +519,10 @@ package body Config is
       end if;
    end Start_Image;
 
+
+   function Verbose return Boolean
+   is (True);
+
    function Short_Help_Text return String
    is ("Usage: "
        & Ada.Command_Line.Command_Name

@@ -175,11 +175,6 @@ package body Images is
                                     "Stream_Element must be 8 bit long");
 
 
-         Width : constant X_Coordinate_Type :=
-                   Image'Last (1)-Image'First (1)+1;
-
-         Heigth : constant Y_Coordinate_Type :=
-                    Image'Last (2)-Image'First (2)+1;
 
          Output : File_Type;
       begin
@@ -192,8 +187,8 @@ package body Images is
 
 
          Put (Output, "P5"
-              & " " & Strip_Spaces (X_Coordinate_Type'Image (Width (Image)))
-              & " " & Strip_Spaces (Y_Coordinate_Type'Image (Height (Image)))
+              & " " & Strip_Spaces (X_Coordinate_Type'Image (Images.Width (Image)))
+              & " " & Strip_Spaces (Y_Coordinate_Type'Image (Images.Height (Image)))
               & " 255"
               & Latin_9.LF);
 

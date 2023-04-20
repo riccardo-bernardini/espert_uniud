@@ -58,4 +58,7 @@ package Config is
                          return Images.Image_Type
      with
        Pre => Package_Ready;
+
+   function Verbose return Boolean;
+
 end Config;

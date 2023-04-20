@@ -9,11 +9,16 @@ with Ada.Command_Line;
 
 with Ada.Containers;
 with Ada.Text_IO; use Ada.Text_IO;
+
 with Ada.Exceptions; use Ada.Exceptions;
+
+with Ada.Strings.Fixed;
 
 with Profiling;
 
 procedure Main is
+   package Float_Formatting is new Float_IO (Float);
+
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
 
    package My_Profiler is
@@ -86,6 +91,62 @@ procedure Main is
 
    end Update_Pixel;
 
+   procedure Put_Line_Maybe (Verbose : Boolean;
+                             Text    : String)
+   is
+   begin
+      if Verbose then
+         Put_Line (Standard_Error, Text);
+      end if;
+   end Put_Line_Maybe;
+
+   procedure Put_Maybe (Verbose : Boolean;
+                        Text    : String)
+   is
+   begin
+      if Verbose then
+         Put (Standard_Error, Text);
+         Flush (Standard_Error);
+      end if;
+   end Put_Maybe;
+
+   procedure Write_Progress (Start_Time   : Camera_Events.Timestamp;
+                             Stop_Time    : Camera_Events.Timestamp;
+                             Current_Time : Camera_Events.Timestamp)
+   is
+      use Camera_Events;
+      use Ada.Strings.Fixed;
+
+      Full : constant Camera_Events.Duration := Stop_Time - Start_Time;
+      Done : constant Camera_Events.Duration := Current_Time - Start_Time;
+      Fraction : constant Float := Done / Full;
+
+      N_Columns : constant Integer := 80;
+
+      Done_Section_Length : constant Integer :=
+                              Integer (Fraction * Float (N_Columns));
+
+      Remaining_Section_Length : constant Integer :=
+                                   N_Columns - Done_Section_Length - 1;
+   begin
+      Put (ASCII.CR);
+      Put (Done_Section_Length * "=");
+      Put (">");
+
+      if Remaining_Section_Length > 0 then
+         Put (Remaining_Section_Length * '-');
+      end if;
+
+      Put (" ");
+      Float_Formatting.Put (Item => 100.0 * Fraction,
+                            Fore => 3,
+                            Aft  => 1,
+                            Exp  => 0);
+
+      Put ("%");
+      Flush;
+   end Write_Progress;
+
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
 
@@ -93,7 +154,7 @@ procedure Main is
 begin
    Config.Parse_Command_Line;
 
-
+   Put_Maybe (Config.Verbose, "Reading event list...");
    Profiler.Entering (Parse_Stream);
 
    Event_Streams.Read_Event_Stream (Filename => Config.Input,
@@ -101,9 +162,11 @@ begin
                                     Metadata => Metadata);
 
 
-   Put_Line ("Size X = N. col =" & Metadata.Size_X'Image);
+   Put_Line_Maybe (Config.Verbose, " Done");
 
-   Put_Line ("Size Y = N. row =" & Metadata.Size_Y'Image);
+   Put_Line_Maybe (Config.Verbose, "Size X = N. col =" & Metadata.Size_X'Image);
+
+   Put_Line_Maybe (Config.Verbose, "Size Y = N. row =" & Metadata.Size_Y'Image);
 
    if Events.Is_Empty then
       Put_Line (Standard_Error, "Empty event stream");
@@ -144,6 +207,11 @@ begin
       --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
 
       while Current_Time < Stopping_Time loop
+
+         if Config.Verbose then
+            Write_Progress (Start_Time, Stopping_Time, Current_Time);
+         end if;
+
          Next_Time := Current_Time + Config.Sampling_Period;
 
          if Next_Time > Stopping_Time then

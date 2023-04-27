@@ -1,6 +1,7 @@
 #!/bin/bash -e
 
 
+
 if env | grep DRYRUN > /dev/null ; then
     echo=echo
 else
@@ -17,7 +18,7 @@ function install_filtering {
     done
 }
 
-function install_event_to_frame {
+function install_events_to_frames {
     $echo cd $my_dir/accumulator
 
     $echo gprbuild
@@ -25,6 +26,7 @@ function install_event_to_frame {
     $echo cp obj/main      $PREFIX/bin/events-to-frames
     $echo cp obj/convert   $PREFIX/bin/event-conversion
 }
+
 
 if [ $# -ne 1 ]; then
     echo "Usage: $0 prefix" >&2
@@ -36,9 +38,11 @@ my_dir=`dirname $0`
 
 PREFIX=$1
 
+$echo mkdir -p $PREFIX/bin
+
 install_filtering
 
-false
+install_events_to_frames
 
-install_event_to_frame
+exit 0
 

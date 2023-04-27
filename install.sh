@@ -21,7 +21,7 @@ function install_filtering {
 function install_events_to_frames {
     $echo cd $my_dir/accumulator
 
-    $echo gprbuild
+    $echo gprbuild -p
 
     $echo cp obj/main      $PREFIX/bin/events-to-frames
     $echo cp obj/convert   $PREFIX/bin/event-conversion

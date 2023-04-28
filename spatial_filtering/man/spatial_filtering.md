@@ -36,6 +36,7 @@ The difference between the two format is how the *weight* of an event is represe
 A file with an impulse response will have the following format
 * It is a text file in ASCII encoding
 * Any row whose first non-space character is `#` is considered a  comment and ignored
+* Any row with only space is ignored
 * It has N (non-comment) rows of integer values (base 10, of course), every row has the same number M of values
 * **One and only one** value is marked with a `!` after the value.  That value is considered the *origin* of the impulse response 
 

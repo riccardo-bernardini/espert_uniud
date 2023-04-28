@@ -48,8 +48,68 @@ def die(msg=nil)
   exit(1)
 end
 
+def parse_filter_row(line)
+  entries = line.split
+
+  mark_column = nil
+
+  (0...entries.size).each do |idx|
+    entry = entries[idx]
+    
+    if entry[-1] == '!'
+      raise "Bad filter format" unless mark_column.nil?
+      mark_column = idx;
+
+      entry = entry[0...-1];
+    end
+
+    entries[idx] = entry.to_i
+  end
+
+  return [entries, mark_column]
+end
+
 def load_filter_from_file(filename)
-  die("Loading from file '#{filename}' not implemented");
+  rows = Array.new
+  origin = nil
+
+  row_number = 0
+  
+  File.open(filename) do |input|
+    input.each do |line|
+      line.chomp!
+      line.strip!
+      
+      next if line.empty? || line[0] == '#'
+
+      this_row, marker_column = parse_filter_row(line)
+
+      if marker_column
+        raise "Bad filter format: double origin" unless origin.nil?
+        origin = [row_number, marker_column]
+      end
+
+      unless rows.empty?
+        raise "Bad filter format: different row length" if this_row.size != rows[0].size
+      end
+
+      row_number += 1
+    end
+  end
+
+  raise "Bad filter format: missing origin" if origin.nil?
+
+  filter = Image.new
+
+  (0...rows.size).each do |y|
+    row = rows[row_index]
+
+    (0...row.size).each do |x|
+      filter[x-origin[1], y-origin[0]] = row[x]
+    end
+  end
+
+  return filter
 end
 
 def make_filter_circle(parameters)

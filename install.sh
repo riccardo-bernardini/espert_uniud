@@ -52,7 +52,7 @@ function install_index {
     working_dir=$my_dir/.work
     mkdir -p $working_dir
 
-    lib/make_index.rb $working_dir/index.md "$doc_files"
+    $my_dir/lib/make_index.rb $working_dir/index.md "$doc_files"
 
     pandoc $working_dir/index.md -o $PREFIX/doc/index.html
 }

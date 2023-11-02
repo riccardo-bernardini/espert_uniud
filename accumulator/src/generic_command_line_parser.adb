@@ -49,9 +49,57 @@ package body Generic_Command_Line_Parser is
       end if;
    end Parse_Option_Names;
 
-   -----------
-   -- Parse --
-   -----------
+   procedure Fill_Name_Table (Names      : Option_Names;
+                              Prefix     : String;
+                              Table      : out Name_Tables.Map;
+                              Help_Lines : out String_Vectors.Vector)
+   is
+      Parsed_Names : String_Vectors.Vector;
+      Help_Line    : Unbounded_String;
+   begin
+      for Option in Options loop
+         Parse_Option_Names (Source    => To_String (Names (Option)),
+                             Names     => Parsed_Names,
+                             Help_Line => Help_Line);
+
+         if Help_Line /= Null_Unbounded_String then
+            Help_Lines.Append (To_String (Help_Line));
+         end if;
+
+         for Name of Parsed_Names loop
+            declare
+               Full_Name : constant String := Prefix & Name;
+            begin
+               if Table.Contains (Full_Name) then
+                  raise Duplicate_Option_Name with Name;
+
+               else
+                  Table.Insert (Key      => Full_Name,
+                                New_Item => Option);
+               end if;
+
+            end;
+         end loop;
+      end loop;
+   end Fill_Name_Table;
+
+   ------------
+   -- Update --
+   ------------
+
+   procedure Update (What           : in out Option_Values;
+                     Name           : String;
+                     Value          : String;
+                     Name_To_Option : Name_Tables.Map)
+   is
+   begin
+      null;
+   end Update;
+
+
+     -----------
+     -- Parse --
+     -----------
 
    function Parse
      (Source                  : String;
@@ -64,52 +112,81 @@ package body Generic_Command_Line_Parser is
       Concatenation_Separator : String := ",")
       return Option_Values
    is
-      procedure Fill_Name_Table (Names      : Option_Names;
-                                 Prefix     : String;
-                                 Table      : out Name_Tables.Map;
-                                 Help_Lines : out String_Vectors.Vector)
-      is
-         Parsed_Names : String_Vectors.Vector;
-         Help_Line    : Unbounded_String;
-      begin
-         for Option in Options loop
-            Parse_Option_Names (Source    => To_String (Names (Option)),
-                                Names     => Parsed_Names,
-                                Help_Line => Help_Line);
-
-            if Help_Line /= Null_Unbounded_String then
-               Help_Lines.Append (To_String (Help_Line));
-            end if;
-
-            for Name of Parsed_Names loop
-               declare
-                  Full_Name : constant String := Prefix & Name;
-               begin
-                  if Table.Contains (Full_Name) then
-                     raise Duplicate_Option_Name with Name;
-
-                  else
-                     Table.Insert (Key      => Full_Name,
-                                   New_Item => Option);
-                  end if;
-
-               end;
-            end loop;
-         end loop;
-      end Fill_Name_Table;
-
+      type Status_Type is
+        (
+         Skipping_Spaces,
+         In_Name,
+         Begin_Of_Value,
+         In_Value
+        );
 
       Name_To_Option : Name_Tables.Map;
 
       Result       : Option_Values := (others => (Missing => True));
 
+      Status : Status_Type := Skipping_Spaces;
+
+      Name_Accumulator  : Unbounded_String;
+      Value_Accumulator : Unbounded_String;
    begin
       Fill_Name_Table (Names      => Names,
                        Table      => Name_To_Option,
                        Prefix     => Option_Prefix,
                        Help_Lines => Help_Lines);
 
+      declare
+         Padded_Source : constant String := Source & " ";
+         Closing_Value : Character;
+      begin
+         for Current_Char of Padded_Source loop
+            case Status is
+               when Skipping_Spaces =>
+                  if Current_Char /= ' ' then
+                     Name_Accumulator := Null_Unbounded_String & Current_Char;
+                  end if;
 
+               when In_Name =>
+                  if Current_Char = ' '  then
+                     Update (Result, To_String (Name_Accumulator), "", Name_To_Option);
+
+                  elsif Current_Char = Option_Value_Separator then
+                     Status := Begin_Of_Value;
+
+                  else
+                     Name_Accumulator := Name_Accumulator & Current_Char;
+                  end if;
+
+               when Begin_Of_Value =>
+                  Value_Accumulator := Null_Unbounded_String;
+                  Status := In_Value;
+
+                  if Current_Char = '"' then
+                     Closing_Value := '"';
+
+                  else
+                     Closing_Value := ' ';
+                     Value_Accumulator := Value_Accumulator & Current_Char;
+
+                  end if;
+
+               when In_Value =>
+                  if Current_Char = Closing_Value  then
+                     Update (Result,
+                             To_String (Name_Accumulator),
+                             To_String (Value_Accumulator),
+                             Name_To_Option);
+
+                     Name_Accumulator := Null_Unbounded_String;
+                     Value_Accumulator := Null_Unbounded_String;
+
+                     Status := Skipping_Spaces;
+                  else
+                     Value_Accumulator := Value_Accumulator & Current_Char;
+                  end if;
+
+            end case;
+         end loop;
+      end;
       pragma Compile_Time_Warning (Standard.True, "Parse unimplemented");
       return raise Program_Error with "Unimplemented function Parse";
 
@@ -129,7 +206,7 @@ package body Generic_Command_Line_Parser is
       Include_Prefix          : String := "@";
       Option_Prefix           : String := "--";
       Concatenation_Separator : String := ",")
-            return Option_Values
+      return Option_Values
    is
       function Command_Line_Restored return String
       is

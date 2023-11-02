@@ -3,6 +3,8 @@ with Memory_Dynamic;
 with Images;
 
 package Config is
+   type Frame_Index is range 0 .. Integer'Last;
+
    type Verbosity is
      (
       Quiet,        -- no verbose at all
@@ -10,23 +12,20 @@ package Config is
       Interactive   -- Stuff that makes sense only on a terminal (e.g., progress bar)
      );
 
-   function Package_Ready return Boolean;
+   -- Used in contracts
+   function Package_Ready return Boolean
+     with Ghost;
 
    procedure Parse_Command_Line
      with
        Pre => not Package_Ready,
        Post => Package_Ready;
 
-   Bad_Command_Line : exception;
-
-
-   Full_Help_Asked : exception;
 
    function Short_Help_Text return String;
 
    function Long_Help_Text return String;
 
-   type Frame_Index is range 0 .. Integer'Last;
 
    function Frame_Filename (N : Frame_Index) return String
      with
@@ -79,5 +78,10 @@ package Config is
    is (Verbosity_Level >= Interactive)
      with
        Pre => Package_Ready;
+
+   Bad_Command_Line : exception;
+
+
+   Full_Help_Asked : exception;
 
 end Config;

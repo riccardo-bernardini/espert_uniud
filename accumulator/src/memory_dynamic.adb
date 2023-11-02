@@ -24,7 +24,7 @@ package body Memory_Dynamic is
    begin
       --  Put_Line ("delta_t=" & Camera_Events.Image (Delta_T));
       case Dynamic.Class is
-         when Step =>
+         when Step | None =>
             return Start;
 
          when Linear =>

@@ -93,7 +93,15 @@ procedure Main is
                                          Dynamic => Config.Forgetting_Method,
                                          Delta_T => T (Ev) - Current_Time);
 
-         Pixel := Pixel + Pixel_Value (Weight (Ev));
+         Pixel := Pixel + Config.Event_Contribution * Pixel_Value (Weight (Ev));
+
+         if Pixel < Config.Pixel_Min then
+            Pixel := Config.Pixel_Min;
+
+         elsif Pixel > Config.Pixel_Max then
+            Pixel := Config.Pixel_Max;
+
+         end if;
 
          Current_Time := T (Ev);
       end loop;
@@ -207,6 +215,11 @@ begin
       Current_Frame : Images.Image_Type :=
                         Config.Start_Image (Metadata.Size_X, Metadata.Size_Y);
 
+      Reset_Frame   : constant Images.Image_Type :=
+                        Images.Uniform (X_Size => Metadata.Size_X,
+                                        Y_Size => Metadata.Size_y,
+                                        Value  => Config.Reset_Value);
+
       Frame_Number : Config.Frame_Index := 0;
 
       Segment      : Event_Sequences.Event_Sequence;
@@ -244,9 +257,11 @@ begin
 
          Profiler.Entering (Collect);
 
-         Event_Sequences.Collect_By_Point (Events         => Segment,
-                                           Last_Timestamp => Next_Time,
-                                           Result         => Events_At);
+         Event_Sequences.Collect_By_Point
+           (Events         => Segment,
+            Last_Timestamp => Next_Time,
+            Synchronous    => Config.Synchronous_Update,
+            Result         => Events_At);
 
          --  Profiler.Entering (Fill);
          --
@@ -275,6 +290,10 @@ begin
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Current_Frame,
                       Format   => Config.Output_Format);
+
+         if Config.Reset_Each_Frame then
+            Current_Frame := Reset_Frame;
+         end if;
 
          Current_Time := Next_Time;
 

@@ -65,6 +65,31 @@ package Config is
      with
        Pre => Package_Ready;
 
+   function Event_Contribution return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Pixel_Min return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Pixel_Max return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Synchronous_Update return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Reset_Each_Frame return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Reset_Value return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+
    function Verbosity_Level return Verbosity
      with
        Pre => Package_Ready;

@@ -29,6 +29,7 @@ package body Event_Sequences is
    procedure Collect_By_Point
      (Events         : Event_Sequence;
       Last_Timestamp : Camera_Events.Timestamp;
+      Synchronous    : Boolean;
       Result         : out Point_Event_Map)
    is
       use Camera_Events;
@@ -39,12 +40,14 @@ package body Event_Sequences is
          Result.Append (Ev);
       end loop;
 
-      for Pos in Result.Iterate loop
-         Result.M (Pos.X, Pos.Y).Append (New_Event (T      => Last_Timestamp,
-                                                    X      => Pos.X,
-                                                    Y      => Pos.Y,
-                                                    Weight => 0));
-      end loop;
+      if Synchronous then
+         for Pos in Result.Iterate loop
+            Result.M (Pos.X, Pos.Y).Append (New_Event (T      => Last_Timestamp,
+                                                       X      => Pos.X,
+                                                       Y      => Pos.Y,
+                                                       Weight => 0));
+         end loop;
+      end if;
    end Collect_By_Point;
 
    --------------

@@ -57,7 +57,7 @@ package Event_Sequences is
    procedure Update (Map : in out Metadata_Map;
                      Src : in     Metadata_Map);
 
-   procedure Iterate (Map : Metadata_Map;
+   procedure Iterate (Map      : Metadata_Map;
                       Callback : access procedure (Name : Metadata_Name;
                                                    Value : Metadata_Value));
 
@@ -110,6 +110,7 @@ package Event_Sequences is
    procedure Collect_By_Point
      (Events         : Event_Sequence;
       Last_Timestamp : Camera_Events.Timestamp;
+      Synchronous    : Boolean;
       Result         : out Point_Event_Map);
 
    -- Commented out, its role now is played by Collect_By_Point

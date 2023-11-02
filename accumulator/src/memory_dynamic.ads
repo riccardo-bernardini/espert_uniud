@@ -6,7 +6,7 @@ package Memory_Dynamic is
 
    function No_Decay return Dynamic_Type;
 
-   function Step return Dynamic_Type;
+   function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type;
 
    function Linear (T       : Camera_Events.Duration;
                     Neutral : Images.Pixel_Value)
@@ -28,7 +28,8 @@ private
                null;
 
             when Step =>
-               null;
+               Reset_Value : Images.Pixel_Value;
+
 
             when Exponential =>
                Time_Constant : Camera_Events.Duration;
@@ -43,11 +44,15 @@ private
    function No_Decay return Dynamic_Type
    is (Dynamic_Type'(Class  => None));
 
-   function Step return Dynamic_Type
-   is (Dynamic_Type'(Class  => Step));
+   function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type
+   is (Dynamic_Type'(Class  => Step, Reset_Value => Reset_To));
 
-   function Linear (T : Camera_Events.Duration) return Dynamic_Type
-   is (Dynamic_Type'(Class => Linear, Time_Constant => T));
+   function Linear (T       : Camera_Events.Duration;
+                    Neutral : Images.Pixel_Value)
+                    return Dynamic_Type
+   is (Dynamic_Type'(Class => Linear,
+                     Inverse_Slope => T,
+                     Neutral_Level => Neutral));
 
    function Exponential (T : Camera_Events.Duration) return Dynamic_Type
    is (Dynamic_Type'(Class => Exponential, Time_Constant => T));

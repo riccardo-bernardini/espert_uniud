@@ -20,7 +20,6 @@ package body Memory_Dynamic is
       use type Camera_Events.Duration;
       use Ada.Numerics.Elementary_Functions;
 
-      New_Value : Images.Pixel_Value;
    begin
       --  Put_Line ("delta_t=" & Camera_Events.Image (Delta_T));
       case Dynamic.Class is
@@ -28,26 +27,23 @@ package body Memory_Dynamic is
             return Start;
 
          when Linear =>
-            --  Put_Line ("delta=" & Float'Image (Delta_T / Dynamic.Time_Constant));
-            New_Value := Start - Pixel_Value (Delta_T / Dynamic.Time_Constant);
+            declare
+               Variation : constant Pixel_Value :=
+                             Pixel_Value (Delta_T / Dynamic.Time_Constant);
 
-            --  Put_Line (Start'Image & New_Value'Image);
-            if New_Value < 0.0 then
-               return 0.0;
+            begin
+               if Start > Dynamic.Neutral_Level then
+                  return  Pixel_Value'Max (Start - Variation, Dynamic.Neutral_Level);
 
-            else
-               return New_Value;
-            end if;
+               else
+                  return  Pixel_Value'Min (Start + Variation, Dynamic.Neutral_Level);
+
+               end if;
+            end;
 
          when Exponential =>
 
-            New_Value := Start * Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
-
-            --  Put_Line ("mult=" & Float'Image (Exp (-Delta_T / Dynamic.Time_Constant)));
-
-            --  Put_Line (Start'Image & New_Value'Image);
-
-            return New_Value;
+            return  Start * Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
       end case;
    end Evolve;
 

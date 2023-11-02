@@ -51,6 +51,11 @@ accepted options are
 * `--weight:value` or `--event-contribution:value`  gives the contribution is applied to a pixel (saturating at `min` and `max` values) when an event arrives
 * `--rectify` convert negative pulse to positive one
 * `--lazy-decay` Usually pixel decays as time passes; with this option, the decay is applied only if an event happens.  It is the negation of the *Synchronous decay* option in the DV software
+
+The following excerpt taken from [DV documentation](https://inivation.gitlab.io/dv/dv-docs/docs/accumulator-module/#accumulator-settings-overview)  explains how to interpreter min and max
+
+> The frame the module generates is an unsigned 8-bit grayscale image, normalized between Min potential and Max potential. A pixel with the value Min potential corresponds to a pixel with the value 0 in the output frame. A pixel with the value Max potential corresponds to a pixel with the value 255 in the output frame.
+
 ## Time syntax
 
 Durations can be specified as

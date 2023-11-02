@@ -60,21 +60,20 @@ package body Generic_Command_Line_Parser is
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := ':';
       Include_Prefix          : String := "@";
+      Option_Prefix           : String := "--";
       Concatenation_Separator : String := ",")
       return Option_Values
    is
-
-      Name_To_Option : Name_Tables.Map;
-
-      Result : Option_Values := (others => (Missing => True));
-
-   begin
-      for Option in Options loop
-         declare
-            Parsed_Names : String_Vectors.Vector;
-            Help_Line    : Unbounded_String;
-         begin
-            Parse_Option_Names (Source    => To_String(Names (Option)),
+      procedure Fill_Name_Table (Names      : Option_Names;
+                                 Prefix     : String;
+                                 Table      : out Name_Tables.Map;
+                                 Help_Lines : out String_Vectors.Vector)
+      is
+         Parsed_Names : String_Vectors.Vector;
+         Help_Line    : Unbounded_String;
+      begin
+         for Option in Options loop
+            Parse_Option_Names (Source    => To_String (Names (Option)),
                                 Names     => Parsed_Names,
                                 Help_Line => Help_Line);
 
@@ -83,22 +82,39 @@ package body Generic_Command_Line_Parser is
             end if;
 
             for Name of Parsed_Names loop
-               if Name_To_Option.Contains (Name) then
-                  raise Duplicate_Option_Name with Name;
-               end if;
+               declare
+                  Full_Name : constant String := Prefix & Name;
+               begin
+                  if Table.Contains (Full_Name) then
+                     raise Duplicate_Option_Name with Name;
 
-               Name_To_Option.Insert (Key      => Name,
-                                      New_Item => Option);
+                  else
+                     Table.Insert (Key      => Full_Name,
+                                   New_Item => Option);
+                  end if;
+
+               end;
             end loop;
-         end;
-      end loop;
+         end loop;
+      end Fill_Name_Table;
 
-      Result (Options'First) := (False, To_Unbounded_String ("pippo"));
 
-      return Result;
+      Name_To_Option : Name_Tables.Map;
+
+      Result       : Option_Values := (others => (Missing => True));
+
+   begin
+      Fill_Name_Table (Names      => Names,
+                       Table      => Name_To_Option,
+                       Prefix     => Option_Prefix,
+                       Help_Lines => Help_Lines);
+
 
       pragma Compile_Time_Warning (Standard.True, "Parse unimplemented");
       return raise Program_Error with "Unimplemented function Parse";
+
+      return Result;
+
    end Parse;
 
    -----------
@@ -111,8 +127,9 @@ package body Generic_Command_Line_Parser is
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := ':';
       Include_Prefix          : String := "@";
+      Option_Prefix           : String := "--";
       Concatenation_Separator : String := ",")
-      return Option_Values
+            return Option_Values
    is
       function Command_Line_Restored return String
       is
@@ -133,6 +150,7 @@ package body Generic_Command_Line_Parser is
                     When_Repeated           => When_Repeated,
                     Option_Value_Separator  => Option_Value_Separator,
                     Include_Prefix          => Include_Prefix,
+                    Option_Prefix           => Option_Prefix,
                     Concatenation_Separator => Concatenation_Separator);
    end Parse;
 

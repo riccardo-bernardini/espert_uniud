@@ -38,6 +38,7 @@ package  Generic_Command_Line_Parser is
                    When_Repeated           : When_Repeated_Do := Always_Die;
                    Option_Value_Separator  : Character := ':';
                    Include_Prefix          : String := "@";
+                   Option_Prefix           : String := "--";
                    Concatenation_Separator : String := ",")
                    return Option_Values;
 
@@ -46,6 +47,7 @@ package  Generic_Command_Line_Parser is
                    When_Repeated           : When_Repeated_Do := Always_Die;
                    Option_Value_Separator  : Character := ':';
                    Include_Prefix          : String := "@";
+                   Option_Prefix           : String := "--";
                    Concatenation_Separator : String := ",")
                    return Option_Values;
 

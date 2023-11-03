@@ -63,6 +63,23 @@ The following excerpt taken from [DV documentation](https://inivation.gitlab.io/
 
 > The frame the module generates is an unsigned 8-bit grayscale image, normalized between Min potential and Max potential. A pixel with the value Min potential corresponds to a pixel with the value 0 in the output frame. A pixel with the value Max potential corresponds to a pixel with the value 255 in the output frame.
 
+| Name | Value              | Mandatory | Default | Notes |
+|------|-------|-----------|---------|---|
+| decay | none, linear:tau, exp:tau, reset | **Yes**   |         |       |
+| sampling | Time between frames | No  | 1000fps | See *Time Syntax*. Incompatible with *frame-rate* |
+| frame-rate | Number of frames per second | No | 1000 | Incompatible with *sampling* |
+| output     | Template for the output filenames | **Yes** |  |  |
+| input      | Input filename | No | standard input |  |
+| start      | Starting time  | No | First event | See *Time Syntax* |
+| stop       | Stop time  | No | Last event | See *Time Syntax* |
+| min        | Minimum value | No | 0.0 |  |
+| max        | Maximum value | No | 1.0 |  |
+| neutral    | Neutral value | No | (min+max)/2 | used by reset and linear  |
+| weight     | Contrinute of each event | No| (max-min)/2 | |
+| rectify    | none | No |  |  |
+| lazy-decay | none | No |  |  |
+
+
 ## Time syntax
 
 Durations can be specified as

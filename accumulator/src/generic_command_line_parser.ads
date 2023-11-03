@@ -44,13 +44,14 @@ package  Generic_Command_Line_Parser is
       Element_Type => Unbounded_String);
 
    procedure Parse (Source                  : String;
-                    Names                   : Option_Names;
-                    Result                  : out Option_Values;
-                    When_Repeated           : When_Repeated_Do := Always_Die;
-                    Option_Value_Separator  : Character := Default_Value_Separator;
-                    Include_Prefix          : Character := No_Include_Prefix;
-                    Option_Prefix           : String := Default_Option_Prefix;
-                    Concatenation_Separator : String := Default_Concatenation_Separator);
+      Names                   : Option_Names;
+      Result                  : out Option_Values;
+      When_Repeated           : When_Repeated_Do := Always_Die;
+      Option_Value_Separator  : Character        := Default_Value_Separator;
+      Include_Prefix          : Character := No_Include_Prefix;
+      Option_Prefix           : String := Default_Option_Prefix;
+      Concatenation_Separator : String := Default_Concatenation_Separator;
+                    Name_Case_Sensitive     : Boolean := False);
 
    procedure Parse (Names                   : Option_Names;
                     Result                  : out Option_Values;
@@ -58,7 +59,8 @@ package  Generic_Command_Line_Parser is
                     Option_Value_Separator  : Character := Default_Value_Separator;
                     Include_Prefix          : Character := No_Include_Prefix;
                     Option_Prefix           : String := Default_Option_Prefix;
-                    Concatenation_Separator : String := Default_Concatenation_Separator);
+                    Concatenation_Separator : String := Default_Concatenation_Separator;
+                    Name_Case_Sensitive     : Boolean := False);
 
    function Find_Missing_Options (Values    : Option_Values;
                                   Mandatory : Option_Flags)

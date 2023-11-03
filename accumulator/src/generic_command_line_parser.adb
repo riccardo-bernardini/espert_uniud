@@ -1,5 +1,7 @@
 pragma Ada_2012;
 with Ada.Command_Line;
+with Ada.Characters.Handling;
+
 --  with Ada.Containers.Indefinite_Ordered_Maps;
 with Ada.Containers.Formal_Ordered_Maps;
 
@@ -25,7 +27,7 @@ package body Generic_Command_Line_Parser is
          C := Source (I);
 
          case C is
-            when '=' | ' ' | ',' =>
+            when '=' | ' ' | '|' =>
                if Name_Accumulator = Null_Unbounded_String then
                   raise Bad_Option_Name with Source;
                end if;
@@ -50,20 +52,35 @@ package body Generic_Command_Line_Parser is
       end if;
    end Parse_Option_Names;
 
-   procedure Fill_Name_Table (Names      : Option_Names;
-                              Prefix     : String;
-                              Table      : in out Name_Tables.Map;
-                              Help_Lines : in out String_Vectors.Vector)
+   procedure Fill_Name_Table (Names               : Option_Names;
+                              Prefix              : String;
+                              Table               : in out Name_Tables.Map;
+                              Help_Lines          : in out String_Vectors.Vector;
+                              Name_Case_Sensitive : Boolean)
    is
       use String_Vectors;
       use Name_Tables;
+
+      function Normalize (X : Unbounded_String) return String
+      is
+         use Ada.Characters.Handling;
+
+         S : constant String := To_String (X);
+      begin
+         if Name_Case_Sensitive then
+            return S;
+
+         else
+            return To_Lower (S);
+         end if;
+      end Normalize;
 
       Parsed_Names : String_Vectors.Vector (4096);
       Help_Line    : Unbounded_String;
    begin
 
       for Option in Options loop
-         Parse_Option_Names (Source    => To_String (Names (Option)),
+         Parse_Option_Names (Source    => Normalize (Names (Option)),
                              Names     => Parsed_Names,
                              Help_Line => Help_Line);
 
@@ -151,7 +168,8 @@ package body Generic_Command_Line_Parser is
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
-      Concatenation_Separator : String := Default_Concatenation_Separator)
+      Concatenation_Separator : String := Default_Concatenation_Separator;
+      Name_Case_Sensitive     : Boolean := False)
    is
       use type Ada.Containers.Count_Type;
 
@@ -182,10 +200,11 @@ package body Generic_Command_Line_Parser is
 
       Ignored           : String_Vectors.Vector (4096);
    begin
-      Fill_Name_Table (Names      => Names,
-                       Table      => Name_To_Option,
-                       Prefix     => Option_Prefix,
-                       Help_Lines => Ignored);
+      Fill_Name_Table (Names               => Names,
+                       Table               => Name_To_Option,
+                       Prefix              => Option_Prefix,
+                       Help_Lines          => Ignored,
+                       Name_Case_Sensitive => Name_Case_Sensitive);
 
       Result := (others => (Missing => True));
 
@@ -299,7 +318,8 @@ package body Generic_Command_Line_Parser is
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
-      Concatenation_Separator : String := Default_Concatenation_Separator)
+      Concatenation_Separator : String := Default_Concatenation_Separator;
+      Name_Case_Sensitive     : Boolean := False)
    is
       function Command_Line_Restored return String
       is
@@ -321,7 +341,8 @@ package body Generic_Command_Line_Parser is
              Option_Value_Separator  => Option_Value_Separator,
              Include_Prefix          => Include_Prefix,
              Option_Prefix           => Option_Prefix,
-             Concatenation_Separator => Concatenation_Separator);
+             Concatenation_Separator => Concatenation_Separator,
+             Name_Case_Sensitive     => Name_Case_Sensitive);
    end Parse;
 
 
@@ -386,10 +407,11 @@ package body Generic_Command_Line_Parser is
       Ignored : Name_Tables.Map (Specs'Length * 100);
       Result  : String_Vectors.Vector (Specs'Length);
    begin
-      Fill_Name_Table (Names      => Specs,
-                       Prefix     => "",
-                       Table      => Ignored,
-                       Help_Lines => Result);
+      Fill_Name_Table (Names               => Specs,
+                       Prefix              => "",
+                       Table               => Ignored,
+                       Help_Lines          => Result,
+                       Name_Case_Sensitive => True);
 
       return Result;
    end Help_Lines;

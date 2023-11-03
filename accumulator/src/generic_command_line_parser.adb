@@ -147,7 +147,6 @@ package body Generic_Command_Line_Parser is
      (Source                  : String;
       Names                   : Option_Names;
       Result                  : out Option_Values;
-      Mandatory               : Option_Flags     := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
@@ -286,21 +285,7 @@ package body Generic_Command_Line_Parser is
          end loop;
       end;
 
-      declare
-         Missing_Options : Unbounded_String := Null_Unbounded_String;
-      begin
-         for Opt in Options loop
-            if Result (Opt).Missing and Mandatory (Opt) then
-               Missing_Options := Missing_Options
-                 & " "
-                 & Options'Image (Opt);
-            end if;
-         end loop;
 
-         if Missing_Options /= Null_Unbounded_String then
-            raise Missing_Mandatory_Options with To_String (Missing_Options);
-         end if;
-      end;
    end Parse;
 
    -----------
@@ -310,7 +295,6 @@ package body Generic_Command_Line_Parser is
    procedure Parse
      (Names                   : Option_Names;
       Result                  : out Option_Values;
-      Mandatory               : Option_Flags := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
@@ -333,7 +317,6 @@ package body Generic_Command_Line_Parser is
       Parse (Source                  => Command_Line_Restored,
              Result                  => Result,
              Names                   => Names,
-             Mandatory               => Mandatory,
              When_Repeated           => When_Repeated,
              Option_Value_Separator  => Option_Value_Separator,
              Include_Prefix          => Include_Prefix,
@@ -341,13 +324,73 @@ package body Generic_Command_Line_Parser is
              Concatenation_Separator => Concatenation_Separator);
    end Parse;
 
-   -----------------------
-   -- Option_Help_Lines --
-   -----------------------
 
-   --  function Option_Help_Lines return String_Vectors.Vector is
-   --  begin
-   --     return String_Vectors.Copy (Help_Lines);
-   --  end Option_Help_Lines;
+   --------------------------
+   -- Find_Missing_Options --
+   --------------------------
 
+   function Find_Missing_Options (Values    : Option_Values;
+                                  Mandatory : Option_Flags)
+                                  return String_Vectors.Vector
+   is
+      use String_Vectors;
+
+      Missing_Options : String_Vectors.Vector (Values'Length);
+   begin
+      for Opt in Options loop
+         if Values (Opt).Missing and Mandatory (Opt) then
+            Append (Missing_Options, To_Unbounded_String (Options'Image (Opt)));
+         end if;
+      end loop;
+
+      return Missing_Options;
+   end Find_Missing_Options;
+
+
+   --------------------------
+   -- Find_Missing_Options --
+   --------------------------
+
+   function Find_Missing_Options  (Values    : Option_Values;
+                                   Mandatory : Option_Flags;
+                                   Join_With : String := " ")
+                                   return String
+   is
+      use String_Vectors;
+
+      Missing : constant String_Vectors.Vector :=
+                  Find_Missing_Options (Values, Mandatory);
+
+      Result  : Unbounded_String := Null_Unbounded_String;
+   begin
+      for I in First_Index (Missing) .. Last_Index (Missing) loop
+         if  Result /= Null_Unbounded_String then
+            Result := Result & Join_With;
+         end if;
+
+         Result := Result & Element (Missing, I);
+      end loop;
+
+      return To_String (Result);
+   end Find_Missing_Options;
+
+   ----------------
+   -- Help_Lines --
+   ----------------
+
+   function Help_Lines (Specs : Option_Names)
+                        return String_Vectors.Vector
+   is
+      use type Ada.Containers.Count_Type;
+
+      Ignored : Name_Tables.Map (Specs'Length * 100);
+      Result  : String_Vectors.Vector (Specs'Length);
+   begin
+      Fill_Name_Table (Names      => Specs,
+                       Prefix     => "",
+                       Table      => Ignored,
+                       Help_Lines => Result);
+
+      return Result;
+   end Help_Lines;
 end Generic_Command_Line_Parser;

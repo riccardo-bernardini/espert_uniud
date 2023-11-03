@@ -46,7 +46,6 @@ package  Generic_Command_Line_Parser is
    procedure Parse (Source                  : String;
                     Names                   : Option_Names;
                     Result                  : out Option_Values;
-                    Mandatory               : Option_Flags := All_No;
                     When_Repeated           : When_Repeated_Do := Always_Die;
                     Option_Value_Separator  : Character := Default_Value_Separator;
                     Include_Prefix          : Character := No_Include_Prefix;
@@ -55,15 +54,24 @@ package  Generic_Command_Line_Parser is
 
    procedure Parse (Names                   : Option_Names;
                     Result                  : out Option_Values;
-                    Mandatory               : Option_Flags := All_No;
                     When_Repeated           : When_Repeated_Do := Always_Die;
                     Option_Value_Separator  : Character := Default_Value_Separator;
                     Include_Prefix          : Character := No_Include_Prefix;
                     Option_Prefix           : String := Default_Option_Prefix;
                     Concatenation_Separator : String := Default_Concatenation_Separator);
 
+   function Find_Missing_Options (Values    : Option_Values;
+                                  Mandatory : Option_Flags)
+                                  return String_Vectors.Vector;
 
-   --  function Option_Help_Lines return String_Vectors.Vector;
+
+   function Find_Missing_Options  (Values    : Option_Values;
+                                   Mandatory : Option_Flags;
+                                   Join_With : String := " ")
+                                   return String;
+
+   function Help_Lines (Specs : Option_Names)
+                        return String_Vectors.Vector;
 
    Bad_Option_Name           : exception;
    Duplicate_Option_Name     : exception;

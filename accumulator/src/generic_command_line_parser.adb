@@ -367,6 +367,28 @@ package body Generic_Command_Line_Parser is
       return Missing_Options;
    end Find_Missing_Options;
 
+   ----------
+   -- Join --
+   ----------
+
+   function Join (Item : String_Vectors.Vector;
+                  Separator : String)
+                  return Unbounded_String
+   is
+      use String_Vectors;
+
+      Result  : Unbounded_String := Null_Unbounded_String;
+   begin
+      for I in First_Index (Item) .. Last_Index (Item) loop
+         if  Result /= Null_Unbounded_String then
+            Result := Result & Separator;
+         end if;
+
+         Result := Result & Element (Item, I);
+      end loop;
+
+      return result;
+   end Join;
 
    --------------------------
    -- Find_Missing_Options --
@@ -377,22 +399,10 @@ package body Generic_Command_Line_Parser is
                                    Join_With : String := " ")
                                    return String
    is
-      use String_Vectors;
-
       Missing : constant String_Vectors.Vector :=
                   Find_Missing_Options (Values, Mandatory);
-
-      Result  : Unbounded_String := Null_Unbounded_String;
    begin
-      for I in First_Index (Missing) .. Last_Index (Missing) loop
-         if  Result /= Null_Unbounded_String then
-            Result := Result & Join_With;
-         end if;
-
-         Result := Result & Element (Missing, I);
-      end loop;
-
-      return To_String (Result);
+      return To_String (Join (Missing, Join_With));
    end Find_Missing_Options;
 
    ----------------
@@ -415,4 +425,51 @@ package body Generic_Command_Line_Parser is
 
       return Result;
    end Help_Lines;
+
+   --------------------
+   -- Apply_Defaults --
+   --------------------
+
+   procedure Apply_Defaults (Values    : in out Option_Values;
+                             Missing   : out Unbounded_String;
+                             Defaults  : Option_Defaults)
+   is
+      Tmp : String_Vectors.Vector (Values'Length);
+   begin
+      Apply_Defaults (Values    => Values,
+                      Missing   => tmp,
+                      Defaults  => Defaults);
+
+      Missing := Join (Tmp, " ");
+   end Apply_Defaults;
+
+   --------------------
+   -- Apply_Defaults --
+   --------------------
+
+   procedure Apply_Defaults (Values    : in out Option_Values;
+                             Missing   : in out String_Vectors.Vector;
+                             Defaults  : Option_Defaults)
+   is
+      use String_Vectors;
+   begin
+      for Opt in Options loop
+         if Values (Opt).Missing then
+
+            case Defaults (Opt).Class is
+               when Mandatory =>
+                  Append (Missing, To_Unbounded_String (Options'Image (Opt)));
+
+               when Use_Default =>
+                  Values (Opt) := (Missing => False,
+                                   Value   => Defaults (Opt).Default);
+
+               when Ignore =>
+                  null;
+            end case;
+
+         end if;
+      end loop;
+   end Apply_Defaults;
+
 end Generic_Command_Line_Parser;

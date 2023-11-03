@@ -6,6 +6,24 @@ generic
 package  Generic_Command_Line_Parser is
    type Option_Names is array (Options) of Unbounded_String;
 
+   type Default_Class is (Mandatory, Use_Default, Ignore);
+
+   type Default_Spec (Class : Default_Class := Ignore) is
+      record
+         case Class is
+            when Use_Default =>
+               Default : Unbounded_String;
+
+            when Mandatory | Ignore =>
+               null;
+         end case;
+      end record;
+
+   Mandatory_Option  : constant Default_Spec := (Class => Mandatory);
+   Ignore_If_Missing : constant Default_Spec := (Class => Ignore);
+
+   type Option_Defaults is array (Options) of Default_Spec;
+
    type Option_Flags is array (Options) of Boolean;
 
 
@@ -44,13 +62,13 @@ package  Generic_Command_Line_Parser is
       Element_Type => Unbounded_String);
 
    procedure Parse (Source                  : String;
-      Names                   : Option_Names;
-      Result                  : out Option_Values;
-      When_Repeated           : When_Repeated_Do := Always_Die;
-      Option_Value_Separator  : Character        := Default_Value_Separator;
-      Include_Prefix          : Character := No_Include_Prefix;
-      Option_Prefix           : String := Default_Option_Prefix;
-      Concatenation_Separator : String := Default_Concatenation_Separator;
+                    Names                   : Option_Names;
+                    Result                  : out Option_Values;
+                    When_Repeated           : When_Repeated_Do := Always_Die;
+                    Option_Value_Separator  : Character        := Default_Value_Separator;
+                    Include_Prefix          : Character := No_Include_Prefix;
+                    Option_Prefix           : String := Default_Option_Prefix;
+                    Concatenation_Separator : String := Default_Concatenation_Separator;
                     Name_Case_Sensitive     : Boolean := False);
 
    procedure Parse (Names                   : Option_Names;
@@ -71,6 +89,14 @@ package  Generic_Command_Line_Parser is
                                    Mandatory : Option_Flags;
                                    Join_With : String := " ")
                                    return String;
+
+   procedure Apply_Defaults (Values    : in out Option_Values;
+                             Missing   : out Unbounded_String;
+                             Defaults  : Option_Defaults);
+
+   procedure Apply_Defaults (Values    : in out Option_Values;
+                             Missing   : in out String_Vectors.Vector;
+                             Defaults  : Option_Defaults);
 
    function Help_Lines (Specs : Option_Names)
                         return String_Vectors.Vector;

@@ -1,22 +1,25 @@
 pragma Ada_2012;
 with Ada.Command_Line;
-with Ada.Containers.Indefinite_Ordered_Maps;
+--  with Ada.Containers.Indefinite_Ordered_Maps;
+with Ada.Containers.Formal_Ordered_Maps;
+
 
 package body Generic_Command_Line_Parser is
-   Help_Lines : String_Vectors.Vector;
 
    package Name_Tables is
-     new Ada.Containers.Indefinite_Ordered_Maps (Key_Type     => String,
-                                                 Element_Type => Options);
+     new Ada.Containers.Formal_Ordered_Maps (Key_Type     => Unbounded_String,
+                                             Element_Type => Options);
 
    procedure Parse_Option_Names (Source    : String;
-                                 Names     : out String_Vectors.Vector;
+                                 Names     : in out String_Vectors.Vector;
                                  Help_Line : out Unbounded_String)
    is
+      use String_Vectors;
+
       Name_Accumulator : Unbounded_String := Null_Unbounded_String;
       C                : Character;
    begin
-      Names.Clear;
+      Help_Line := Null_Unbounded_String;
 
       for I in Source'Range loop
          C := Source (I);
@@ -27,14 +30,12 @@ package body Generic_Command_Line_Parser is
                   raise Bad_Option_Name with Source;
                end if;
 
-               Names.Append (To_String (Name_Accumulator));
+               Append (Names, Name_Accumulator);
 
                Name_Accumulator := Null_Unbounded_String;
 
                if C = '=' or C = ' ' then
-                  Help_Line :=
-                    To_Unbounded_String (Names.First_Element)
-                    & Source (I .. Source'Last);
+                  Help_Line := First_Element (Names)  & Source (I .. Source'Last);
 
                   return;
                end if;
@@ -45,37 +46,43 @@ package body Generic_Command_Line_Parser is
       end loop;
 
       if Name_Accumulator /= Null_Unbounded_String then
-         Names.Append (To_String (Name_Accumulator));
+         Append (Names, Name_Accumulator);
       end if;
    end Parse_Option_Names;
 
    procedure Fill_Name_Table (Names      : Option_Names;
                               Prefix     : String;
-                              Table      : out Name_Tables.Map;
-                              Help_Lines : out String_Vectors.Vector)
+                              Table      : in out Name_Tables.Map;
+                              Help_Lines : in out String_Vectors.Vector)
    is
-      Parsed_Names : String_Vectors.Vector;
+      use String_Vectors;
+      use Name_Tables;
+
+      Parsed_Names : String_Vectors.Vector (4096);
       Help_Line    : Unbounded_String;
    begin
+
       for Option in Options loop
          Parse_Option_Names (Source    => To_String (Names (Option)),
                              Names     => Parsed_Names,
                              Help_Line => Help_Line);
 
          if Help_Line /= Null_Unbounded_String then
-            Help_Lines.Append (To_String (Help_Line));
+            Append (Help_Lines, Help_Line);
          end if;
 
-         for Name of Parsed_Names loop
+         for I in First_Index (Parsed_Names) .. Last_Index (Parsed_Names) loop
             declare
+               Name      : constant String := To_String (Element (Parsed_Names, I));
                Full_Name : constant String := Prefix & Name;
             begin
-               if Table.Contains (Full_Name) then
+               if Contains (Table, To_Unbounded_String (Full_Name)) then
                   raise Duplicate_Option_Name with Name;
 
                else
-                  Table.Insert (Key      => Full_Name,
-                                New_Item => Option);
+                  Insert (Table,
+                          Key      => To_Unbounded_String (Full_Name),
+                          New_Item => Option);
                end if;
 
             end;
@@ -96,14 +103,14 @@ package body Generic_Command_Line_Parser is
    is
       use Name_Tables;
 
-      Pos : constant Cursor := Name_To_Option.Find (Name);
+      Pos : constant Cursor := Find (Name_To_Option, To_Unbounded_String (Name));
    begin
       if Pos = No_Element then
          raise Unknown_Option with Name;
       end if;
 
       declare
-         Option : constant Options := Element (Pos);
+         Option : constant Options := Element (Name_To_Option, Pos);
       begin
          if What (Option).Missing then
             What (Option) := (Missing => False,
@@ -136,17 +143,18 @@ package body Generic_Command_Line_Parser is
    -- Parse --
    -----------
 
-   function Parse
+   procedure Parse
      (Source                  : String;
       Names                   : Option_Names;
+      Result                  : out Option_Values;
       Mandatory               : Option_Flags     := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
       Concatenation_Separator : String := Default_Concatenation_Separator)
-      return Option_Values
    is
+      use type Ada.Containers.Count_Type;
 
       procedure Process_Include (Filename : Unbounded_String)
       is
@@ -164,30 +172,43 @@ package body Generic_Command_Line_Parser is
          In_Value
         );
 
-      Name_To_Option : Name_Tables.Map;
+      Name_To_Option : Name_Tables.Map (100 * Options'Pos (Options'Last));
 
-      Result       : Option_Values := (others => (Missing => True));
 
       Status : Status_Type := Skipping_Spaces;
 
       Name_Accumulator  : Unbounded_String;
       Value_Accumulator : Unbounded_String;
       Include_Filename  : Unbounded_String;
+
+      Ignored           : String_Vectors.Vector (4096);
    begin
       Fill_Name_Table (Names      => Names,
                        Table      => Name_To_Option,
                        Prefix     => Option_Prefix,
-                       Help_Lines => Help_Lines);
+                       Help_Lines => Ignored);
+
+      Result := (others => (Missing => True));
 
       declare
          Padded_Source : constant String := Source & " ";
          Closing_Value : Character;
       begin
+         --
+         -- The following initializations are not really necessary since
+         -- these variables are initialized when needed by the state
+         -- automata implemented by for loop + case.  However, without
+         -- them SPARK complains that they could be not initialized.
+         --
+         Closing_Value := ASCII.NUL;
+         Name_Accumulator := Null_Unbounded_String;
+         Value_Accumulator := Null_Unbounded_String;
+         Include_Filename := Null_Unbounded_String;
+
          for Current_Char of Padded_Source loop
             case Status is
                when Skipping_Spaces =>
                   if Current_Char = Include_Prefix and Include_Prefix /= No_Include_Prefix then
-                     Include_Filename := Null_Unbounded_String;
                      Status := Begin_Include_Filename;
 
                   elsif Current_Char /= ' '  then
@@ -197,6 +218,8 @@ package body Generic_Command_Line_Parser is
                   end if;
 
                when Begin_Include_Filename =>
+                  Include_Filename := Null_Unbounded_String;
+
                   if Current_Char = ''' then
                      Closing_Value := ''';
                   else
@@ -264,7 +287,7 @@ package body Generic_Command_Line_Parser is
       end;
 
       declare
-         Missing_Options : Unbounded_String;
+         Missing_Options : Unbounded_String := Null_Unbounded_String;
       begin
          for Opt in Options loop
             if Result (Opt).Missing and Mandatory (Opt) then
@@ -278,24 +301,21 @@ package body Generic_Command_Line_Parser is
             raise Missing_Mandatory_Options with To_String (Missing_Options);
          end if;
       end;
-
-      return Result;
-
    end Parse;
 
    -----------
    -- Parse --
    -----------
 
-   function Parse
+   procedure Parse
      (Names                   : Option_Names;
+      Result                  : out Option_Values;
       Mandatory               : Option_Flags := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
       Option_Value_Separator  : Character        := Default_Value_Separator;
       Include_Prefix          : Character := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
       Concatenation_Separator : String := Default_Concatenation_Separator)
-      return Option_Values
    is
       function Command_Line_Restored return String
       is
@@ -310,23 +330,24 @@ package body Generic_Command_Line_Parser is
          return To_String (Accumulator);
       end Command_Line_Restored;
    begin
-      return Parse (Source                  => Command_Line_Restored,
-                    Names                   => Names,
-                    Mandatory               => Mandatory,
-                    When_Repeated           => When_Repeated,
-                    Option_Value_Separator  => Option_Value_Separator,
-                    Include_Prefix          => Include_Prefix,
-                    Option_Prefix           => Option_Prefix,
-                    Concatenation_Separator => Concatenation_Separator);
+      Parse (Source                  => Command_Line_Restored,
+             Result                  => Result,
+             Names                   => Names,
+             Mandatory               => Mandatory,
+             When_Repeated           => When_Repeated,
+             Option_Value_Separator  => Option_Value_Separator,
+             Include_Prefix          => Include_Prefix,
+             Option_Prefix           => Option_Prefix,
+             Concatenation_Separator => Concatenation_Separator);
    end Parse;
 
    -----------------------
    -- Option_Help_Lines --
    -----------------------
 
-   function Option_Help_Lines return String_Vectors.Vector is
-   begin
-      return Help_Lines;
-   end Option_Help_Lines;
+   --  function Option_Help_Lines return String_Vectors.Vector is
+   --  begin
+   --     return String_Vectors.Copy (Help_Lines);
+   --  end Option_Help_Lines;
 
 end Generic_Command_Line_Parser;

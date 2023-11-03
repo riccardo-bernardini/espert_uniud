@@ -1,5 +1,5 @@
 with Ada.Strings.Unbounded;               use Ada.Strings.Unbounded;
-with Ada.Containers.Indefinite_Vectors;
+with Ada.Containers.Formal_Vectors;
 
 generic
    type Options is (<>);
@@ -39,30 +39,31 @@ package  Generic_Command_Line_Parser is
    No_Include_Prefix : constant Character := ASCII.NUL;
 
 
-   function Parse (Source                  : String;
-                   Names                   : Option_Names;
-                   Mandatory               : Option_Flags := All_No;
-                   When_Repeated           : When_Repeated_Do := Always_Die;
-                   Option_Value_Separator  : Character := Default_Value_Separator;
-                   Include_Prefix          : Character := No_Include_Prefix;
-                   Option_Prefix           : String := Default_Option_Prefix;
-                   Concatenation_Separator : String := Default_Concatenation_Separator)
-                   return Option_Values;
-
-   function Parse (Names                   : Option_Names;
-                   Mandatory               : Option_Flags := All_No;
-                   When_Repeated           : When_Repeated_Do := Always_Die;
-                   Option_Value_Separator  : Character := Default_Value_Separator;
-                   Include_Prefix          : Character := No_Include_Prefix;
-                   Option_Prefix           : String := Default_Option_Prefix;
-                   Concatenation_Separator : String := Default_Concatenation_Separator)
-                   return Option_Values;
-
-   package String_Vectors is new Ada.Containers.Indefinite_Vectors
+   package String_Vectors is new Ada.Containers.Formal_Vectors
      (Index_Type   => Positive,
-      Element_Type => String);
+      Element_Type => Unbounded_String);
 
-   function Option_Help_Lines return String_Vectors.Vector;
+   procedure Parse (Source                  : String;
+                    Names                   : Option_Names;
+                    Result                  : out Option_Values;
+                    Mandatory               : Option_Flags := All_No;
+                    When_Repeated           : When_Repeated_Do := Always_Die;
+                    Option_Value_Separator  : Character := Default_Value_Separator;
+                    Include_Prefix          : Character := No_Include_Prefix;
+                    Option_Prefix           : String := Default_Option_Prefix;
+                    Concatenation_Separator : String := Default_Concatenation_Separator);
+
+   procedure Parse (Names                   : Option_Names;
+                    Result                  : out Option_Values;
+                    Mandatory               : Option_Flags := All_No;
+                    When_Repeated           : When_Repeated_Do := Always_Die;
+                    Option_Value_Separator  : Character := Default_Value_Separator;
+                    Include_Prefix          : Character := No_Include_Prefix;
+                    Option_Prefix           : String := Default_Option_Prefix;
+                    Concatenation_Separator : String := Default_Concatenation_Separator);
+
+
+   --  function Option_Help_Lines return String_Vectors.Vector;
 
    Bad_Option_Name           : exception;
    Duplicate_Option_Name     : exception;

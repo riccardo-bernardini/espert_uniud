@@ -10,7 +10,7 @@ package  Generic_Command_Line_Parser is
 
 
 
-   All_No : constant Option_Flags := (others => False);
+   All_No  : constant Option_Flags := (others => False);
    All_Yes : constant Option_Flags := (others => True);
 
    type Repeated_Option_Action is (Concatenate, Overwrite, Die, Ignore);
@@ -32,23 +32,30 @@ package  Generic_Command_Line_Parser is
 
    type Option_Values is array (Options) of Option_Value;
 
+   Default_Value_Separator : constant Character := '=';
+   Default_Option_Prefix   : constant String := "--";
+   Default_Concatenation_Separator : constant String := ",";
+
+   No_Include_Prefix : constant Character := ASCII.NUL;
+
+
    function Parse (Source                  : String;
                    Names                   : Option_Names;
                    Mandatory               : Option_Flags := All_No;
                    When_Repeated           : When_Repeated_Do := Always_Die;
-                   Option_Value_Separator  : Character := ':';
-                   Include_Prefix          : String := "@";
-                   Option_Prefix           : String := "--";
-                   Concatenation_Separator : String := ",")
+                   Option_Value_Separator  : Character := Default_Value_Separator;
+                   Include_Prefix          : Character := No_Include_Prefix;
+                   Option_Prefix           : String := Default_Option_Prefix;
+                   Concatenation_Separator : String := Default_Concatenation_Separator)
                    return Option_Values;
 
    function Parse (Names                   : Option_Names;
                    Mandatory               : Option_Flags := All_No;
                    When_Repeated           : When_Repeated_Do := Always_Die;
-                   Option_Value_Separator  : Character := ':';
-                   Include_Prefix          : String := "@";
-                   Option_Prefix           : String := "--";
-                   Concatenation_Separator : String := ",")
+                   Option_Value_Separator  : Character := Default_Value_Separator;
+                   Include_Prefix          : Character := No_Include_Prefix;
+                   Option_Prefix           : String := Default_Option_Prefix;
+                   Concatenation_Separator : String := Default_Concatenation_Separator)
                    return Option_Values;
 
    package String_Vectors is new Ada.Containers.Indefinite_Vectors

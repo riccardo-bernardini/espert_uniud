@@ -141,16 +141,24 @@ package body Generic_Command_Line_Parser is
       Names                   : Option_Names;
       Mandatory               : Option_Flags     := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
-      Option_Value_Separator  : Character        := ':';
-      Include_Prefix          : String := "@";
-      Option_Prefix           : String := "--";
-      Concatenation_Separator : String := ",")
+      Option_Value_Separator  : Character        := Default_Value_Separator;
+      Include_Prefix          : Character := No_Include_Prefix;
+      Option_Prefix           : String := Default_Option_Prefix;
+      Concatenation_Separator : String := Default_Concatenation_Separator)
       return Option_Values
    is
-      pragma Unreferenced (Include_Prefix);
+
+      procedure Process_Include (Filename : Unbounded_String)
+      is
+      begin
+         raise Program_Error with "Include not implemented";
+      end Process_Include;
+
       type Status_Type is
         (
          Skipping_Spaces,
+         Begin_Include_Filename,
+         In_Include_Filename,
          In_Name,
          Begin_Of_Value,
          In_Value
@@ -164,6 +172,7 @@ package body Generic_Command_Line_Parser is
 
       Name_Accumulator  : Unbounded_String;
       Value_Accumulator : Unbounded_String;
+      Include_Filename  : Unbounded_String;
    begin
       Fill_Name_Table (Names      => Names,
                        Table      => Name_To_Option,
@@ -177,16 +186,39 @@ package body Generic_Command_Line_Parser is
          for Current_Char of Padded_Source loop
             case Status is
                when Skipping_Spaces =>
-                  if Current_Char /= ' ' then
+                  if Current_Char = Include_Prefix and Include_Prefix /= No_Include_Prefix then
+                     Include_Filename := Null_Unbounded_String;
+                     Status := Begin_Include_Filename;
+
+                  elsif Current_Char /= ' '  then
                      Name_Accumulator := Null_Unbounded_String & Current_Char;
+                     Status := In_Name;
+
+                  end if;
+
+               when Begin_Include_Filename =>
+                  if Current_Char = ''' then
+                     Closing_Value := ''';
+                  else
+                     Include_Filename := Include_Filename & Current_Char;
+                     Closing_Value := ' ';
+                  end if;
+
+                  Status := In_Include_Filename;
+
+               when In_Include_Filename =>
+                  if Current_Char = Closing_Value then
+                     Process_Include (Include_Filename);
+                  else
+                     Include_Filename := Include_Filename & Current_Char;
                   end if;
 
                when In_Name =>
                   if Current_Char = ' '  then
-                     Update (What => Result,
-                             Name  => To_String (Name_Accumulator),
-                             Value          => "",
-                             Name_To_Option => Name_To_Option,
+                     Update (What                    => Result,
+                             Name                    => To_String (Name_Accumulator),
+                             Value                   => "",
+                             Name_To_Option          => Name_To_Option,
                              When_Repeated           => When_Repeated,
                              Concatenation_Separator => Concatenation_Separator);
 
@@ -259,10 +291,10 @@ package body Generic_Command_Line_Parser is
      (Names                   : Option_Names;
       Mandatory               : Option_Flags := All_No;
       When_Repeated           : When_Repeated_Do := Always_Die;
-      Option_Value_Separator  : Character        := ':';
-      Include_Prefix          : String := "@";
-      Option_Prefix           : String := "--";
-      Concatenation_Separator : String := ",")
+      Option_Value_Separator  : Character        := Default_Value_Separator;
+      Include_Prefix          : Character := No_Include_Prefix;
+      Option_Prefix           : String := Default_Option_Prefix;
+      Concatenation_Separator : String := Default_Concatenation_Separator)
       return Option_Values
    is
       function Command_Line_Restored return String

@@ -59,4 +59,6 @@ package  Generic_Command_Line_Parser is
 
    Bad_Option_Name : exception;
    Duplicate_Option_Name : exception;
+   Unknown_Option : exception;
+   Repeated_Option : exception;
 end Generic_Command_Line_Parser;

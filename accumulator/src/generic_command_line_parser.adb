@@ -87,19 +87,54 @@ package body Generic_Command_Line_Parser is
    -- Update --
    ------------
 
-   procedure Update (What           : in out Option_Values;
-                     Name           : String;
-                     Value          : String;
-                     Name_To_Option : Name_Tables.Map)
+   procedure Update (What                    : in out Option_Values;
+                     Name                    : String;
+                     Value                   : String;
+                     Name_To_Option          : Name_Tables.Map;
+                     When_Repeated           : When_Repeated_Do;
+                     Concatenation_Separator : String)
    is
+      use Name_Tables;
+
+      Pos : constant Cursor := Name_To_Option.Find (Name);
    begin
-      null;
+      if Pos = No_Element then
+         raise Unknown_Option with Name;
+      end if;
+
+      declare
+         Option : constant Options := Element (Pos);
+      begin
+         if What (Option).Missing then
+            What (Option) := (Missing => False,
+                              Value   => To_Unbounded_String (Value));
+
+            return;
+         end if;
+
+         pragma Assert (not What (Option).Missing);
+
+         case When_Repeated (Option) is
+            when Die =>
+               raise Repeated_Option with Name;
+
+            when Concatenate =>
+               What (Option).Value := What (Option).Value
+                 & Concatenation_Separator
+                 & To_Unbounded_String (Value);
+            when Ignore =>
+               null;
+
+            when Overwrite =>
+               What (Option).Value := To_Unbounded_String (Value);
+         end case;
+      end;
    end Update;
 
 
-     -----------
-     -- Parse --
-     -----------
+   -----------
+   -- Parse --
+   -----------
 
    function Parse
      (Source                  : String;
@@ -112,6 +147,7 @@ package body Generic_Command_Line_Parser is
       Concatenation_Separator : String := ",")
       return Option_Values
    is
+      pragma Unreferenced (Include_Prefix);
       type Status_Type is
         (
          Skipping_Spaces,
@@ -147,7 +183,12 @@ package body Generic_Command_Line_Parser is
 
                when In_Name =>
                   if Current_Char = ' '  then
-                     Update (Result, To_String (Name_Accumulator), "", Name_To_Option);
+                     Update (What => Result,
+                             Name  => To_String (Name_Accumulator),
+                             Value          => "",
+                             Name_To_Option => Name_To_Option,
+                             When_Repeated           => When_Repeated,
+                             Concatenation_Separator => Concatenation_Separator);
 
                   elsif Current_Char = Option_Value_Separator then
                      Status := Begin_Of_Value;
@@ -171,10 +212,12 @@ package body Generic_Command_Line_Parser is
 
                when In_Value =>
                   if Current_Char = Closing_Value  then
-                     Update (Result,
-                             To_String (Name_Accumulator),
-                             To_String (Value_Accumulator),
-                             Name_To_Option);
+                     Update (What                    => Result,
+                             Name                    => To_String (Name_Accumulator),
+                             Value                   => To_String (Value_Accumulator),
+                             Name_To_Option          => Name_To_Option,
+                             When_Repeated           => When_Repeated,
+                             Concatenation_Separator => Concatenation_Separator);
 
                      Name_Accumulator := Null_Unbounded_String;
                      Value_Accumulator := Null_Unbounded_String;
@@ -187,8 +230,22 @@ package body Generic_Command_Line_Parser is
             end case;
          end loop;
       end;
-      pragma Compile_Time_Warning (Standard.True, "Parse unimplemented");
-      return raise Program_Error with "Unimplemented function Parse";
+
+      declare
+         Missing_Options : Unbounded_String;
+      begin
+         for Opt in Options loop
+            if Result (Opt).Missing and Mandatory (Opt) then
+               Missing_Options := Missing_Options
+                 & " "
+                 & Options'Image (Opt);
+            end if;
+         end loop;
+
+         if Missing_Options /= Null_Unbounded_String then
+            raise Missing_Mandatory_Options with To_String (Missing_Options);
+         end if;
+      end;
 
       return Result;
 

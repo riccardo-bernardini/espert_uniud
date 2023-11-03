@@ -69,8 +69,8 @@ package body Config is
 
    Event_W              : Images.Pixel_Value;
 
-   Rectify              : Boolean := False;
-   Lazy_Decay           : Boolean := False;
+   Rectify_Requested    : Boolean := False;
+   Lazy_Decay_Requested : Boolean := False;
 
    function Package_Ready return Boolean
    is (I_Am_Ready);
@@ -264,9 +264,9 @@ package body Config is
 
       Event_W := To_Pixel_Value (Parsed_Options (Event_Weigth).Value);
 
-      Lazy_Decay := not Parsed_Options (Lazy_Decay).Missing;
+      Lazy_Decay_Requested := not Parsed_Options (Lazy_Decay).Missing;
 
-      Rectify := not Parsed_Options (Rectify).Missing;
+      Rectify_Requested := not Parsed_Options (Rectify).Missing;
 
 
       I_Am_Ready := True;
@@ -434,4 +434,24 @@ package body Config is
         & LF;
    end Long_Help_Text;
 
+   function Event_Contribution return Images.Pixel_Value
+   is (Event_W);
+
+   function Pixel_Min return Images.Pixel_Value
+   is (Min_Level);
+
+   function Pixel_Max return Images.Pixel_Value
+   is (Max_Level);
+
+   function Synchronous_Update return Boolean
+   is (Lazy_Decay_Requested);
+
+   function Reset_Each_Frame return Boolean
+   is (Memory_Dynamic.Is_Reset (Memory_Dynamic_Spec));
+
+   function Reset_Value return Images.Pixel_Value
+   is (Memory_Dynamic.Reset_Value (Memory_Dynamic_Spec));
+
+   function Rectify_Events return Boolean
+   is (Rectify_Requested);
 end Config;

@@ -87,6 +87,11 @@ package Config is
 
    function Reset_Value return Images.Pixel_Value
      with
+       Pre => Package_Ready and then Reset_Each_Frame;
+
+
+   function Rectify_Events return Boolean
+     with
        Pre => Package_Ready;
 
 

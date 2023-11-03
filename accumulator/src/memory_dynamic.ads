@@ -18,6 +18,12 @@ package Memory_Dynamic is
                     Dynamic : Dynamic_Type;
                     Delta_T : Camera_Events.Duration)
                     return Images.Pixel_Value;
+
+   function Is_Reset (X : Dynamic_Type) return Boolean;
+
+   function Reset_Value (X : Dynamic_Type) return Images.Pixel_Value
+     with
+       Pre => Is_Reset (X);
 private
    type Dynamic_Class is (None, Step, Linear, Exponential);
 
@@ -40,6 +46,13 @@ private
 
          end case;
       end record;
+
+
+   function Is_Reset (X : Dynamic_Type) return Boolean
+   is (X.Class = Step);
+
+   function Reset_Value (X : Dynamic_Type) return images.Pixel_Value
+   is (X.Reset_Value);
 
    function No_Decay return Dynamic_Type
    is (Dynamic_Type'(Class  => None));

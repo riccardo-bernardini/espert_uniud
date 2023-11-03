@@ -57,8 +57,9 @@ package  Generic_Command_Line_Parser is
 
    function Option_Help_Lines return String_Vectors.Vector;
 
-   Bad_Option_Name : exception;
-   Duplicate_Option_Name : exception;
-   Unknown_Option : exception;
-   Repeated_Option : exception;
+   Bad_Option_Name           : exception;
+   Duplicate_Option_Name     : exception;
+   Unknown_Option            : exception;
+   Repeated_Option           : exception;
+   Missing_Mandatory_Options : exception;
 end Generic_Command_Line_Parser;

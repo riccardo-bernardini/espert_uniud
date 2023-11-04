@@ -43,32 +43,13 @@ package body Config is
 
 
 
-   I_Am_Ready   : Boolean := False;
 
-   Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
-
-
-   Requested_Verbosity : Verbosity;
-
-   Input_Filename : Unbounded_String := Null_Unbounded_String;
-
-   Sampling_Info : Sampling_Spec;
-
-   Frame_Filename_Spec : Radix_Spec;
 
    First_Image_Filename : Unbounded_String;
 
-   Min_Level            : Images.Pixel_Value;
-   Max_Level            : Images.Pixel_Value;
-   Neutral_Level        : Images.Pixel_Value;
-
-   Event_W              : Images.Pixel_Value;
-
-   Rectify_Requested    : Boolean := False;
-   Lazy_Decay_Requested : Boolean := False;
 
    function Package_Ready return Boolean
-   is (I_Am_Ready);
+   is (data.Is_All_Set);
 
    ------------------------
    -- Parse_Command_Line --

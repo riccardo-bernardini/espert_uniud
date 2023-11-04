@@ -154,7 +154,7 @@ package body Config.Syntax is
        else
           Parse_Time_Spec (Spec));
 
-   function Parse_Output_Filename_Template (Spec : String) return Radix_Spec
+   function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec
    is
       use Ada.Strings.Fixed;
 
@@ -162,10 +162,6 @@ package body Config.Syntax is
       function To_Unbounded (X : String) return Unbounded_String
                              renames To_Unbounded_String;
 
-
-      Frame_Number_Position : constant Natural :=
-                                Index (Source  => Spec,
-                                       Pattern => Frame_Number_Marker);
 
       function Extract_Format (Filename : String) return Images.Format_Type
       is
@@ -181,7 +177,7 @@ package body Config.Syntax is
          end if;
 
          declare
-            Ext : constant Extension := Tail (Spec, 3);
+            Ext : constant Extension := Tail (Filename, 3);
          begin
             for Fmt in Format_To_Extension'Range loop
                if Ext = Format_To_Extension (Fmt) then
@@ -195,6 +191,12 @@ package body Config.Syntax is
       end Extract_Format;
 
       Frame_Format : Images.Format_Type;
+
+      Spec : constant String := To_String (Template);
+
+      Frame_Number_Position : constant Natural :=
+                                Index (Source  => Spec,
+                                       Pattern => Frame_Number_Marker);
 
    begin
       if Frame_Number_Position = 0 then

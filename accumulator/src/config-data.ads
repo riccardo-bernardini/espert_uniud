@@ -9,9 +9,11 @@ private package Config.Data is
    type Configuration_Field is
      (
       Decay,
-      Input,
       Output_Filename_Template,
       Verbosity_Level,
+      -- String fields
+      Input,
+      First_Image,
       -- Numeric fields
       Min,
       Max,
@@ -24,6 +26,8 @@ private package Config.Data is
       Rectify,
       Lazy_Decay
      );
+
+   subtype String_Field is Configuration_Field range Input .. First_Image;
 
    subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
 
@@ -38,14 +42,14 @@ private package Config.Data is
    function Is_All_Set return Boolean
    is (for all F in Configuration_Field => Is_Set (F));
 
-   procedure Set_Input_Filename (Item : String)
-     with
-       Pre => not Is_Set (Input),
-       Post => Is_Set (Input);
-
-   function Input_Filename return String
-     with
-       Pre => Is_Set (Input);
+   --  procedure Set_Input_Filename (Item : String)
+   --    with
+   --      Pre => not Is_Set (Input),
+   --      Post => Is_Set (Input);
+   --
+   --  function Input_Filename return String
+   --    with
+   --      Pre => Is_Set (Input);
 
 
    procedure Set_Verbosity_Level (Verb : Verbosity)
@@ -78,6 +82,15 @@ private package Config.Data is
      with
        pre => Is_Set (Decay);
 
+   procedure Set (Field : String_Field;
+                  Value : String)
+     with
+       Pre => not Is_Set (Field),
+       Post => Is_Set (Field) and then Get (Field) = Value;
+
+   function Get (Field : String_Field) return String
+     with
+       Pre => Is_Set (Field);
 
 
    procedure Set (Field : Numeric_Field;

@@ -4,6 +4,8 @@ package body Config.Data is
 
    Set_Fields : array (Configuration_Field) of Boolean := (others => False);
 
+   type String_Field_Array is array (String_Field) of Unbounded_String;
+
    type Numeric_Field_Array is array (Numeric_Field) of Images.Pixel_Value;
 
    type Boolean_Field_Array is array (Boolean_Field) of Boolean;
@@ -25,9 +27,10 @@ package body Config.Data is
          Input_Filename          : Unbounded_String := Null_Unbounded_String;
          Frame_Filename_Template : Config.Syntax.Radix_Spec;
 
+         String_Fields           : String_Field_Array;
+         Numeric_Fields          : Numeric_Field_Array;
          Timestamp_Fields        : Timestamp_Field_Array;
          Duration_Fields         : Duration_Field_Array;
-         Numeric_Fields          : Numeric_Field_Array;
          Boolean_Fields          : Boolean_Field_Array;
       end record;
 
@@ -46,22 +49,22 @@ package body Config.Data is
    is (Set_Fields (Field));
 
 
-   ------------------------
-   -- Set_Input_Filename --
-   ------------------------
-
-   procedure Set_Input_Filename (Item : String) is
-   begin
-      Config_Data.Input_Filename := To_Unbounded_String (Item);
-      Is_Set (Input);
-   end Set_Input_Filename;
-
-   --------------------
-   -- Input_Filename --
-   --------------------
-
-   function Input_Filename return String
-   is (To_String (Config_Data.Input_Filename));
+   --  ------------------------
+   --  -- Set_Input_Filename --
+   --  ------------------------
+   --
+   --  procedure Set_Input_Filename (Item : String) is
+   --  begin
+   --     Config_Data.Input_Filename := To_Unbounded_String (Item);
+   --     Is_Set (Input);
+   --  end Set_Input_Filename;
+   --
+   --  --------------------
+   --  -- Input_Filename --
+   --  --------------------
+   --
+   --  function Input_Filename return String
+   --  is (To_String (Config_Data.Input_Filename));
 
    -------------------------
    -- Set_Verbosity_Level --
@@ -115,6 +118,17 @@ package body Config.Data is
 
    function Decay return Memory_Dynamic.Dynamic_Type
    is (Config_Data.Decay_Handler);
+
+   procedure Set (Field : String_Field;
+                  Value : String) is
+   begin
+      Config_Data.String_Fields (Field) := To_Unbounded_String (Value);
+      Is_Set (Field);
+   end Set;
+
+   function Get (Field : String_Field) return String
+   is (To_String (Config_Data.String_Fields (Field)));
+
 
    ---------
    -- Set --

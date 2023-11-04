@@ -16,6 +16,8 @@ with Config.Syntax;  use Config.Syntax;
 with Config.Data;    use Config.Data;
 
 package body Config is
+   use type Camera_Events.Timestamp;
+
    function "+" (X : String) return Unbounded_String
                  renames To_Unbounded_String;
 
@@ -38,18 +40,9 @@ package body Config is
       return (C_Is_A_Tty (Descriptor) = 1);
    end Is_A_Tty;
 
-   use type Camera_Events.Timestamp;
-
-
-
-
-
-
-   First_Image_Filename : Unbounded_String;
-
 
    function Package_Ready return Boolean
-   is (data.Is_All_Set);
+   is (Data.Is_All_Set);
 
    ------------------------
    -- Parse_Command_Line --
@@ -69,6 +62,7 @@ package body Config is
          Frame_Rate,
          Output_Template,
          Input_Spec,
+         First_Image_Filename,
          Start_Time,
          Stop_Time,
          Min,
@@ -84,37 +78,62 @@ package body Config is
 
       Option_Specs : constant CL_Parser.Option_Names :=
                        (
-                        Decay           => +"decay",
-                        Sampling        => +"sampling",
-                        Frame_Rate      => +"framerate|frame-rate|fps",
-                        Output_Template => +"output",
-                        Input_Spec      => +"input",
-                        Start_Time      => +"start",
-                        Stop_Time       => + "stop",
-                        Min             => +"min",
-                        Max             => +"max",
-                        Neutral         => +"neutral",
-                        Event_Weigth    => +"weigth",
-                        Rectify         => +"rectify",
-                        Lazy_Decay      => +"lazy"
+                        Decay                => +"decay",
+                        Sampling             => +"sampling",
+                        Frame_Rate           => +"framerate|frame-rate|fps",
+                        Output_Template      => +"output",
+                        Input_Spec           => +"input",
+                        First_Image_Filename => +"first-image|first",
+                        Start_Time           => +"start",
+                        Stop_Time            => + "stop",
+                        Min                  => +"min",
+                        Max                  => +"max",
+                        Neutral              => +"neutral",
+                        Event_Weigth         => +"weigth",
+                        Rectify              => +"rectify",
+                        Lazy_Decay           => +"lazy"
                        );
 
       Defaults : constant CL_Parser.Option_Defaults :=
                    (
-                    Decay           => CL_Parser.Mandatory_Option,
-                    Sampling        => CL_Parser.Ignore_If_Missing,
-                    Frame_Rate      => CL_Parser.Ignore_If_Missing,
-                    Output_Template => CL_Parser.Mandatory_Option,
-                    Input_Spec      => CL_Parser.Ignore_If_Missing,
-                    Start_Time      => (CL_Parser.Use_Default, +""),
-                    Stop_Time       => (CL_Parser.Use_Default, +""),
-                    Min             => (CL_Parser.Use_Default, +"0.0"),
-                    Max             => (CL_Parser.Use_Default, +"1.0"),
-                    Neutral         => CL_Parser.Ignore_If_Missing,
-                    Event_Weigth    => (CL_Parser.Use_Default, +"1.0"),
-                    Rectify         => CL_Parser.Ignore_If_Missing,
-                    Lazy_Decay      => CL_Parser.Ignore_If_Missing
+                    Decay                => CL_Parser.Mandatory_Option,
+                    Sampling             => CL_Parser.Ignore_If_Missing,
+                    Frame_Rate           => CL_Parser.Ignore_If_Missing,
+                    Output_Template      => CL_Parser.Mandatory_Option,
+                    Input_Spec           => CL_Parser.Ignore_If_Missing,
+                    First_Image_Filename => (CL_Parser.Use_Default, +""),
+                    Start_Time           => (CL_Parser.Use_Default, +""),
+                    Stop_Time            => (CL_Parser.Use_Default, +""),
+                    Min                  => (CL_Parser.Use_Default, +"0.0"),
+                    Max                  => (CL_Parser.Use_Default, +"1.0"),
+                    Neutral              => CL_Parser.Ignore_If_Missing,
+                    Event_Weigth         => (CL_Parser.Use_Default, +"1.0"),
+                    Rectify              => CL_Parser.Ignore_If_Missing,
+                    Lazy_Decay           => CL_Parser.Ignore_If_Missing
                    );
+
+      procedure Set_Sampling_Spec
+        with
+          Pre => not Is_Set (Sampling_Period)
+          and not Is_Set (Start_Time)
+          and not Is_Set (Stop_Time),
+          Post => Is_Set (Sampling_Period)
+          and Is_Set (Start_Time)
+          and Is_Set (Stop_Time);
+
+      procedure Set_Levels
+        with
+          Pre => not Is_Set (Min)
+          and not Is_Set (Max)
+          and not Is_Set (Neutral),
+          Post => Is_Set (Min)
+          and Is_Set (Max)
+          and Is_Set (Neutral);
+
+      procedure Set_Decay
+        with
+          Pre => not Is_Set (Decay),
+          Post => Is_Set (Decay);
 
 
       function Help_Asked return Boolean
@@ -133,42 +152,6 @@ package body Config is
 
       Parsed_Options       : CL_Parser.Option_Values;
 
-      procedure Set_Levels is
-      begin
-         Min_Level := To_Pixel_Value (Parsed_Options (Min).Value);
-         Max_Level := To_Pixel_Value (Parsed_Options (Max).Value);
-
-         if Parsed_Options (Neutral).Missing then
-            Neutral_Level := (Min_Level + Max_Level) / 2.0;
-
-         else
-            Neutral_Level := To_Pixel_Value (Parsed_Options (Neutral).Value);
-
-         end if;
-      end Set_Levels;
-
-      procedure Set_Decay is
-
-         Chosen_Decay : constant Decay_Spec :=
-                          Parse_Memory_Spec (To_String (Parsed_Options (Decay).Value));
-      begin
-         case Chosen_Decay.Class is
-            when None =>
-               Memory_Dynamic_Spec := Memory_Dynamic.No_Decay;
-
-            when Linear =>
-               Memory_Dynamic_Spec := Memory_Dynamic.Linear (T       => Chosen_Decay.Tau,
-                                                             Neutral => Neutral_Level);
-
-            when Exponential =>
-               Memory_Dynamic_Spec := Memory_Dynamic.Exponential (Chosen_Decay.Tau);
-
-            when Reset =>
-               Memory_Dynamic_Spec := Memory_Dynamic.Step (Reset_To => Neutral_Level);
-
-         end case;
-      end Set_Decay;
-
       procedure Parse_Options_And_Apply_Defaults is
          Missing_Options : Unbounded_String;
       begin
@@ -186,14 +169,51 @@ package body Config is
          end if;
       end Parse_Options_And_Apply_Defaults;
 
+      procedure Set_Levels is
+      begin
+         Set (Min, To_Pixel_Value (Parsed_Options (Min).Value));
+         Set (Max, To_Pixel_Value (Parsed_Options (Max).Value));
+
+         if Parsed_Options (Neutral).Missing then
+            Set (Neutral, (Get (Min) + Get (Max) / 2.0));
+
+         else
+            Set (Neutral, To_Pixel_Value (Parsed_Options (Neutral).Value));
+
+         end if;
+      end Set_Levels;
+
+      procedure Set_Decay is
+
+         Chosen_Decay : constant Decay_Spec :=
+                          Parse_Memory_Spec (To_String (Parsed_Options (Decay).Value));
+      begin
+         case Chosen_Decay.Class is
+            when None =>
+               Set_Decay (Memory_Dynamic.No_Decay);
+
+            when Linear =>
+               Set_Decay (Memory_Dynamic.Linear (T       => Chosen_Decay.Tau,
+                                                 Neutral => Get (Neutral)));
+
+            when Exponential =>
+               Set_Decay (Memory_Dynamic.Exponential (Chosen_Decay.Tau));
+
+            when Reset =>
+               Set_Decay (Memory_Dynamic.Step (Reset_To => Get (Neutral)));
+
+         end case;
+      end Set_Decay;
+
+
       procedure Set_Sampling_Spec is
-         Sampling_Period : Camera_Events.Duration;
+         T : Camera_Events.Duration;
       begin
          if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
-            Sampling_Period := Parse_Time_Spec (Parsed_Options (Frame_Rate).Value & "fps");
+            T := Parse_Time_Spec (Parsed_Options (Frame_Rate).Value & "fps");
 
          elsif Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
-            Sampling_Period := Parse_Time_Spec (Parsed_Options (Sampling).Value);
+            T := Parse_Time_Spec (Parsed_Options (Sampling).Value);
 
          else
             raise Bad_Command_Line
@@ -201,11 +221,9 @@ package body Config is
          end if;
 
 
-         Sampling_Info :=
-           Sampling_Spec'(Start           => Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)),
-                          Stop            => Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)),
-                          Sampling_Period => Sampling_Period);
-
+         Set (Sampling_Period, T);
+         Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
+         Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
       end Set_Sampling_Spec;
    begin
       if Help_Asked then
@@ -213,10 +231,7 @@ package body Config is
       end if;
 
 
-      Requested_Verbosity := (if Is_A_Tty (2) then
-                                 Interactive
-                              else
-                                 Logging);
+      Set_Verbosity_Level ((if Is_A_Tty (2) then Interactive else Logging));
 
       Parse_Options_And_Apply_Defaults;
 
@@ -226,27 +241,24 @@ package body Config is
 
       Set_Sampling_Spec;
 
-      --  Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
+      Set (First_Image, To_String (Parsed_Options (First_Image_Filename).Value));
 
-      Frame_Filename_Spec := Parse_Output_Filename_Template (To_String (Parsed_Options (Output_Template).Value));
+      Set_Output_Filename_Template
+        (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
 
       if Parsed_Options (Input_Spec).Missing  then
-         Input_Filename := To_Unbounded_String ("-");
+         Set (Input, "-");
       else
-         Input_Filename := Parsed_Options (Input_Spec).Value;
+         Set (Input, To_String (Parsed_Options (Input_Spec).Value));
       end if;
 
-      pragma Assert (Input_Filename /= Null_Unbounded_String);
+      Set (Event_Weigth, To_Pixel_Value (Parsed_Options (Event_Weigth).Value));
 
-      Event_W := To_Pixel_Value (Parsed_Options (Event_Weigth).Value);
+      Set (Lazy_Decay, not Parsed_Options (Lazy_Decay).Missing);
 
-      Lazy_Decay_Requested := not Parsed_Options (Lazy_Decay).Missing;
+      Set (Rectify, not Parsed_Options (Rectify).Missing);
 
-      Rectify_Requested := not Parsed_Options (Rectify).Missing;
-
-
-      I_Am_Ready := True;
-
+      pragma Assert (Is_All_Set);
    end Parse_Command_Line;
 
    -----------
@@ -254,22 +266,22 @@ package body Config is
    -----------
 
    function Input return String
-   is (To_String (Input_Filename));
+   is (Get (Input));
 
    ---------------------
    -- Sampling_Period --
    ---------------------
 
    function Sampling_Period return Camera_Events.Duration
-   is (Sampling_Info.Sampling_Period);
+   is (Get (Sampling_Period));
 
    --------------
    -- Start_At --
    --------------
 
    function Start_At (T_Min : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Sampling_Info.Start > T_Min then
-          Sampling_Info.Start
+   is (if Get (Start_Time) > T_Min then
+          Get (Start_Time)
        else
           T_Min);
 
@@ -279,14 +291,14 @@ package body Config is
    -------------
 
    function Stop_At (T_Max : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Sampling_Info.Stop = Camera_Events.Infinity then
+   is (if Get (Stop_Time) = Camera_Events.Infinity then
           T_Max
 
-       elsif Sampling_Info.Stop = Camera_Events.Minus_Infinity then
+       elsif Get (Stop_Time) = Camera_Events.Minus_Infinity then
           raise Constraint_Error
 
        else
-          Sampling_Info.Stop);
+          Get (Stop_Time));
 
 
    -----------------------
@@ -294,14 +306,14 @@ package body Config is
    -----------------------
 
    function Forgetting_Method return Memory_Dynamic.Dynamic_Type
-   is (Memory_Dynamic_Spec);
+   is (Config.Data.Decay);
 
    -------------------
    -- Output_Format --
    -------------------
 
    function Output_Format return Images.Format_Type
-   is (Frame_Filename_Spec.Frame_Format);
+   is (Config.Data.Output_Filename_Template.Frame_Format);
 
    -----------
    -- Radix --
@@ -310,6 +322,10 @@ package body Config is
 
    function Frame_Filename (N : Frame_Index) return String
    is
+
+      Frame_Filename_Spec : constant Radix_Spec :=
+                              Config.Data.Output_Filename_Template;
+
       function Format_Frame_Number (N : Frame_Index) return String
       is
          use Ada.Strings.Fixed;
@@ -328,6 +344,7 @@ package body Config is
       begin
          return Padding & Raw_Image;
       end Format_Frame_Number;
+
    begin
       return To_String (Frame_Filename_Spec.Head &
                           Format_Frame_Number (N) &
@@ -339,14 +356,14 @@ package body Config is
    ---------------------
 
    function Has_Start_Image return Boolean
-   is (First_Image_Filename /= Null_Unbounded_String);
+   is (Get (First_Image) /= "");
 
    --------------------------
    -- Start_Image_Filename --
    --------------------------
 
    function Start_Image_Filename return String
-   is (To_String (First_Image_Filename));
+   is (Get (First_Image));
 
 
    function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
@@ -366,14 +383,14 @@ package body Config is
          end return;
 
       else
-         return Images.Uniform (Size_X, Size_Y, 128.0);
+         return Images.Uniform (Size_X, Size_Y, Get (Neutral));
 
       end if;
    end Start_Image;
 
 
    function Verbosity_Level return Verbosity
-   is (Requested_Verbosity);
+   is (Config.Data.Verbosity_Level);
 
 
    function Short_Help_Text return String
@@ -411,23 +428,23 @@ package body Config is
    end Long_Help_Text;
 
    function Event_Contribution return Images.Pixel_Value
-   is (Event_W);
+   is (Get (Event_Weigth));
 
    function Pixel_Min return Images.Pixel_Value
-   is (Min_Level);
+   is (Get (Min));
 
    function Pixel_Max return Images.Pixel_Value
-   is (Max_Level);
+   is (Get (Max));
 
    function Synchronous_Update return Boolean
-   is (Lazy_Decay_Requested);
+   is (Get (Lazy_Decay));
 
    function Reset_Each_Frame return Boolean
-   is (Memory_Dynamic.Is_Reset (Memory_Dynamic_Spec));
+   is (Memory_Dynamic.Is_Reset (Config.Data.Decay));
 
    function Reset_Value return Images.Pixel_Value
-   is (Memory_Dynamic.Reset_Value (Memory_Dynamic_Spec));
+   is (Memory_Dynamic.Reset_Value (Config.Data.Decay));
 
    function Rectify_Events return Boolean
-   is (Rectify_Requested);
+   is (Get (Rectify));
 end Config;

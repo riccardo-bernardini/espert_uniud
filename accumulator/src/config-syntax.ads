@@ -60,7 +60,7 @@ private package Config.Syntax is
          Sampling_Period : Camera_Events.Duration;
       end record;
 
-   function Parse_Output_Filename_Template (Spec : String) return Radix_Spec;
+   function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec;
 
 
 

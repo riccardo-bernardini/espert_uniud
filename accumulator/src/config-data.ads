@@ -1,0 +1,86 @@
+with Config.Syntax;
+
+private package Config.Data is
+   type Configuration_Field is
+     (
+      Decay,
+      Input,
+      Output_Filename_Template,
+      -- Numeric fields
+      Min,
+      Max,
+      Neutral,
+      Sampling_Period,
+      Start_Time,
+      Stop_Time,
+      Event_Weigth,
+      -- Boolean fields
+      Rectify,
+      Lazy_Decay
+     );
+
+   subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
+
+   subtype Boolean_Field is Configuration_Field range Rectify .. Lazy_Decay;
+
+   subtype Duration_Field is Configuration_Field range Sampling_Period .. Sampling_Period;
+
+   subtype Timestamp_Field is Configuration_Field range Start_Time .. Stop_Time;
+
+   procedure Set_Input_Filename (Item : String)
+     with
+       Pre => not Is_Set (Input),
+       Post => Is_Set (Input);
+
+   procedure Set_Output_Filename_Template (Item : Syntax.Radix_Spec)
+     with
+       Pre => not Is_Set (Output_Filename_Template),
+       Post => Is_Set (Output_Filename_Template);
+
+   procedure Set_Decay (Item : Memory_Dynamic.Dynamic_Type)
+     with
+       Pre => not Is_Set (Decay),
+       Post => Is_Set (Decay);
+
+
+   procedure Set (Field : Numeric_Field;
+                  Value : Images.Pixel_Value)
+     with
+       Pre => not Is_Set (Field),
+     Post => Is_Set (Field);
+
+   procedure Set (Field : Timestamp_Field;
+                  Value : Camera_Events.Timestamp)
+     with
+       Pre =>  not Is_Set (Field),
+     Post => Is_Set (Field);
+
+   procedure Set (Field : Duration_Field;
+                  Value : Camera_Events.Duration)
+     with
+       Pre =>  not Is_Set (Field),
+     Post => Is_Set (Field);
+
+   procedure Set (Field : Boolean_Field;
+                  Value : Boolean)
+     with
+       Pre => not Is_Set (Field),
+     Post => Is_Set (Field);
+
+   function Output_Filename_Template return Syntax.Radix_Spec
+     with
+       Pre => Is_Set (Output_Filename_Template);
+
+   function Decay_Handler return Memory_Dynamic.Dynamic_Type
+     with
+       Pre => Is_Set (Decay);
+
+   function Input_Filename return String
+     with
+       Pre => Is_Set (Input);
+
+   function Is_Set (Field : Configuration_Field) return Boolean;
+
+   function Is_All_Set return Boolean
+   is (for all F in Configuration_Field => Is_Set (F));
+end Config.Data;

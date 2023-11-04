@@ -1,17 +1,11 @@
 pragma Ada_2012;
 
 with Ada.Command_Line;
---  with Ada.Containers;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Fixed;        use Ada.Strings;
 
---  with Ada.Characters.Handling;
---  with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Latin_9;
---  with Gnat.Regpat;
---  with Tokenize;
---  with Ada.Text_IO; use Ada.Text_IO;
 with Generic_Command_Line_Parser;
 
 with Interfaces.C;
@@ -19,6 +13,7 @@ with Interfaces.C;
 use Interfaces;
 
 with Config.Syntax;  use Config.Syntax;
+with Config.Data;    use Config.Data;
 
 package body Config is
    function "+" (X : String) return Unbounded_String

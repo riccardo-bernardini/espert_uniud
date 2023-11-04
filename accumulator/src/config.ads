@@ -2,7 +2,7 @@ with Camera_Events;
 with Memory_Dynamic;
 with Images;
 
-package Config is
+package Config with SPARK_Mode is
    type Frame_Index is range 0 .. Integer'Last;
 
    type Verbosity is

@@ -15,7 +15,7 @@ use Interfaces;
 with Config.Syntax;  use Config.Syntax;
 with Config.Data;    use Config.Data;
 
-package body Config is
+package body Config with SPARK_Mode is
    use type Camera_Events.Timestamp;
 
    function "+" (X : String) return Unbounded_String
@@ -35,7 +35,8 @@ package body Config is
         with
           Import => True,
           Convention => C,
-          External_Name => "isatty";
+          External_Name => "isatty",
+          Global => (null);
    begin
       return (C_Is_A_Tty (Descriptor) = 1);
    end Is_A_Tty;

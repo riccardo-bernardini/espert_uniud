@@ -3,14 +3,14 @@ with Ada.Command_Line;
 with Ada.Characters.Handling;
 
 --  with Ada.Containers.Indefinite_Ordered_Maps;
-with Ada.Containers.Formal_Ordered_Maps;
+with Simple_Tables;
 
 
 package body Generic_Command_Line_Parser is
 
    package Name_Tables is
-     new Ada.Containers.Formal_Ordered_Maps (Key_Type     => Unbounded_String,
-                                             Element_Type => Options);
+     new Simple_Tables (Key_Type     => Unbounded_String,
+                        Element_Type => Options);
 
    procedure Parse_Option_Names (Source    : String;
                                  Names     : in out String_Vectors.Vector;
@@ -171,7 +171,6 @@ package body Generic_Command_Line_Parser is
       Concatenation_Separator : String := Default_Concatenation_Separator;
       Name_Case_Sensitive     : Boolean := False)
    is
-      use type Ada.Containers.Count_Type;
 
       procedure Process_Include (Filename : Unbounded_String)
       is
@@ -189,7 +188,7 @@ package body Generic_Command_Line_Parser is
          In_Value
         );
 
-      Name_To_Option : Name_Tables.Map (100 * Options'Pos (Options'Last));
+      Name_To_Option : Name_Tables.Map := Name_Tables.New_Map (100 * Options'Pos (Options'Last));
 
 
       Status : Status_Type := Skipping_Spaces;
@@ -412,9 +411,8 @@ package body Generic_Command_Line_Parser is
    function Help_Lines (Specs : Option_Names)
                         return String_Vectors.Vector
    is
-      use type Ada.Containers.Count_Type;
 
-      Ignored : Name_Tables.Map (Specs'Length * 100);
+      Ignored : Name_Tables.Map := Name_Tables.New_Map (Specs'Length * 100);
       Result  : String_Vectors.Vector (Specs'Length);
    begin
       Fill_Name_Table (Names               => Specs,

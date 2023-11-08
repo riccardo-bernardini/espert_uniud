@@ -1,5 +1,5 @@
 with Ada.Strings.Unbounded;               use Ada.Strings.Unbounded;
-with Ada.Containers.Formal_Vectors;
+with String_Vectors;
 
 generic
    type Options is (<>);
@@ -57,9 +57,9 @@ package  Generic_Command_Line_Parser is
    No_Include_Prefix : constant Character := ASCII.NUL;
 
 
-   package String_Vectors is new Ada.Containers.Formal_Vectors
-     (Index_Type   => Positive,
-      Element_Type => Unbounded_String);
+   --  package String_Vectors is new Ada.Containers.Formal_Vectors
+   --    (Index_Type   => Positive,
+   --     Element_Type => Unbounded_String);
 
    procedure Parse (Source                  : String;
                     Names                   : Option_Names;

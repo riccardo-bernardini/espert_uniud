@@ -5,6 +5,10 @@ package body String_Vectors is
    function Capacity (V : Vector) return Positive
    is (V.Capacity);
 
+   ------------
+   -- Append --
+   ------------
+
    procedure Append (To : in out Vector; What : Unbounded_String)
    is
    begin
@@ -17,6 +21,16 @@ package body String_Vectors is
       To.Next_Free := To.Next_Free + 1;
    end Append;
 
+
+   -----------
+   -- Clear --
+   -----------
+
+   procedure Clear (Item : out Vector)
+   is
+   begin
+      Item.Next_Free := Item.Elements'First;
+   end Clear;
    -------------------
    -- First_Element --
    -------------------
@@ -36,28 +50,14 @@ package body String_Vectors is
    -----------------
 
    function First_Index (V : Vector) return Positive
-   is
-   begin
-      if Size (V) = 0 then
-         raise Constraint_Error;
-      end if;
-
-      return V.Elements'First;
-   end First_Index;
+   is (V.Elements'First);
 
    ----------------
    -- Last_Index --
    ----------------
 
-   function Last_Index (V : Vector) return Positive
-   is
-   begin
-      if Size (V) = 0 then
-         raise Constraint_Error;
-      end if;
-
-      return V.Next_Free-1;
-   end Last_Index;
+   function Last_Index (V : Vector) return Natural
+   is (V.Next_Free - 1);
 
    -------------
    -- Element --

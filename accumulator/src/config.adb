@@ -213,7 +213,7 @@ package body Config with SPARK_Mode is
          if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
             T := Parse_Time_Spec (Parsed_Options (Frame_Rate).Value & "fps");
 
-         elsif Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
+         elsif not Parsed_Options (Sampling).Missing and Parsed_Options (Frame_Rate).Missing then
             T := Parse_Time_Spec (Parsed_Options (Sampling).Value);
 
          else

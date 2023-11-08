@@ -6,6 +6,10 @@ package String_Vectors is
 
    function Capacity (V : Vector) return Positive;
 
+   procedure Clear (Item : out Vector)
+     with
+       Post => Size (Item) = 0;
+
    procedure Append (To : in out Vector; What : Unbounded_String)
      with
        Pre => Size (To) < Capacity (To),
@@ -15,13 +19,9 @@ package String_Vectors is
      with
        Pre => Size (V) > 0;
 
-   function First_Index (V : Vector) return Positive
-     with
-       Pre => Size (V) > 0;
+   function First_Index (V : Vector) return Positive;
 
-   function Last_Index (V : Vector) return Positive
-     with
-       Pre => Size (V) > 0;
+   function Last_Index (V : Vector) return Natural;
 
    function Element (V : Vector; Index : Positive) return Unbounded_String
      with

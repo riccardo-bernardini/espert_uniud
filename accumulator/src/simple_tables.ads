@@ -24,7 +24,8 @@ package Simple_Tables is
                      Key      : Key_Type;
                      New_Item : Element_Type)
      with
-       Pre => Size (Item) < Capacity (Item) and Find (Item, Key) = No_Element;
+       Pre => Size (Item) < Capacity (Item) and Find (Item, Key) = No_Element,
+     Post => Size (Item) = Size (Item)'Old + 1;
 
    function Find (Where : Map;
                   What  : Key_Type)
@@ -36,6 +37,7 @@ package Simple_Tables is
      with
        Pre => Pos /= No_Element;
 
+   procedure Dump (Item : Map; Image : access function (K : Key_Type; E : Element_Type) return String);
 private
    type Map_Entry is
       record

@@ -1,3 +1,4 @@
+with Ada.Text_IO; use Ada.Text_IO;
 package body Simple_Tables is
    function Contains (Item : Map; Key : Key_Type) return Boolean
    is (Find (Item, key) /= No_Element);
@@ -30,6 +31,8 @@ package body Simple_Tables is
       end if;
 
       Item.data (Item.Next_Free) := Map_Entry'(Key, New_Item);
+
+      Item.Next_Free := Item.Next_Free + 1;
    end Insert;
 
    ----------
@@ -65,5 +68,19 @@ package body Simple_Tables is
 
       return Item.Data (Pos).Element;
    end Element;
+
+
+   procedure Dump (Item : Map; Image : access function (K : Key_Type; E : Element_Type) return String)
+   is
+   begin
+      Put_Line ("DUMP BEGIN");
+
+      for I in item.Data'First .. item.Next_Free - 1 loop
+         Put_Line (I'Image & " " & Image (item.Data (I).Key, item.Data (I).Element));
+      end loop;
+
+      Put_Line ("DUMP END");
+
+   end Dump;
 
 end Simple_Tables;

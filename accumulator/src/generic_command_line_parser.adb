@@ -1,9 +1,11 @@
 pragma Ada_2012;
-with Ada.Command_Line;
 with Ada.Characters.Handling;
+with Ada.Command_Line;
+-- with Ada.Text_IO; use Ada.Text_IO;
 
 --  with Ada.Containers.Indefinite_Ordered_Maps;
 with Simple_Tables;
+
 
 
 package body Generic_Command_Line_Parser is
@@ -21,6 +23,10 @@ package body Generic_Command_Line_Parser is
       Name_Accumulator : Unbounded_String := Null_Unbounded_String;
       C                : Character;
    begin
+      Clear (Names);
+
+      --  Put_Line ("Parse option names '" & Source & "'");
+
       Help_Line := Null_Unbounded_String;
 
       for I in Source'Range loop
@@ -33,7 +39,7 @@ package body Generic_Command_Line_Parser is
                end if;
 
                Append (Names, Name_Accumulator);
-
+               --  Put_Line ("Appending '" & To_String (Name_Accumulator) & "'");
                Name_Accumulator := Null_Unbounded_String;
 
                if C = '=' or C = ' ' then
@@ -49,6 +55,8 @@ package body Generic_Command_Line_Parser is
 
       if Name_Accumulator /= Null_Unbounded_String then
          Append (Names, Name_Accumulator);
+
+         --  Put_Line ("Appending '" & To_String (Name_Accumulator) & "'");
       end if;
    end Parse_Option_Names;
 
@@ -84,6 +92,13 @@ package body Generic_Command_Line_Parser is
                              Names     => Parsed_Names,
                              Help_Line => Help_Line);
 
+         --  Put_Line("<<<");
+         --  for I in First_Index (Parsed_Names) .. Last_Index (Parsed_Names) loop
+         --     Put_Line (I'Image & " " & To_String (Element (Parsed_Names, I)));
+         --  end loop;
+         --
+         --  Put_Line(">>>");
+
          if Help_Line /= Null_Unbounded_String then
             Append (Help_Lines, Help_Line);
          end if;
@@ -105,6 +120,13 @@ package body Generic_Command_Line_Parser is
             end;
          end loop;
       end loop;
+
+      --  declare
+      --     function Pippo (K : Unbounded_String; E : Options) return String
+      --     is ("[" & To_String (K) & "] " & E'Image);
+      --  begin
+      --     Dump (Table, Pippo'Access);
+      --  end;
    end Fill_Name_Table;
 
    ------------

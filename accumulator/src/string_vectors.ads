@@ -1,6 +1,6 @@
 with Ada.Strings.Unbounded;   use Ada.Strings.Unbounded;
 package String_Vectors is
-   type Vector (Size : Positive) is private;
+   type Vector (Capacity : Positive) is private;
 
    function Size (V : Vector) return Natural;
 
@@ -30,12 +30,12 @@ package String_Vectors is
 private
    type String_Array is array (Positive range <>) of Unbounded_String;
 
-   type Vector (Size : Positive) is
+   type Vector (Capacity : Positive) is
       record
-         Elements : String_Array (1 .. Size);
+         Elements  : String_Array (1 .. Capacity);
          Next_Free : Positive := 1;
       end record
      with
-       Type_Invariant => Next_Free <= Size + 1;
+       Type_Invariant => Next_Free <= Capacity + 1;
 
 end String_Vectors;

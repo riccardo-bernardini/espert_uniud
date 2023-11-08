@@ -289,7 +289,9 @@ begin
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Current_Frame,
-                      Format   => Config.Output_Format);
+                      Format   => Config.Output_Format,
+                      Min      => Config.Pixel_Min,
+                      Max      => Config.Pixel_Max);
 
          if Config.Reset_Each_Frame then
             Current_Frame := Reset_Frame;

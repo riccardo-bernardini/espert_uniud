@@ -24,6 +24,8 @@ package Memory_Dynamic is
    function Reset_Value (X : Dynamic_Type) return Images.Pixel_Value
      with
        Pre => Is_Reset (X);
+
+   function Image (X : Dynamic_Type) return String;
 private
    type Dynamic_Class is (None, Step, Linear, Exponential);
 

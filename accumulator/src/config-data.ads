@@ -14,6 +14,7 @@ private package Config.Data is
       -- String fields
       Input,
       First_Image,
+      Metadata_Filename,
       -- Numeric fields
       Min,
       Max,
@@ -27,7 +28,7 @@ private package Config.Data is
       Lazy_Decay
      );
 
-   subtype String_Field is Configuration_Field range Input .. First_Image;
+   subtype String_Field is Configuration_Field range Input .. Metadata_Filename;
 
    subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
 

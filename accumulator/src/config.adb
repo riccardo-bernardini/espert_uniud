@@ -64,6 +64,7 @@ package body Config with SPARK_Mode is
          Output_Template,
          Input_Spec,
          First_Image_Filename,
+         Metadata_Filename,
          Start_Time,
          Stop_Time,
          Min,
@@ -85,6 +86,7 @@ package body Config with SPARK_Mode is
                         Output_Template      => +"output",
                         Input_Spec           => +"input",
                         First_Image_Filename => +"first-image|first",
+                        Metadata_Filename    => +"metadata|meta",
                         Start_Time           => +"start",
                         Stop_Time            => + "stop",
                         Min                  => +"min",
@@ -103,6 +105,7 @@ package body Config with SPARK_Mode is
                     Output_Template      => CL_Parser.Mandatory_Option,
                     Input_Spec           => CL_Parser.Ignore_If_Missing,
                     First_Image_Filename => (CL_Parser.Use_Default, +""),
+                    Metadata_Filename    => CL_Parser.Ignore_If_Missing,
                     Start_Time           => (CL_Parser.Use_Default, +""),
                     Stop_Time            => (CL_Parser.Use_Default, +""),
                     Min                  => (CL_Parser.Use_Default, +"0.0"),
@@ -226,6 +229,20 @@ package body Config with SPARK_Mode is
          Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
          Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
       end Set_Sampling_Spec;
+
+      procedure Handle_Metadata_Request is
+      begin
+         if Parsed_Options (Metadata_Filename).Missing then
+            Set (Metadata_Filename, "");
+
+         elsif Parsed_Options (Metadata_Filename).Value /= Null_Unbounded_String then
+            Set (Metadata_Filename, To_String (Parsed_Options (Metadata_Filename).Value));
+
+         else
+            Set (Metadata_Filename, To_String (Output_Filename_Template.Head) & ".meta");
+
+         end if;
+      end Handle_Metadata_Request;
    begin
       if Help_Asked then
          raise Full_Help_Asked;
@@ -246,6 +263,8 @@ package body Config with SPARK_Mode is
 
       Set_Output_Filename_Template
         (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
+
+      Handle_Metadata_Request;
 
       if Parsed_Options (Input_Spec).Missing  then
          Set (Input, "-");
@@ -448,4 +467,11 @@ package body Config with SPARK_Mode is
 
    function Rectify_Events return Boolean
    is (Get (Rectify));
+
+   function Metadata_Requested return Boolean
+   is (Get (Metadata_Filename) /= "");
+
+   function Metadata_Filename return String
+   is (Get (Metadata_Filename));
+
 end Config;

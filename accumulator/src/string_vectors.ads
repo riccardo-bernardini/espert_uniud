@@ -15,6 +15,11 @@ package String_Vectors is
        Pre => Size (To) < Capacity (To),
        Post => Size (To) = Size (To)'Old + 1;
 
+   procedure Append (To : in out Vector; What : String)
+     with
+       Pre => Size (To) < Capacity (To),
+       Post => Size (To) = Size (To)'Old + 1;
+
    function First_Element (V : Vector) return Unbounded_String
      with
        Pre => Size (V) > 0;

@@ -47,4 +47,27 @@ package body Memory_Dynamic is
       end case;
    end Evolve;
 
+   -----------
+   -- Image --
+   -----------
+
+   function Image (X : Dynamic_Type) return String
+   is
+   begin
+      case X.Class is
+         when None =>
+            return "none";
+
+         when Step =>
+            return "Reset at " & X.Reset_Value'Image;
+
+         when Linear =>
+            return "Linear, tau=" & Camera_Events.Image (X.Inverse_Slope, True);
+
+         when Exponential =>
+            return "Exponential, tau=" & Camera_Events.Image (X.Time_Constant, True);
+
+      end case;
+   end Image;
+
 end Memory_Dynamic;

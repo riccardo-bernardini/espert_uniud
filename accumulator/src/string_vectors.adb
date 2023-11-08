@@ -22,6 +22,17 @@ package body String_Vectors is
    end Append;
 
 
+   ------------
+   -- Append --
+   ------------
+
+   procedure Append (To : in out Vector; What : String)
+   is
+   begin
+      Append (To, To_Unbounded_String (What));
+   end Append;
+
+
    -----------
    -- Clear --
    -----------

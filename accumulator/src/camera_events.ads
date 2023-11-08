@@ -14,19 +14,22 @@ package Camera_Events is
 
    function Value (S : String) return Timestamp;
 
-   function Image(T : Timestamp) return String;
+   function Image (T         : Timestamp;
+                   With_Unit : Boolean := False) return String;
 
    type Duration is private;
 
    function Value (S : String) return Duration;
 
-   function Image (X : Duration) return String;
+   function Image (X         : Duration;
+                   With_Unit : Boolean := False) return String;
+
 
    function To_Duration (Seconds : Float) return Duration;
 
    function To_Duration (T : Timestamp) return Duration
      with
-       Pre => Is_Finite (t),
+       Pre => Is_Finite (T),
        Post => T = T0 + To_Duration'Result;
 
    function "/" (X, Y : Duration) return Float;
@@ -180,8 +183,10 @@ private
    function Value (S : String) return Duration
    is (Duration'Value (S));
 
-   function Image (X : Duration) return String
-   is (Duration'Image (X));
+   function Image (X : Duration;
+                   With_Unit : Boolean := False)
+                   return String
+   is (Duration'Image (X) & (if With_Unit then "us" else ""));
 
    function Value (S : String) return Timestamp
    is ((T       => Timestamp_Value'Value (S),

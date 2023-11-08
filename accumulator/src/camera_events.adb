@@ -30,7 +30,8 @@ package body Camera_Events is
        & "]");
 
 
-   function Image (T : Timestamp) return String
+   function Image (T : Timestamp;
+                   With_Unit : Boolean := False) return String
    is (if T = Minus_Infinity then
           "-Inf"
 
@@ -38,7 +39,7 @@ package body Camera_Events is
           "Inf"
 
        else
-          T.T'Image);
+          T.T'Image & (if With_Unit then "us" else ""));
 
 
 end Camera_Events;

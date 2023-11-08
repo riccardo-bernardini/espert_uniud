@@ -3,9 +3,6 @@ with Ada.Containers;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Exceptions; use Ada.Exceptions;
 with Ada.IO_Exceptions;
-with Ada.Strings.Fixed;
-
-with Interfaces.C;
 
 with Config;
 with Camera_Events;
@@ -13,22 +10,15 @@ with Event_Sequences;
 with Event_Streams;
 with Images;
 with Memory_Dynamic;
+with Logging_Utilities; use Logging_Utilities;
 
 with Profiling;
 
 use Ada;
-use Interfaces;
 
 procedure Main is
    use type Config.Verbosity;
 
-   function Terminal_Width return C.Int
-     with
-       Import => True,
-       Convention => C,
-       External_Name => "terminal_width";
-
-   package Float_Formatting is new Float_IO (Float);
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
 
@@ -110,62 +100,6 @@ procedure Main is
 
    end Update_Pixel;
 
-   procedure Put_Line_Maybe (Verbose : Boolean;
-                             Text    : String)
-   is
-   begin
-      if Verbose then
-         Put_Line (Standard_Error, Text);
-      end if;
-   end Put_Line_Maybe;
-
-   procedure Put_Maybe (Verbose : Boolean;
-                        Text    : String)
-   is
-   begin
-      if Verbose then
-         Put (Standard_Error, Text);
-         Flush (Standard_Error);
-      end if;
-   end Put_Maybe;
-
-   procedure Show_Progress_Bar (Start_Time   : Camera_Events.Timestamp;
-                                Stop_Time    : Camera_Events.Timestamp;
-                                Current_Time : Camera_Events.Timestamp)
-   is
-      use Camera_Events;
-      use Ada.Strings.Fixed;
-
-      Full     : constant Camera_Events.Duration := Stop_Time - Start_Time;
-      Done     : constant Camera_Events.Duration := Current_Time - Start_Time;
-      Fraction : constant Float := Done / Full;
-
-      N_Columns : constant Integer := Integer (Terminal_Width)-10;
-
-      Done_Section_Length : constant Integer :=
-                              Integer (Fraction * Float (N_Columns - 1));
-
-      Remaining_Section_Length : constant Integer :=
-                                   N_Columns - Done_Section_Length - 1;
-   begin
-      Put (Standard_Error, ASCII.CR);
-      Put (Standard_Error, Done_Section_Length * "=");
-      Put (Standard_Error, ">");
-
-      if Remaining_Section_Length > 0 then
-         Put (Standard_Error, Remaining_Section_Length * '-');
-      end if;
-
-      Put (Standard_Error, " ");
-      Float_Formatting.Put (File => Standard_Error,
-                            Item => 100.0 * Fraction,
-                            Fore => 3,
-                            Aft  => 1,
-                            Exp  => 0);
-
-      Put (Standard_Error, "%");
-      Flush (Standard_Error);
-   end Show_Progress_Bar;
 
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
@@ -173,6 +107,10 @@ procedure Main is
    Profiler : My_Profiler.Profiler_Type;
 begin
    Config.Parse_Command_Line;
+
+   if Config.Metadata_Requested then
+      Logging_Utilities.Dump_Metadata (Config.Metadata_Filename);
+   end if;
 
    Put_Maybe (Config.Verbosity_Level = Config.Interactive,
               "Reading event list...");

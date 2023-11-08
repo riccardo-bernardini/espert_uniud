@@ -109,6 +109,15 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
+   function Metadata_Requested return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Metadata_Filename return String
+     with
+       Pre => Package_Ready and then Metadata_Requested;
+
+
    Bad_Command_Line : exception;
 
 

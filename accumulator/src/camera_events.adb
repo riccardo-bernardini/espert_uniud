@@ -3,6 +3,13 @@ package body Camera_Events is
    function To_Duration (T : Timestamp) return Duration
    is (Duration (T.T));
 
+
+   function Max (X, Y : Timestamp) return Timestamp
+   is (if X > Y then X else Y);
+
+   function Min (X, Y : Timestamp) return Timestamp
+   is (if X < Y then X else Y) ;
+
    --------------
    -- Position --
    --------------
@@ -16,8 +23,8 @@ package body Camera_Events is
                        Delta_T : Duration)
                        return Event_Type
    is (Event_Type'(T      => Event.T - Delta_T,
-                   X      => Event.x,
-                   Y      => Event.y,
+                   X      => Event.X,
+                   Y      => Event.Y,
                    Weight => Event.Weight));
 
 
@@ -25,12 +32,12 @@ package body Camera_Events is
    is ("["
        & Event.T.T'Image & ", "
        & Event.X'Image & ", "
-       & Event.y'Image & ", "
+       & Event.Y'Image & ", "
        & Event.Weight'Image
        & "]");
 
 
-   function Image (T : Timestamp;
+   function Image (T         : Timestamp;
                    With_Unit : Boolean := False) return String
    is (if T = Minus_Infinity then
           "-Inf"

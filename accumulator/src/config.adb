@@ -15,6 +15,8 @@ with Config.Syntax;  use Config.Syntax;
 with Config.Data;    use Config.Data;
 
 with Patterns;
+with Event_Sequences;
+with Event_Streams;
 
 package body Config with SPARK_Mode is
    use type Camera_Events.Timestamp;
@@ -64,6 +66,7 @@ package body Config with SPARK_Mode is
          Frame_Rate,
          Output_Template,
          Input_Spec,
+         Synch_With,
          First_Image,
          Metadata_Filename,
          Start_Time,
@@ -86,6 +89,7 @@ package body Config with SPARK_Mode is
                         Frame_Rate           => +"framerate|frame-rate|fps",
                         Output_Template      => +"output",
                         Input_Spec           => +"input",
+                        Synch_With           => +"synch-with|synch",
                         First_Image          => +"first-image|first",
                         Metadata_Filename    => +"metadata|meta",
                         Start_Time           => +"start",
@@ -105,10 +109,11 @@ package body Config with SPARK_Mode is
                     Frame_Rate           => CL_Parser.Ignore_If_Missing,
                     Output_Template      => CL_Parser.Mandatory_Option,
                     Input_Spec           => CL_Parser.Ignore_If_Missing,
+                    Synch_With           => CL_Parser.Ignore_If_Missing,
                     First_Image          => (CL_Parser.Use_Default, +""),
                     Metadata_Filename    => CL_Parser.Ignore_If_Missing,
-                    Start_Time           => (CL_Parser.Use_Default, +""),
-                    Stop_Time            => (CL_Parser.Use_Default, +""),
+                    Start_Time           => CL_Parser.Ignore_If_Missing,
+                    Stop_Time            => CL_Parser.Ignore_If_Missing,
                     Min                  => (CL_Parser.Use_Default, +"-1.0"),
                     Max                  => (CL_Parser.Use_Default, +"1.0"),
                     Neutral              => CL_Parser.Ignore_If_Missing,
@@ -119,12 +124,17 @@ package body Config with SPARK_Mode is
 
       procedure Set_Sampling_Spec (Msg : out Unbounded_String)
         with
-          Pre => not Is_Set (Sampling_Period)
-          and not Is_Set (Start_Time)
-          and not Is_Set (Stop_Time),
-          Post => Is_Set (Sampling_Period)
-          and Is_Set (Start_Time)
-          and Is_Set (Stop_Time);
+          Pre => not Is_Set (Sampling_Period),
+          Post => Is_Set (Sampling_Period);
+
+      procedure Set_Start_And_Stop_Times
+        with
+          Pre =>
+            not Is_Set (Start_Time)
+            and not Is_Set (Stop_Time),
+          Post =>
+            Is_Set (Start_Time)
+            and  Is_Set (Stop_Time);
 
       procedure Set_Levels
         with
@@ -132,8 +142,7 @@ package body Config with SPARK_Mode is
           and not Is_Set (Max)
           and not Is_Set (Neutral)
           and not Parsed_Options (Min).Missing
-          and not Parsed_Options (max).Missing
-          and not Parsed_Options (Neutral).Missing,
+          and not Parsed_Options (Max).Missing,
           Post => Is_Set (Min)
           and Is_Set (Max)
           and Is_Set (Neutral);
@@ -224,11 +233,47 @@ package body Config with SPARK_Mode is
 
 
          Set (Sampling_Period, T);
-         Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
-         Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
+         --  Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
+         --  Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
 
-         msg := Null_Unbounded_String;
+         Msg := Null_Unbounded_String;
       end Set_Sampling_Spec;
+
+      procedure Set_Start_And_Stop_Times is
+
+         Start : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
+         Stop : Camera_Events.Timestamp := Camera_Events.Infinity;
+      begin
+         Start := (if Parsed_Options (Start_Time).Missing then
+                      Camera_Events.Minus_Infinity
+                   else
+                      Parse_Time_Spec (To_String (Parsed_Options (Start_Time).Value)));
+
+         Stop := (if Parsed_Options (Stop_Time).Missing then
+                     Camera_Events.Infinity
+                  else
+                     Parse_Time_Spec (To_String (Parsed_Options (Stop_Time).Value)));
+
+         if not Parsed_Options (Synch_With).Missing then
+            declare
+               Filename : constant String :=
+                            To_String (Parsed_Options (Synch_With).Value);
+
+               Events   : Event_Sequences.Event_Sequence;
+               Metadata : Event_Sequences.Metadata_Map;
+            begin
+               Event_Streams.Read_Event_Stream (Filename => Filename,
+                                                Events   => Events,
+                                                Metadata => Metadata);
+
+               Start := Camera_Events.Max (Start, Event_Sequences.T_Min (Events));
+               Stop := Camera_Events.Min (stop, Event_Sequences.T_Max (Events));
+            end;
+         end if;
+
+         Set (Start_Time, Start);
+         Set (Stop_Time, Stop);
+      end Set_Start_And_Stop_Times;
 
       procedure Handle_Metadata_Request is
       begin
@@ -260,14 +305,14 @@ package body Config with SPARK_Mode is
                   return;
                end if;
 
-               Set_First_Image_Spec((Class    => Uniform,
-                                     Level    => Level));
+               Set_First_Image_Spec ((Class    => Uniform,
+                                      Level    => Level));
 
             end;
 
          else
-            Set_First_Image_Spec((Class    => External,
-                                  Filename => To_Unbounded_String (First_Image_Value)));
+            Set_First_Image_Spec ((Class    => External,
+                                   Filename => To_Unbounded_String (First_Image_Value)));
 
          end if;
 
@@ -275,7 +320,7 @@ package body Config with SPARK_Mode is
 
       end Handle_First_Image;
 
-      function Make_report (Msg : Unbounded_String) return Parsing_Report
+      function Make_Report (Msg : Unbounded_String) return Parsing_Report
       is (Parsing_Report'(Status  => Bad_Command_Line,
                           Message => Msg));
 
@@ -307,6 +352,8 @@ package body Config with SPARK_Mode is
       Set_Levels;
 
       Set_Decay;
+
+      Set_Start_And_Stop_Times;
 
       Set_Sampling_Spec (Error);
 
@@ -363,26 +410,16 @@ package body Config with SPARK_Mode is
    -- Start_At --
    --------------
 
-   function Start_At (T_Min : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Get (Start_Time) > T_Min then
-          Get (Start_Time)
-       else
-          T_Min);
+   function Start_At  return Camera_Events.Timestamp
+   is (Get (Start_Time));
 
 
    -------------
    -- Stop_At --
    -------------
 
-   function Stop_At (T_Max : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Get (Stop_Time) = Camera_Events.Infinity then
-          T_Max
-
-       elsif Get (Stop_Time) = Camera_Events.Minus_Infinity then
-          raise Constraint_Error
-
-       else
-          Get (Stop_Time));
+   function Stop_At return Camera_Events.Timestamp
+   is (Get (Stop_Time));
 
 
    -----------------------

@@ -475,10 +475,10 @@ package body Event_Streams is
    end Save_Binary_Event_Stream;
 
    ---------------------------
-   -- Save_CVS_Event_Stream --
+   -- Save_CSV_Event_Stream --
    ---------------------------
 
-   procedure Save_CVS_Event_Stream
+   procedure Save_CSV_Event_Stream
      (Output   : Ada.Text_Io.File_Type;
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map)
@@ -518,10 +518,10 @@ package body Event_Streams is
                    & (if Weight (Event) > 0 then "1" else "0"));
       end loop;
 
-   end Save_CVS_Event_Stream;
+   end Save_CSV_Event_Stream;
 
    ---------------------------
-   -- Save_CVS_Event_Stream --
+   -- Save_CSV_Event_Stream --
    ---------------------------
 
    procedure Save_CVS_Event_Stream
@@ -531,7 +531,7 @@ package body Event_Streams is
    is
    begin
       if Filename = "-" then
-         Save_CVS_Event_Stream (Output   => Ada.Text_IO.Standard_Output,
+         Save_CSV_Event_Stream (Output   => Ada.Text_IO.Standard_Output,
                                 Events   => Events,
                                 Metadata => Metadata);
 
@@ -545,7 +545,7 @@ package body Event_Streams is
                     Mode => Out_File,
                     Name => Filename);
 
-            Save_CVS_Event_Stream (Output   => Output,
+            Save_CSV_Event_Stream (Output   => Output,
                                    Events   => Events,
                                    Metadata => Metadata);
 

@@ -52,13 +52,11 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
-   function Start_At (T_Min : Camera_Events.Timestamp)
-                      return Camera_Events.Timestamp
+   function Start_At  return Camera_Events.Timestamp
      with
        Pre => Package_Ready;
 
-   function Stop_At (T_Max : Camera_Events.Timestamp)
-                     return Camera_Events.Timestamp
+   function Stop_At  return Camera_Events.Timestamp
      with
        Pre => Package_Ready;
 

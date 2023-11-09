@@ -54,6 +54,10 @@ package Camera_Events is
 
    function "<=" (X, Y : Timestamp) return Boolean;
 
+   function Max (X, Y : Timestamp) return Timestamp;
+
+   function Min (X, Y : Timestamp) return Timestamp;
+
    type X_Coordinate_Type is mod 2 ** 16;
    type Y_Coordinate_Type is mod 2 ** 16;
 

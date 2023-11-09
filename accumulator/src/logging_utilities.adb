@@ -108,8 +108,8 @@ package body Logging_Utilities is
 
       Append ("Memory", Memory_Dynamic.Image (Config.Forgetting_Method));
 
-      Append ("Start", Camera_Events.Image (Config.Start_At (Camera_Events.Minus_Infinity)));
-      Append ("Stop", Camera_Events.Image (Config.Stop_At (Camera_Events.Infinity)));
+      Append ("Start", Camera_Events.Image (Config.Start_At));
+      Append ("Stop", Camera_Events.Image (Config.Stop_At));
       return Result;
    end Get_Metadata_Text;
 

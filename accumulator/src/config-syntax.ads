@@ -14,9 +14,9 @@ private package Config.Syntax is
    function Parse_Time_Spec (Spec : Unbounded_String) return Camera_Events.Timestamp
    is (Parse_Time_Spec (To_String (Spec)));
 
-   function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp;
-
-   function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp;
+   --  function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp;
+   --
+   --  function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp;
 
 
    type Decay_Type is (None, Reset, Linear, Exponential);

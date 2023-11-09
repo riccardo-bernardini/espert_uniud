@@ -22,6 +22,7 @@ procedure Main is
 
    Bad_Command_Line : exception;
    Full_Help_Asked  : exception;
+   Empty_Event_Stream : exception;
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
 
@@ -138,6 +139,9 @@ begin
                                     Events   => Events,
                                     Metadata => Metadata);
 
+   if Events.Is_Empty then
+      raise Empty_Event_Stream;
+   end if;
 
    Put_Line_Maybe (Config.Verbosity_Level = Config.Interactive, " Done");
 
@@ -145,23 +149,19 @@ begin
 
    Put_Line_Maybe (Config.Verbose, "Size Y = N. row =" & Metadata.Size_Y'Image);
 
-   if Events.Is_Empty then
-      Put_Line (Standard_Error, "Empty event stream");
-      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
-      return;
-   end if;
 
    declare
+      use Camera_Events;
       use type Camera_Events.Duration;
       use type Camera_Events.X_Coordinate_Type;
       use type Camera_Events.Y_Coordinate_Type;
       use type Config.Frame_Index;
 
-      Start_Time : constant Camera_Events.Timestamp :=
-                     Config.Start_At (Event_Sequences.T_Min (Events));
+      Start_Time : constant Timestamp :=
+                     Max (Config.Start_At,  Event_Sequences.T_Min (Events));
 
-      Stopping_Time : constant Camera_Events.Timestamp :=
-                        Config.Stop_At (Event_Sequences.T_Max (Events));
+      Stopping_Time : constant Timestamp :=
+                        Min (Config.Stop_At, Event_Sequences.T_Max (Events));
 
       Current_Time : Camera_Events.Timestamp := Start_Time;
       Next_Time    : Camera_Events.Timestamp;
@@ -287,6 +287,10 @@ exception
       Put_Line (Standard_Error, Config.Long_Help_Text);
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
+
+   when Empty_Event_Stream =>
+      Put_Line (Standard_Error, "Empty event stream");
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
    when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
       Put_Line (Standard_Error, Exception_Message (E));

@@ -142,17 +142,17 @@ package body Config.Syntax is
       end if;
    end Parse_Memory_Spec;
 
-   function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp
-   is (if Spec = "" then
-          Camera_Events.Minus_Infinity
-       else
-          Parse_Time_Spec (Spec));
-
-   function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp
-   is (if Spec  = "" then
-          Camera_Events.Infinity
-       else
-          Parse_Time_Spec (Spec));
+   --  function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp
+   --  is (if Spec = "" then
+   --         Camera_Events.Minus_Infinity
+   --      else
+   --         Parse_Time_Spec (Spec));
+   --
+   --  function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp
+   --  is (if Spec  = "" then
+   --         Camera_Events.Infinity
+   --      else
+   --         Parse_Time_Spec (Spec));
 
    function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec
    is

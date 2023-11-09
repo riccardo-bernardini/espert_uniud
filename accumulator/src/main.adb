@@ -20,8 +20,8 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 procedure Main is
    use type Config.Verbosity;
 
-   Bad_Command_Line : exception;
-   Full_Help_Asked  : exception;
+   Bad_Command_Line   : exception;
+   Full_Help_Asked    : exception;
    Empty_Event_Stream : exception;
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
@@ -47,10 +47,8 @@ procedure Main is
        Pre => From < To,
        Post =>
          (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
-         and
-           (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
-           and
-             (Segment.Length + Events.Length = Events.Length'Old);
+         and (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
+         and (Segment.Length + Events.Length = Events.Length'Old);
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
@@ -83,9 +81,9 @@ procedure Main is
 
       for Ev of Events loop
          --  Put_Line ("++" & Image (T (Ev)) & Image (Current_Time));
-         Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
-                                         Dynamic => Config.Forgetting_Method,
-                                         Delta_T => T (Ev) - Current_Time);
+         Pixel := Memory_Dynamic.Evolve (Initial_Value  => Pixel,
+                                         Dynamic        => Config.Forgetting_Method,
+                                         Delta_T        => T (Ev) - Current_Time);
 
          Pixel := Pixel + Config.Event_Contribution * Pixel_Value (Weight (Ev));
 
@@ -110,12 +108,12 @@ procedure Main is
 
    Profiler : My_Profiler.Profiler_Type;
 
-   report : Config.Parsing_Report;
+   Report : Config.Parsing_Report;
 begin
    Config.Parse_Command_Line (Report);
 
    case Report.Status is
-      when config.Success =>
+      when Config.Success =>
          null;
 
       when Config.Full_Help_Asked =>
@@ -136,6 +134,7 @@ begin
    Profiler.Entering (Parse_Stream);
 
    Event_Streams.Read_Event_Stream (Filename => Config.Input,
+                                    Use_Absolute_Timestamp => True,
                                     Events   => Events,
                                     Metadata => Metadata);
 
@@ -172,7 +171,7 @@ begin
 
       Reset_Frame   : constant Images.Image_Type :=
                         Images.Uniform (X_Size => Metadata.Size_X,
-                                        Y_Size => Metadata.Size_y,
+                                        Y_Size => Metadata.Size_Y,
                                         Value  => Config.Reset_Value);
 
       Frame_Number : Config.Frame_Index := 0;

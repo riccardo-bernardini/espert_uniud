@@ -132,9 +132,9 @@ package body Config with SPARK_Mode is
           Pre =>
             not Is_Set (Start_Time)
             and not Is_Set (Stop_Time),
-          Post =>
-            Is_Set (Start_Time)
-            and  Is_Set (Stop_Time);
+            Post =>
+              Is_Set (Start_Time)
+              and  Is_Set (Stop_Time);
 
       procedure Set_Levels
         with
@@ -186,7 +186,8 @@ package body Config with SPARK_Mode is
          Set (Max, To_Pixel_Value (Parsed_Options (Max).Value));
 
          if Parsed_Options (Neutral).Missing then
-            Set (Neutral, (Get (Min) + Get (Max) / 2.0));
+
+            Set (Neutral, (Get (Min) + Get (Max)) / 2.0);
 
          else
             Set (Neutral, To_Pixel_Value (Parsed_Options (Neutral).Value));
@@ -195,23 +196,25 @@ package body Config with SPARK_Mode is
       end Set_Levels;
 
       procedure Set_Decay is
+         use Memory_Dynamic;
 
          Chosen_Decay : constant Decay_Spec :=
                           Parse_Memory_Spec (To_String (Parsed_Options (Decay).Value));
       begin
          case Chosen_Decay.Class is
             when None =>
-               Set_Decay (Memory_Dynamic.No_Decay);
+               Set_Decay (No_Decay);
 
             when Linear =>
-               Set_Decay (Memory_Dynamic.Linear (T       => Chosen_Decay.Tau,
-                                                 Neutral => Get (Neutral)));
+               Set_Decay (Linear (T       => Chosen_Decay.Tau,
+                                  Neutral => Get (Neutral)));
 
             when Exponential =>
-               Set_Decay (Memory_Dynamic.Exponential (Chosen_Decay.Tau));
+               Set_Decay (Exponential (T          => Chosen_Decay.Tau,
+                                       Zero_Level => Get (Neutral)));
 
             when Reset =>
-               Set_Decay (Memory_Dynamic.Step (Reset_To => Get (Neutral)));
+               Set_Decay (Step (Reset_To => Get (Neutral)));
 
          end case;
       end Set_Decay;
@@ -242,7 +245,7 @@ package body Config with SPARK_Mode is
       procedure Set_Start_And_Stop_Times is
 
          Start : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
-         Stop : Camera_Events.Timestamp := Camera_Events.Infinity;
+         Stop  : Camera_Events.Timestamp := Camera_Events.Infinity;
       begin
          Start := (if Parsed_Options (Start_Time).Missing then
                       Camera_Events.Minus_Infinity
@@ -262,12 +265,13 @@ package body Config with SPARK_Mode is
                Events   : Event_Sequences.Event_Sequence;
                Metadata : Event_Sequences.Metadata_Map;
             begin
-               Event_Streams.Read_Event_Stream (Filename => Filename,
-                                                Events   => Events,
-                                                Metadata => Metadata);
+               Event_Streams.Read_Event_Stream (Filename               => Filename,
+                                                Use_Absolute_Timestamp => True,
+                                                Events                 => Events,
+                                                Metadata               => Metadata);
 
                Start := Camera_Events.Max (Start, Event_Sequences.T_Min (Events));
-               Stop := Camera_Events.Min (stop, Event_Sequences.T_Max (Events));
+               Stop := Camera_Events.Min (Stop, Event_Sequences.T_Max (Events));
             end;
          end if;
 

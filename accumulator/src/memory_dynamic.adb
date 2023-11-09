@@ -10,10 +10,14 @@ package body Memory_Dynamic is
    -- Evolve --
    ------------
 
+   ------------
+   -- Evolve --
+   ------------
+
    function Evolve
-     (Start   : Images.Pixel_Value;
-      Dynamic : Dynamic_Type;
-      Delta_T : Camera_Events.Duration)
+     (Initial_Value   : Images.Pixel_Value;
+      Dynamic         : Dynamic_Type;
+      Delta_T         : Camera_Events.Duration)
       return Images.Pixel_Value
    is
       use Images;
@@ -24,7 +28,7 @@ package body Memory_Dynamic is
       --  Put_Line ("delta_t=" & Camera_Events.Image (Delta_T));
       case Dynamic.Class is
          when Step | None =>
-            return Start;
+            return Initial_Value;
 
          when Linear =>
             declare
@@ -32,18 +36,26 @@ package body Memory_Dynamic is
                              Pixel_Value (Delta_T / Dynamic.Time_Constant);
 
             begin
-               if Start > Dynamic.Neutral_Level then
-                  return  Pixel_Value'Max (Start - Variation, Dynamic.Neutral_Level);
+               if Initial_Value > Dynamic.Neutral_Level then
+                  return  Pixel_Value'Max (Initial_Value - Variation,
+                                           Dynamic.Neutral_Level);
 
                else
-                  return  Pixel_Value'Min (Start + Variation, Dynamic.Neutral_Level);
+                  return  Pixel_Value'Min (Initial_Value + Variation,
+                                           Dynamic.Neutral_Level);
 
                end if;
             end;
 
          when Exponential =>
+            declare
+               Decay : constant Pixel_Value :=
+                         Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
 
-            return  Start * Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
+               Zero  : constant Pixel_Value := Dynamic.Zero_Level;
+            begin
+               return  Zero + (Initial_Value - Zero)  * Decay;
+            end;
       end case;
    end Evolve;
 

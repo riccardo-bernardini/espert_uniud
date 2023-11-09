@@ -1,7 +1,6 @@
 pragma Ada_2012;
 
 with Aida.Command_Line;
-with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Fixed;        use Ada.Strings;
 
 
@@ -14,6 +13,8 @@ use Interfaces;
 
 with Config.Syntax;  use Config.Syntax;
 with Config.Data;    use Config.Data;
+
+with Patterns;
 
 package body Config with SPARK_Mode is
    use type Camera_Events.Timestamp;
@@ -52,7 +53,7 @@ package body Config with SPARK_Mode is
 
 
 
-   procedure Parse_Command_Line is
+   procedure Parse_Command_Line (Report : out Parsing_Report) is
       use Aida.Command_Line;
       use type Images.Pixel_Value;
 
@@ -116,7 +117,7 @@ package body Config with SPARK_Mode is
                     Lazy_Decay           => CL_Parser.Ignore_If_Missing
                    );
 
-      procedure Set_Sampling_Spec
+      procedure Set_Sampling_Spec (Msg : out Unbounded_String)
         with
           Pre => not Is_Set (Sampling_Period)
           and not Is_Set (Start_Time)
@@ -129,7 +130,10 @@ package body Config with SPARK_Mode is
         with
           Pre => not Is_Set (Min)
           and not Is_Set (Max)
-          and not Is_Set (Neutral),
+          and not Is_Set (Neutral)
+          and not Parsed_Options (Min).Missing
+          and not Parsed_Options (max).Missing
+          and not Parsed_Options (Neutral).Missing,
           Post => Is_Set (Min)
           and Is_Set (Max)
           and Is_Set (Neutral);
@@ -156,8 +160,8 @@ package body Config with SPARK_Mode is
 
       Parsed_Options       : CL_Parser.Option_Values;
 
-      procedure Parse_Options_And_Apply_Defaults is
-         Missing_Options : Unbounded_String;
+      procedure Parse_Options_And_Apply_Defaults (Missing_Options : out Unbounded_String)
+      is
       begin
          CL_Parser.Parse (Names  => Option_Specs,
                           Result => Parsed_Options);
@@ -165,12 +169,6 @@ package body Config with SPARK_Mode is
          CL_Parser.Apply_Defaults (Values   => Parsed_Options,
                                    Missing  => Missing_Options,
                                    Defaults => Defaults);
-
-         if Missing_Options /= Null_Unbounded_String then
-            raise Bad_Command_Line
-              with
-                "Missing mandatory options: " & To_String (Missing_Options);
-         end if;
       end Parse_Options_And_Apply_Defaults;
 
       procedure Set_Levels is
@@ -210,7 +208,7 @@ package body Config with SPARK_Mode is
       end Set_Decay;
 
 
-      procedure Set_Sampling_Spec is
+      procedure Set_Sampling_Spec (Msg : out Unbounded_String) is
          T : Camera_Events.Duration;
       begin
          if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
@@ -220,14 +218,16 @@ package body Config with SPARK_Mode is
             T := Parse_Time_Spec (Parsed_Options (Sampling).Value);
 
          else
-            raise Bad_Command_Line
-              with "sampling or framerate, but not both";
+            Msg := To_Unbounded_String ("Sampling or framerate, but not both");
+            return;
          end if;
 
 
          Set (Sampling_Period, T);
          Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
          Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
+
+         msg := Null_Unbounded_String;
       end Set_Sampling_Spec;
 
       procedure Handle_Metadata_Request is
@@ -243,23 +243,84 @@ package body Config with SPARK_Mode is
 
          end if;
       end Handle_Metadata_Request;
+
+      procedure Handle_First_Image (Err : out Unbounded_String)  is
+         First_Image_Value : constant String :=
+                               To_String (Parsed_Options (First_Image).Value);
+      begin
+         if Patterns.Is_Float (First_Image_Value) then
+            declare
+               use Images;
+
+               Level : constant Pixel_Value :=
+                         Pixel_Value'Value (First_Image_Value);
+            begin
+               if Level > Get (Max) or Level < Get (Min) then
+                  Err := To_Unbounded_String ("First image level out of bounds");
+                  return;
+               end if;
+
+               Set_First_Image_Spec((Class    => Uniform,
+                                     Level    => Level));
+
+            end;
+
+         else
+            Set_First_Image_Spec((Class    => External,
+                                  Filename => To_Unbounded_String (First_Image_Value)));
+
+         end if;
+
+         Err := Null_Unbounded_String;
+
+      end Handle_First_Image;
+
+      function Make_report (Msg : Unbounded_String) return Parsing_Report
+      is (Parsing_Report'(Status  => Bad_Command_Line,
+                          Message => Msg));
+
+      Error : Unbounded_String;
    begin
       if Help_Asked then
-         raise Full_Help_Asked;
+         Report := Parsing_Report'(Status  => Full_Help_Asked,
+                                   Message => Null_Unbounded_String);
+
+         return;
       end if;
 
 
       Set_Verbosity_Level ((if Is_A_Tty (2) then Interactive else Logging));
 
-      Parse_Options_And_Apply_Defaults;
+      declare
+         Missing_Options : Unbounded_String;
+      begin
+         Parse_Options_And_Apply_Defaults (Missing_Options);
+
+         if Missing_Options /= Null_Unbounded_String then
+            Report := Parsing_Report'(Status  => Bad_Command_Line,
+                                      Message =>  "Missing mandatory options: " & Missing_Options);
+
+            return;
+         end if;
+      end;
 
       Set_Levels;
 
       Set_Decay;
 
-      Set_Sampling_Spec;
+      Set_Sampling_Spec (Error);
 
-      Set (First_Image, To_String (Parsed_Options (First_Image).Value));
+      if Error /= Null_Unbounded_String then
+         Report := Make_Report (Error);
+         return;
+      end if;
+
+      Handle_First_Image (Error);
+
+      if Error /= Null_Unbounded_String then
+         Report := Make_Report (Error);
+         return;
+      end if;
 
       Set_Output_Filename_Template
         (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
@@ -279,6 +340,9 @@ package body Config with SPARK_Mode is
       Set (Rectify, not Parsed_Options (Rectify).Missing);
 
       pragma Assert (Is_All_Set);
+
+      Report := Parsing_Report'(Status  => Success,
+                                Message => Null_Unbounded_String);
    end Parse_Command_Line;
 
    -----------
@@ -371,172 +435,35 @@ package body Config with SPARK_Mode is
                           Frame_Filename_Spec.Tail);
    end Frame_Filename;
 
-   ---------------------
-   -- Has_Start_Image --
-   ---------------------
-
-   function Has_Start_Image return Boolean
-   is (Get (First_Image) /= "");
 
    --------------------------
    -- Start_Image_Filename --
    --------------------------
 
-   function Start_Image_Spec return String
-   is (Get (First_Image));
+   function Start_Image_Spec return Start_Image_Spec_Type
+   is (Get_First_Image_Spec);
 
 
    function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
                          Size_Y : Camera_Events.Y_Coordinate_Type)
                          return Images.Image_Type
    is
-      function Is_Float (X : String) return Boolean
-      is
-         type Status_Type is
-           (
-            Start,
-            Sign,
-            Integer_Part,
-            Dot,
-            Fractional_Part,
-            Exponent,
-            Sign_Exponent,
-            Exponent_Value
-           );
-
-         Status : Status_Type := Start;
-
-         Is_Final : constant array (Status_Type) of Boolean :=
-                      (
-                       Start | Sign | Dot | Exponent | Sign_Exponent   => False,
-                       Integer_Part | Fractional_Part | Exponent_Value => True
-                      );
-      begin
-         for Current_Char of X loop
-            case Status is
-               when Start =>
-                  case Current_Char is
-                     when '+' | '-' =>
-                          Status := Sign;
-
-                     when '0' .. '9' =>
-                        Status := Integer_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-               when Sign =>
-                  case Current_Char is
-                     when '0' .. '9' =>
-                        Status := Fractional_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-
-               when Integer_Part =>
-                  case Current_Char is
-                     when '.'  =>
-                        Status := Dot;
-
-                     when '0' .. '9' =>
-                        Status := Integer_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-               when Dot =>
-                  case Current_Char is
-                     when '0' .. '9' =>
-                        Status := Fractional_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-
-               when Fractional_Part =>
-                  case Current_Char is
-                     when 'e' | 'E'  =>
-                        Status := Exponent;
-
-                     when '0' .. '9' =>
-                        Status := Fractional_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-
-               when Exponent =>
-                  case Current_Char is
-                     when '+' | '-'  =>
-                        Status := Sign_Exponent;
-
-                     when '0' .. '9' =>
-                        Status := Exponent_Value;
-
-                     when others =>
-                        return False;
-                  end case;
-
-               when Sign_Exponent =>
-                  case Current_Char is
-                     when '0' .. '9' =>
-                        Status := Fractional_Part;
-
-                     when others =>
-                        return False;
-                  end case;
-
-               when Exponent_Value =>
-                  case Current_Char is
-                     when '0' .. '9' =>
-                        Status := Exponent_Value;
-
-                     when others =>
-                        return False;
-                  end case;
-            end case;
-         end loop;
-
-         return Is_Final (Status);
-      end Is_Float;
-
       use Camera_Events;
    begin
-      if not Has_Start_Image then
-         return Images.Uniform (Size_X, Size_Y, Get (Neutral));
+      case Start_Image_Spec.Class is
+         when Uniform =>
+            return Images.Uniform (Size_X, Size_Y, Start_Image_Spec.Level);
 
-      elsif Is_Float (Start_Image_Spec) then
-         declare
-            use Images;
+         when External =>
+            return Result : constant Images.Image_Type :=
+              Images.Load (To_String (Start_Image_Spec.Filename)) do
 
-            Level : constant Pixel_Value :=
-                      Pixel_Value'Value (Start_Image_Spec);
-         begin
-            if Level <= Get (Max) and Level >= Get (Min) then
-               return Images.Uniform (Size_X, Size_Y, Level);
-
-            else
-               raise Bad_Command_Line
-                 with "Start image level outside of the range";
-
-            end if;
-         end;
-      else
-         return Result : constant Images.Image_Type :=
-           Images.Load (Start_Image_Spec) do
-
-            if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
-               raise Constraint_Error
-                 with "Non-compatible start image size";
-            end if;
-         end return;
-      end if;
+               if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
+                  raise Constraint_Error
+                    with "Non-compatible start image size";
+               end if;
+            end return;
+      end case;
    end Start_Image;
 
 

@@ -1,6 +1,6 @@
 with Config.Syntax;
 
-private package Config.Data is
+private package Config.Data with SPARK_Mode is
    use type Memory_Dynamic.Dynamic_Type;
    use type Images.Pixel_Value;
    use type Camera_Events.Timestamp;
@@ -11,9 +11,9 @@ private package Config.Data is
       Decay,
       Output_Filename_Template,
       Verbosity_Level,
+      First_Image,
       -- String fields
       Input,
-      First_Image,
       Metadata_Filename,
       -- Numeric fields
       Min,
@@ -27,6 +27,20 @@ private package Config.Data is
       Rectify,
       Lazy_Decay
      );
+
+   type Start_Image_Class is (Uniform, External);
+
+   type Start_Image_Spec_Type (Class : Start_Image_Class := Uniform) is
+      record
+         case Class is
+            when Uniform =>
+               Level : Images.Pixel_Value;
+
+            when External =>
+               Filename : Unbounded_String;
+         end case;
+      end record;
+
 
    subtype String_Field is Configuration_Field range Input .. Metadata_Filename;
 
@@ -72,7 +86,14 @@ private package Config.Data is
      with
        Pre => Is_Set (Output_Filename_Template);
 
+   procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
+     with
+       Pre => not Is_Set (First_Image),
+       Post => Is_Set (First_Image) and then Get_First_Image_Spec = Spec;
 
+   function get_first_image_spec return Start_Image_Spec_Type
+     with
+       Pre => Is_Set (First_Image);
 
    procedure Set_Decay (Item : Memory_Dynamic.Dynamic_Type)
      with
@@ -98,7 +119,7 @@ private package Config.Data is
                   Value : Images.Pixel_Value)
      with
        Pre => not Is_Set (Field),
-       Post => Is_Set (Field) and then Get (Field) = Value;
+       Post => (Is_Set (Field) and then Get (Field) = Value);
 
    function Get (Field : Numeric_Field) return Images.Pixel_Value
      with

@@ -1,6 +1,6 @@
 pragma Ada_2012;
-with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
-package body Config.Data is
+
+package body Config.Data with SPARK_Mode is
 
    Set_Fields : array (Configuration_Field) of Boolean := (others => False);
 
@@ -27,6 +27,8 @@ package body Config.Data is
          Input_Filename          : Unbounded_String := Null_Unbounded_String;
          Frame_Filename_Template : Config.Syntax.Radix_Spec;
 
+         First_Image_Spec        : Start_Image_Spec_Type;
+
          String_Fields           : String_Field_Array;
          Numeric_Fields          : Numeric_Field_Array;
          Timestamp_Fields        : Timestamp_Field_Array;
@@ -37,10 +39,25 @@ package body Config.Data is
    Config_Data : Config_Data_Record;
 
    procedure Is_Set (Field : Configuration_Field)
+     with
+       Post => Is_Set (Field);
+
+   procedure Is_Set (Field : Configuration_Field)
    is
    begin
       Set_Fields (Field) := True;
    end Is_Set;
+
+   procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
+   is
+   begin
+      Config_Data.First_Image_Spec := Spec;
+      Is_Set (First_Image);
+   end Set_First_Image_Spec;
+
+   function Get_First_Image_Spec return Start_Image_Spec_Type
+   is (Config_Data.First_Image_Spec);
+
    ------------
    -- Is_Set --
    ------------

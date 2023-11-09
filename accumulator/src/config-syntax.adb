@@ -58,7 +58,7 @@ package body Config.Syntax is
                     Float'Value (X)
 
                  else
-                    raise Bad_Command_Line
+                    raise Bad_Syntax
                       with "Bad number '" & X & "'");
       end To_Float;
    begin
@@ -81,7 +81,7 @@ package body Config.Syntax is
          return 1.0 / To_Float (Value);
 
       else
-         raise Bad_Command_Line with "Unknown unit '" & Unit & "'";
+         raise Bad_Syntax with "Unknown unit '" & Unit & "'";
       end if;
    end Parse_Time_Spec;
 
@@ -111,34 +111,34 @@ package body Config.Syntax is
    begin
       if Method = "step" or Method = "s" or Method = "reset" then
          if Parameter /= "" then
-            raise Bad_Command_Line with "'step' with parameter";
+            raise Bad_Syntax with "'step' with parameter";
          end if;
 
          return (Class => Reset);
 
       elsif Method = "none" then
          if Parameter /= "" then
-            raise Bad_Command_Line with "'none' with parameter";
+            raise Bad_Syntax with "'none' with parameter";
          end if;
 
          return (Class => None);
 
       elsif Method = "linear" or Method = "lin" or Method = "l" then
          if Parameter = "" then
-            raise Bad_Command_Line with "'linear' needs a time constant";
+            raise Bad_Syntax with "'linear' needs a time constant";
          end if;
 
          return (Class => Linear, Tau => Parse_Time_Spec (Parameter));
 
       elsif Method = "exponential" or Method = "exp" or Method = "e" then
          if Parameter = "" then
-            raise Bad_Command_Line with "'exponential' needs a time constant";
+            raise Bad_Syntax with "'exponential' needs a time constant";
          end if;
 
          return (Class => Exponential, Tau => Parse_Time_Spec (Parameter));
 
       else
-         raise Bad_Command_Line with "Unknown dynamic '" & Method & "'";
+         raise Bad_Syntax with "Unknown dynamic '" & Method & "'";
       end if;
    end Parse_Memory_Spec;
 
@@ -185,7 +185,7 @@ package body Config.Syntax is
                end if;
             end loop;
 
-            raise Bad_Command_Line
+            raise Bad_Syntax
               with "Unknown extension: '" & Ext & "'";
          end;
       end Extract_Format;
@@ -200,7 +200,7 @@ package body Config.Syntax is
 
    begin
       if Frame_Number_Position = 0 then
-         raise Bad_Command_Line
+         raise Bad_Syntax
            with "Missing '" & Frame_Number_Marker & "' in frame filename radix";
       end if;
 

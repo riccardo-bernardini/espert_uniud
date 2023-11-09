@@ -1,4 +1,3 @@
-with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 
 private package Config.Syntax is
    function Parse_Time_Spec (Spec : String) return Float;
@@ -62,6 +61,6 @@ private package Config.Syntax is
 
    function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec;
 
-
+   Bad_Syntax : exception;
 
 end Config.Syntax;

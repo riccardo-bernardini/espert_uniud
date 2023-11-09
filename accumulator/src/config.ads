@@ -1,6 +1,7 @@
 with Camera_Events;
 with Memory_Dynamic;
 with Images;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 package Config with SPARK_Mode is
    type Frame_Index is range 0 .. Integer'Last;
@@ -16,10 +17,18 @@ package Config with SPARK_Mode is
    function Package_Ready return Boolean
      with Ghost;
 
-   procedure Parse_Command_Line
+   type Parsing_Status is (Success, Full_Help_Asked, Bad_Command_Line);
+
+   type Parsing_Report is
+      record
+         Status  : Parsing_Status;
+         Message : Unbounded_String;
+      end record;
+
+   procedure Parse_Command_Line (Report : out Parsing_Report)
      with
        Pre => not Package_Ready,
-       Post => Package_Ready;
+       Post => (Report.Status = Success) = Package_Ready;
 
 
    function Short_Help_Text return String;
@@ -118,9 +127,6 @@ package Config with SPARK_Mode is
        Pre => Package_Ready and then Metadata_Requested;
 
 
-   Bad_Command_Line : exception;
 
-
-   Full_Help_Asked : exception;
 
 end Config;

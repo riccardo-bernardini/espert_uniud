@@ -17,6 +17,12 @@ package body Generic_Command_Line_Parser is
    procedure Parse_Option_Names (Source    : String;
                                  Names     : out String_Vectors.Vector;
                                  Help_Line : out Unbounded_String)
+     with
+       Pre => Source'Length < Natural'Last;
+
+   procedure Parse_Option_Names (Source    : String;
+                                 Names     : out String_Vectors.Vector;
+                                 Help_Line : out Unbounded_String)
    is
       use String_Vectors;
 
@@ -29,7 +35,10 @@ package body Generic_Command_Line_Parser is
 
       Help_Line := Null_Unbounded_String;
 
+      pragma Assert (Length (Name_Accumulator) = 0);
+
       for I in Source'Range loop
+         pragma Loop_Invariant (Length (Name_Accumulator) <= I - Source'First);
          C := Source (I);
 
          case C is

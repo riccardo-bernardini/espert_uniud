@@ -15,10 +15,13 @@ with Logging_Utilities; use Logging_Utilities;
 with Profiling;
 
 use Ada;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 procedure Main is
    use type Config.Verbosity;
 
+   Bad_Command_Line : exception;
+   Full_Help_Asked  : exception;
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
 
@@ -105,8 +108,22 @@ procedure Main is
    Metadata : Event_Sequences.Metadata_Map;
 
    Profiler : My_Profiler.Profiler_Type;
+
+   report : Config.Parsing_Report;
 begin
-   Config.Parse_Command_Line;
+   Config.Parse_Command_Line (Report);
+
+   case Report.Status is
+      when config.Success =>
+         null;
+
+      when Config.Full_Help_Asked =>
+         raise Full_Help_Asked;
+
+      when Config.Bad_Command_Line =>
+         raise Bad_Command_Line with To_String (Report.Message);
+
+   end case;
 
    if Config.Metadata_Requested then
       Logging_Utilities.Dump_Metadata (Config.Metadata_Filename);
@@ -247,7 +264,7 @@ begin
       Profiler.Dump;
    end;
 exception
-   when E : Config.Bad_Command_Line =>
+   when E : Bad_Command_Line =>
       Put_Line (Standard_Error, Exception_Message (E));
       New_Line (Standard_Error);
 
@@ -266,7 +283,7 @@ exception
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
-   when Config.Full_Help_Asked =>
+   when Full_Help_Asked =>
       Put_Line (Standard_Error, Config.Long_Help_Text);
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);

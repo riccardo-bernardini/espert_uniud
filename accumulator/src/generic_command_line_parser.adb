@@ -1,6 +1,6 @@
 pragma Ada_2012;
 with Ada.Characters.Handling;
-with Ada.Command_Line;
+with Aida.Command_Line;
 -- with Ada.Text_IO; use Ada.Text_IO;
 
 --  with Ada.Containers.Indefinite_Ordered_Maps;
@@ -15,7 +15,7 @@ package body Generic_Command_Line_Parser is
                         Element_Type => Options);
 
    procedure Parse_Option_Names (Source    : String;
-                                 Names     : in out String_Vectors.Vector;
+                                 Names     : out String_Vectors.Vector;
                                  Help_Line : out Unbounded_String)
    is
       use String_Vectors;
@@ -344,7 +344,7 @@ package body Generic_Command_Line_Parser is
    is
       function Command_Line_Restored return String
       is
-         use Ada, Ada.Command_Line;
+         use Aida, Aida.Command_Line;
 
          Accumulator : Unbounded_String := Null_Unbounded_String;
       begin

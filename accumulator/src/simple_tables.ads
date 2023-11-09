@@ -4,7 +4,7 @@ generic
 
    with function"=" (X, Y : Key_Type) return Boolean is <>;
 
-   with function"<" (X, Y : Key_Type) return Boolean is <>;
+   --  with function"<" (X, Y : Key_Type) return Boolean is <>;
 package Simple_Tables is
    type Map (<>) is private;
 
@@ -39,11 +39,19 @@ package Simple_Tables is
 
    procedure Dump (Item : Map; Image : access function (K : Key_Type; E : Element_Type) return String);
 private
-   type Map_Entry is
+   type Map_Entry (Valid : Boolean := False) is
       record
-         Key     : Key_Type;
-         Element : Element_Type;
+         case Valid is
+            when False =>
+               null;
+
+            when True =>
+               Key     : Key_Type;
+               Element : Element_Type;
+         end case;
       end record;
+
+   Invalid_Entry : constant Map_Entry := Map_Entry'(Valid => False);
 
    type Cursor is new Natural;
 
@@ -58,6 +66,8 @@ private
          Data : Entry_Array (Valid_Cursor'First .. Last_Index);
          Next_Free : Valid_Cursor;
       end record;
+     --  with
+     --    Type_Invariant => (for all I in Valid_Cursor'First .. Next_Free - 1 => Data (I).Valid);
 
 
 

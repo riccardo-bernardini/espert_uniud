@@ -1,14 +1,22 @@
 with Ada.Text_IO; use Ada.Text_IO;
 package body Simple_Tables is
    function Contains (Item : Map; Key : Key_Type) return Boolean
-   is (Find (Item, key) /= No_Element);
+   is (Find (Item, Key) /= No_Element);
 
    function Size (Item : Map) return Natural
-   is (Positive(Item.Next_Free) - 1);
+   is (Positive (Item.Next_Free) - 1);
+
+   -------------
+   -- New_Map --
+   -------------
 
    function New_Map (Capacity : Positive) return Map
-   is (Map'(Last_Index => Cursor (Capacity), Data => <>, Next_Free => Valid_Cursor'First));
-
+   is
+   begin
+      return Map'(Last_Index => Cursor (Capacity),
+                  Data       => (others => Invalid_Entry),
+                  Next_Free  => Valid_Cursor'First);
+   end New_Map;
 
    function Capacity (Item : Map) return Positive
    is (Positive (Item.Last_Index));
@@ -30,7 +38,9 @@ package body Simple_Tables is
          raise Constraint_Error;
       end if;
 
-      Item.data (Item.Next_Free) := Map_Entry'(Key, New_Item);
+      Item.Data (Item.Next_Free) := Map_Entry'(Valid   => True,
+                                               Key     => Key,
+                                               Element => New_Item);
 
       Item.Next_Free := Item.Next_Free + 1;
    end Insert;
@@ -75,8 +85,8 @@ package body Simple_Tables is
    begin
       Put_Line ("DUMP BEGIN");
 
-      for I in item.Data'First .. item.Next_Free - 1 loop
-         Put_Line (I'Image & " " & Image (item.Data (I).Key, item.Data (I).Element));
+      for I in Item.Data'First .. Item.Next_Free - 1 loop
+         Put_Line (I'Image & " " & Image (Item.Data (I).Key, Item.Data (I).Element));
       end loop;
 
       Put_Line ("DUMP END");

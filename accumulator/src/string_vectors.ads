@@ -37,7 +37,7 @@ private
 
    type Vector (Capacity : Positive) is
       record
-         Elements  : String_Array (1 .. Capacity);
+         Elements  : String_Array (1 .. Capacity) := (others => Null_Unbounded_String);
          Next_Free : Positive := 1;
       end record
      with

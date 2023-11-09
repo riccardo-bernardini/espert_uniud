@@ -1,6 +1,6 @@
 pragma Ada_2012;
 
-with Ada.Command_Line;
+with Aida.Command_Line;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Fixed;        use Ada.Strings;
 
@@ -53,7 +53,7 @@ package body Config with SPARK_Mode is
 
 
    procedure Parse_Command_Line is
-      use Ada.Command_Line;
+      use Aida.Command_Line;
       use type Images.Pixel_Value;
 
       type Options is
@@ -63,7 +63,7 @@ package body Config with SPARK_Mode is
          Frame_Rate,
          Output_Template,
          Input_Spec,
-         First_Image_Filename,
+         First_Image,
          Metadata_Filename,
          Start_Time,
          Stop_Time,
@@ -85,7 +85,7 @@ package body Config with SPARK_Mode is
                         Frame_Rate           => +"framerate|frame-rate|fps",
                         Output_Template      => +"output",
                         Input_Spec           => +"input",
-                        First_Image_Filename => +"first-image|first",
+                        First_Image          => +"first-image|first",
                         Metadata_Filename    => +"metadata|meta",
                         Start_Time           => +"start",
                         Stop_Time            => + "stop",
@@ -104,14 +104,14 @@ package body Config with SPARK_Mode is
                     Frame_Rate           => CL_Parser.Ignore_If_Missing,
                     Output_Template      => CL_Parser.Mandatory_Option,
                     Input_Spec           => CL_Parser.Ignore_If_Missing,
-                    First_Image_Filename => (CL_Parser.Use_Default, +""),
+                    First_Image          => (CL_Parser.Use_Default, +""),
                     Metadata_Filename    => CL_Parser.Ignore_If_Missing,
                     Start_Time           => (CL_Parser.Use_Default, +""),
                     Stop_Time            => (CL_Parser.Use_Default, +""),
-                    Min                  => (CL_Parser.Use_Default, +"0.0"),
+                    Min                  => (CL_Parser.Use_Default, +"-1.0"),
                     Max                  => (CL_Parser.Use_Default, +"1.0"),
                     Neutral              => CL_Parser.Ignore_If_Missing,
-                    Event_Weigth         => (CL_Parser.Use_Default, +"1.0"),
+                    Event_Weigth         => (CL_Parser.Use_Default, +"0.25"),
                     Rectify              => CL_Parser.Ignore_If_Missing,
                     Lazy_Decay           => CL_Parser.Ignore_If_Missing
                    );
@@ -259,7 +259,7 @@ package body Config with SPARK_Mode is
 
       Set_Sampling_Spec;
 
-      Set (First_Image, To_String (Parsed_Options (First_Image_Filename).Value));
+      Set (First_Image, To_String (Parsed_Options (First_Image).Value));
 
       Set_Output_Filename_Template
         (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
@@ -382,7 +382,7 @@ package body Config with SPARK_Mode is
    -- Start_Image_Filename --
    --------------------------
 
-   function Start_Image_Filename return String
+   function Start_Image_Spec return String
    is (Get (First_Image));
 
 
@@ -390,21 +390,152 @@ package body Config with SPARK_Mode is
                          Size_Y : Camera_Events.Y_Coordinate_Type)
                          return Images.Image_Type
    is
+      function Is_Float (X : String) return Boolean
+      is
+         type Status_Type is
+           (
+            Start,
+            Sign,
+            Integer_Part,
+            Dot,
+            Fractional_Part,
+            Exponent,
+            Sign_Exponent,
+            Exponent_Value
+           );
+
+         Status : Status_Type := Start;
+
+         Is_Final : constant array (Status_Type) of Boolean :=
+                      (
+                       Start | Sign | Dot | Exponent | Sign_Exponent   => False,
+                       Integer_Part | Fractional_Part | Exponent_Value => True
+                      );
+      begin
+         for Current_Char of X loop
+            case Status is
+               when Start =>
+                  case Current_Char is
+                     when '+' | '-' =>
+                          Status := Sign;
+
+                     when '0' .. '9' =>
+                        Status := Integer_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+               when Sign =>
+                  case Current_Char is
+                     when '0' .. '9' =>
+                        Status := Fractional_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+
+               when Integer_Part =>
+                  case Current_Char is
+                     when '.'  =>
+                        Status := Dot;
+
+                     when '0' .. '9' =>
+                        Status := Integer_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+               when Dot =>
+                  case Current_Char is
+                     when '0' .. '9' =>
+                        Status := Fractional_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+
+               when Fractional_Part =>
+                  case Current_Char is
+                     when 'e' | 'E'  =>
+                        Status := Exponent;
+
+                     when '0' .. '9' =>
+                        Status := Fractional_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+
+               when Exponent =>
+                  case Current_Char is
+                     when '+' | '-'  =>
+                        Status := Sign_Exponent;
+
+                     when '0' .. '9' =>
+                        Status := Exponent_Value;
+
+                     when others =>
+                        return False;
+                  end case;
+
+               when Sign_Exponent =>
+                  case Current_Char is
+                     when '0' .. '9' =>
+                        Status := Fractional_Part;
+
+                     when others =>
+                        return False;
+                  end case;
+
+               when Exponent_Value =>
+                  case Current_Char is
+                     when '0' .. '9' =>
+                        Status := Exponent_Value;
+
+                     when others =>
+                        return False;
+                  end case;
+            end case;
+         end loop;
+
+         return Is_Final (Status);
+      end Is_Float;
+
       use Camera_Events;
    begin
-      if Has_Start_Image then
+      if not Has_Start_Image then
+         return Images.Uniform (Size_X, Size_Y, Get (Neutral));
+
+      elsif Is_Float (Start_Image_Spec) then
+         declare
+            use Images;
+
+            Level : constant Pixel_Value :=
+                      Pixel_Value'Value (Start_Image_Spec);
+         begin
+            if Level <= Get (Max) and Level >= Get (Min) then
+               return Images.Uniform (Size_X, Size_Y, Level);
+
+            else
+               raise Bad_Command_Line
+                 with "Start image level outside of the range";
+
+            end if;
+         end;
+      else
          return Result : constant Images.Image_Type :=
-           Images.Load (Start_Image_Filename) do
+           Images.Load (Start_Image_Spec) do
 
             if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
                raise Constraint_Error
                  with "Non-compatible start image size";
             end if;
          end return;
-
-      else
-         return Images.Uniform (Size_X, Size_Y, Get (Neutral));
-
       end if;
    end Start_Image;
 
@@ -415,7 +546,7 @@ package body Config with SPARK_Mode is
 
    function Short_Help_Text return String
    is ("Usage: "
-       & Ada.Command_Line.Command_Name
+       & Aida.Command_Line.Command_Name
        & " memory-spec  sampling  radix  [event-filename] [first-image]");
 
    function Long_Help_Text return String

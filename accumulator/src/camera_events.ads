@@ -95,7 +95,7 @@ package Camera_Events is
 
    function Image (Event : Event_Type) return String;
 private
-   type Duration is mod 2 ** 64;
+   type Duration is range -2 ** 63 .. 2 ** 63 - 1;
    type Timestamp_Value is mod 2 ** 64;
 
    type Timestamp is

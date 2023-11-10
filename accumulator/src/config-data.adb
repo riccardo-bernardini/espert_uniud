@@ -157,6 +157,17 @@ package body Config.Data with SPARK_Mode is
       Is_Set (Field);
    end Set;
 
+   ------------
+   -- Update --
+   ------------
+
+   procedure Update  (Field : Timestamp_Field;
+                      Value : Camera_Events.Timestamp)is
+   begin
+      Config_Data.Timestamp_Fields (Field) := Value;
+   end Update;
+
+
    ---------
    -- Get --
    ---------

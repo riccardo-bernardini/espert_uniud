@@ -1,18 +1,6 @@
 
 private package Config.Syntax is
-   function Parse_Time_Spec (Spec : String) return Float;
 
-   function Parse_Time_Spec (Spec : String) return Camera_Events.Duration
-   is (Camera_Events.To_Duration (Parse_Time_Spec (Spec)));
-
-   function Parse_Time_Spec (Spec : String) return Camera_Events.Timestamp
-   is (Camera_Events.To_Timestamp (Parse_Time_Spec (Spec)));
-
-   function Parse_Time_Spec (Spec : Unbounded_String) return Camera_Events.Duration
-   is (Parse_Time_Spec (To_String (Spec)));
-
-   function Parse_Time_Spec (Spec : Unbounded_String) return Camera_Events.Timestamp
-   is (Parse_Time_Spec (To_String (Spec)));
 
    --  function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp;
    --

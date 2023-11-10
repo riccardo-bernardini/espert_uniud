@@ -1,89 +1,13 @@
 with Ada.Strings.Fixed;        use Ada.Strings;
 with Ada.Characters.Handling;
-with Ada.Strings.Maps.Constants;
+--  with Ada.Strings.Maps.Constants;
 
-with Gnat.Regpat;
-
+with Time_Syntax; use Time_Syntax;
 
 package body Config.Syntax is
    function Strip_Spaces (S : String) return String
    is (Fixed.Trim (Source => S,
                    Side   => Both));
-
-   function Parse_Time_Spec (Spec : String) return Float
-   is
-      use Ada.Strings.Fixed;
-      use Ada.Strings.Maps.Constants;
-      use Ada.Strings.Maps;
-
-      Stripped : constant String := Strip_Spaces (Spec);
-
-      End_Of_Number : constant Natural :=
-                        Index (Source => Stripped,
-                               Set    => Decimal_Digit_Set or To_Set ("._-+eE"),
-                               Test   => Outside);
-
-      Unit : constant String :=
-               (if End_Of_Number = 0
-                then
-                   ""
-                else
-                   Strip_Spaces (Stripped (End_Of_Number .. Stripped'Last)));
-
-      Value : constant String :=
-                (if End_Of_Number = 0
-                 then
-                    Stripped
-                 else
-                    Stripped (Stripped'First .. End_Of_Number - 1));
-
-      --------------
-      -- To_Float --
-      --------------
-
-      function To_Float (X : String) return Float
-      is
-         use Gnat.Regpat;
-
-         Integer_Regexp : constant Pattern_Matcher :=
-                            Compile ("^[-+]?[0-9_]+$");
-
-         Float_Regexp : constant Pattern_Matcher :=
-                          Compile ("^[-+]?[0-9_]+\.[0-9_]+([eE][-+]?[0-9_]+)?$");
-      begin
-         return (if Match (Integer_Regexp, X) then
-                    Float (Integer'Value (X))
-
-                 elsif Match (Float_Regexp, X) then
-                    Float'Value (X)
-
-                 else
-                    raise Bad_Syntax
-                      with "Bad number '" & X & "'");
-      end To_Float;
-   begin
-      if Unit = "" then
-         return To_Float (Value) * Camera_Events.Timestamps_Per_Second;
-
-      elsif Unit = "s" then
-         return To_Float (Value);
-
-      elsif Unit = "ms" then
-         return 1.0e-3 * To_Float (Value);
-
-      elsif Unit = "us" then
-         return 1.0e-6 * To_Float (Value);
-
-      elsif Unit = "ns" then
-         return 1.0e-9 * To_Float (Value);
-
-      elsif Unit = "fps" then
-         return 1.0 / To_Float (Value);
-
-      else
-         raise Bad_Syntax with "Unknown unit '" & Unit & "'";
-      end if;
-   end Parse_Time_Spec;
 
 
    function Parse_Memory_Spec (Spec : String)
@@ -128,14 +52,14 @@ package body Config.Syntax is
             raise Bad_Syntax with "'linear' needs a time constant";
          end if;
 
-         return (Class => Linear, Tau => Parse_Time_Spec (Parameter));
+         return (Class => Linear, Tau => Parse_Duration (Parameter));
 
       elsif Method = "exponential" or Method = "exp" or Method = "e" then
          if Parameter = "" then
             raise Bad_Syntax with "'exponential' needs a time constant";
          end if;
 
-         return (Class => Exponential, Tau => Parse_Time_Spec (Parameter));
+         return (Class => Exponential, Tau => Parse_Duration (Parameter));
 
       else
          raise Bad_Syntax with "Unknown dynamic '" & Method & "'";
@@ -217,3 +141,49 @@ package body Config.Syntax is
    end Parse_Output_Filename_Template;
 
 end Config.Syntax;
+--  Stripped : constant String := Strip_Spaces (Spec);
+--
+--  End_Of_Number : constant Natural :=
+--                    Index (Source => Stripped,
+--  --                           Set    => Decimal_Digit_Set or To_Set ("._-+eE"),
+--  --                           Test   => Outside);
+--  --
+--  --  Unit : constant String :=
+--  --           (if End_Of_Number = 0
+--  --            then
+--  --               ""
+--  --            else
+--  --               Strip_Spaces (Stripped (End_Of_Number .. Stripped'Last)));
+--  --
+--  --  Value : constant String :=
+--  --            (if End_Of_Number = 0
+--  --             then
+--  --                Stripped
+--  --             else
+--  --                Stripped (Stripped'First .. End_Of_Number - 1));
+--
+--  --------------
+--  -- To_Float --
+--  --------------
+--
+--  function To_Float (X : String) return Float
+--  is
+--     use Gnat.Regpat;
+--
+--     Integer_Regexp : constant Pattern_Matcher :=
+--                        Compile ("^[-+]?[0-9_]+$");
+--
+--     Float_Regexp : constant Pattern_Matcher :=
+--                      Compile ("^[-+]?[0-9_]+\.[0-9_]+([eE][-+]?[0-9_]+)?$");
+--  begin
+--     return (if Match (Integer_Regexp, X) then
+--                Float (Integer'Value (X))
+--
+--             elsif Match (Float_Regexp, X) then
+--                Float'Value (X)
+--
+--             else
+--                raise Bad_Syntax
+--                  with "Bad number '" & X & "'");
+--  end To_Float;
+--

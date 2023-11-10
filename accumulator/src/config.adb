@@ -18,8 +18,15 @@ with Patterns;
 with Event_Sequences;
 with Event_Streams;
 
+with Time_Syntax;
+
 package body Config with SPARK_Mode is
    use type Camera_Events.Timestamp;
+
+   T0_Has_Been_Fixed : Boolean := False;
+
+   function T0_Fixed return Boolean
+   is (T0_Has_Been_Fixed);
 
    function "+" (X : String) return Unbounded_String
                  renames To_Unbounded_String;
@@ -221,13 +228,15 @@ package body Config with SPARK_Mode is
 
 
       procedure Set_Sampling_Spec (Msg : out Unbounded_String) is
+         use Time_Syntax;
+
          T : Camera_Events.Duration;
       begin
          if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
-            T := Parse_Time_Spec (Parsed_Options (Frame_Rate).Value & "fps");
+            T := Parse_Duration (Parsed_Options (Frame_Rate).Value & "fps");
 
          elsif not Parsed_Options (Sampling).Missing and Parsed_Options (Frame_Rate).Missing then
-            T := Parse_Time_Spec (Parsed_Options (Sampling).Value);
+            T := Parse_Duration (Parsed_Options (Sampling).Value);
 
          else
             Msg := To_Unbounded_String ("Sampling or framerate, but not both");
@@ -243,6 +252,7 @@ package body Config with SPARK_Mode is
       end Set_Sampling_Spec;
 
       procedure Set_Start_And_Stop_Times is
+         use Time_Syntax;
 
          Start : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
          Stop  : Camera_Events.Timestamp := Camera_Events.Infinity;
@@ -250,12 +260,12 @@ package body Config with SPARK_Mode is
          Start := (if Parsed_Options (Start_Time).Missing then
                       Camera_Events.Minus_Infinity
                    else
-                      Parse_Time_Spec (To_String (Parsed_Options (Start_Time).Value)));
+                      Parse_Timestamp (To_String (Parsed_Options (Start_Time).Value)));
 
          Stop := (if Parsed_Options (Stop_Time).Missing then
                      Camera_Events.Infinity
                   else
-                     Parse_Time_Spec (To_String (Parsed_Options (Stop_Time).Value)));
+                     Parse_Timestamp (To_String (Parsed_Options (Stop_Time).Value)));
 
          if not Parsed_Options (Synch_With).Missing then
             declare
@@ -395,6 +405,21 @@ package body Config with SPARK_Mode is
       Report := Parsing_Report'(Status  => Success,
                                 Message => Null_Unbounded_String);
    end Parse_Command_Line;
+
+   ------------
+   -- Fix_T0 --
+   ------------
+
+   procedure Fix_T0 (T0 : Camera_Events.Timestamp) is
+   begin
+      for Field in Data.Timestamp_Field loop
+         if Camera_Events.Is_Relative (Get (Field)) then
+            Update (Field, Camera_Events.Fix_T0 (T => Get (Field), T0 => T0));
+         end if;
+      end loop;
+
+      T0_Has_Been_Fixed := True;
+   end Fix_T0;
 
    -----------
    -- Input --

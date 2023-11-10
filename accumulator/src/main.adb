@@ -32,13 +32,11 @@ procedure Main is
    use type Camera_Events.Timestamp;
    use type Ada.Containers.Count_Type;
 
-   function "<=" (A, B : Camera_Events.Timestamp) return Boolean
-   is
-   begin
-      return  not (A > B);
-   end "<=";
-   pragma Unreferenced ("<=");
-
+   --
+   -- Extract from Events the sequence of events with timestamp >= From and < To.
+   -- The events are moved from Events to Segment.  Any event with timestamp smaller
+   -- than From is discarded.
+   --
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
                               From    : in Camera_Events.Timestamp;
@@ -48,7 +46,10 @@ procedure Main is
        Post =>
          (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
          and (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
-         and (Segment.Length + Events.Length = Events.Length'Old);
+         and (Segment.Is_Empty or else Camera_Events.T (Segment.First_Element) >= From)
+         and (if Camera_Events.T (Events.First_Element)'Old >= From
+                then Segment.Length + Events.Length = Events'Old.Length
+                  else Segment.Length + Events.Length < Events'Old.Length);
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
@@ -133,9 +134,9 @@ begin
 
    Profiler.Entering (Parse_Stream);
 
-   Event_Streams.Read_Event_Stream (Filename => Config.Input,
+   Event_Streams.Read_Event_Stream (Filename               => Config.Input,
                                     Use_Absolute_Timestamp => True,
-                                    Events   => Events,
+                                    Events                 => Events,
                                     Metadata => Metadata);
 
    if Events.Is_Empty then
@@ -148,19 +149,16 @@ begin
 
    Put_Line_Maybe (Config.Verbose, "Size Y = N. row =" & Metadata.Size_Y'Image);
 
+   Config.Fix_T0 (Event_Sequences.T_Min (Events));
+
+   pragma Assert (Config.T0_Fixed);
 
    declare
       use Camera_Events;
-      use type Camera_Events.Duration;
-      use type Camera_Events.X_Coordinate_Type;
-      use type Camera_Events.Y_Coordinate_Type;
       use type Config.Frame_Index;
 
-      Start_Time : constant Timestamp :=
-                     Max (Config.Start_At,  Event_Sequences.T_Min (Events));
-
-      Stopping_Time : constant Timestamp :=
-                        Min (Config.Stop_At, Event_Sequences.T_Max (Events));
+      Start_Time    : constant Timestamp := Max (Config.Start_At,  Event_Sequences.T_Min (Events));
+      Stopping_Time : constant Timestamp := Min (Config.Stop_At, Event_Sequences.T_Max (Events));
 
       Current_Time : Camera_Events.Timestamp := Start_Time;
       Next_Time    : Camera_Events.Timestamp;

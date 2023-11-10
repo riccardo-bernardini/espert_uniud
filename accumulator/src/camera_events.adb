@@ -1,15 +1,5 @@
 pragma Ada_2012;
 package body Camera_Events is
-   function To_Duration (T : Timestamp) return Duration
-   is (Duration (T.T));
-
-
-   function Max (X, Y : Timestamp) return Timestamp
-   is (if X > Y then X else Y);
-
-   function Min (X, Y : Timestamp) return Timestamp
-   is (if X < Y then X else Y) ;
-
    --------------
    -- Position --
    --------------
@@ -20,7 +10,7 @@ package body Camera_Events is
 
 
    function Translate (Event   : Event_Type;
-                       Delta_T : Duration)
+                       Delta_T : Times.Duration)
                        return Event_Type
    is (Event_Type'(T      => Event.T - Delta_T,
                    X      => Event.X,
@@ -30,23 +20,12 @@ package body Camera_Events is
 
    function Image (Event : Event_Type) return String
    is ("["
-       & Event.T.T'Image & ", "
+       & Image (Event.T) & ", "
        & Event.X'Image & ", "
        & Event.Y'Image & ", "
        & Event.Weight'Image
        & "]");
 
-
-   function Image (T         : Timestamp;
-                   With_Unit : Boolean := False) return String
-   is (if T = Minus_Infinity then
-          "-Inf"
-
-       elsif T = Infinity then
-          "Inf"
-
-       else
-          T.T'Image & (if With_Unit then "us" else ""));
 
 
 end Camera_Events;

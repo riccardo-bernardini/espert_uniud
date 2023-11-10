@@ -17,6 +17,8 @@ with Camera_Events;
 use Ada;
 use Ada.Strings;
 
+with Time_Syntax;
+
 package body Event_Streams is
    type Counter is mod 2 ** 64;
 
@@ -124,7 +126,7 @@ package body Event_Streams is
             Weight := -1;
          end if;
 
-         return New_Event (T      => Value (Fields (1)),
+         return New_Event (T      => Time_Syntax.Parse_Timestamp (Fields (1)),
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
                            Weight => Weight);

@@ -6,7 +6,7 @@ project Accumulator is
    for Languages use ("Ada", "C");
 
    package Compiler is
-      for Switches ("ada") use ("-g", "-fstack-check", "-O3", "-gnata", "-gnatVa", "-gnatwa");
+      for Switches ("ada") use ("-g", "-fstack-check", "-O3", "-gnata", "-gnatf", "-gnatVa", "-gnatwa");
    end Compiler;
 
    package Builder is

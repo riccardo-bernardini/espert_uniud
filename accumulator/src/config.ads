@@ -17,6 +17,10 @@ package Config with SPARK_Mode is
    function Package_Ready return Boolean
      with Ghost;
 
+   function T0_Fixed return Boolean
+     with
+       Ghost;
+
    type Parsing_Status is (Success, Full_Help_Asked, Bad_Command_Line);
 
    type Parsing_Report is
@@ -54,11 +58,11 @@ package Config with SPARK_Mode is
 
    function Start_At  return Camera_Events.Timestamp
      with
-       Pre => Package_Ready;
+       Pre => Package_Ready and then T0_Fixed;
 
    function Stop_At  return Camera_Events.Timestamp
      with
-       Pre => Package_Ready;
+       Pre => Package_Ready and then T0_Fixed;
 
 
    function Forgetting_Method return  Memory_Dynamic.Dynamic_Type
@@ -124,7 +128,10 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready and then Metadata_Requested;
 
-
+   procedure Fix_T0 (T0 : Camera_Events.Timestamp)
+     with
+       Pre => Package_Ready and not T0_Fixed,
+       Post => T0_Fixed;
 
 
 end Config;

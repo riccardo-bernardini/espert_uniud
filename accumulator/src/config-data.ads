@@ -131,6 +131,12 @@ private package Config.Data with SPARK_Mode is
        Pre =>  not Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
+   procedure Update  (Field : Timestamp_Field;
+                      Value : Camera_Events.Timestamp)
+     with
+       Pre =>  Is_Set (Field),
+       Post => Is_Set (Field) and then Get (Field) = Value;
+
    function Get (Field : Timestamp_Field) return Camera_Events.Timestamp
      with
        Pre => Is_Set (Field);

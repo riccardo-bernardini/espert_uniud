@@ -97,9 +97,9 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
-   function Reset_Value return Images.Pixel_Value
+   function Neutral_Value return Images.Pixel_Value
      with
-       Pre => Package_Ready and then Reset_Each_Frame;
+       Pre => Package_Ready;
 
 
    function Rectify_Events return Boolean

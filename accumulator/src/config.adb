@@ -1,4 +1,5 @@
 pragma Ada_2012;
+with Ada.Text_IO; use Ada.Text_IO;
 
 with Aida.Command_Line;
 with Ada.Strings.Fixed;        use Ada.Strings;
@@ -305,7 +306,11 @@ package body Config with SPARK_Mode is
          First_Image_Value : constant String :=
                                To_String (Parsed_Options (First_Image).Value);
       begin
-         if Patterns.Is_Float (First_Image_Value) then
+         if First_Image_Value = "" then
+               Set_First_Image_Spec ((Class    => Uniform,
+                                      Level    => Get(Neutral)));
+
+         elsif Patterns.Is_Float (First_Image_Value) then
             declare
                use Images;
 
@@ -323,6 +328,8 @@ package body Config with SPARK_Mode is
             end;
 
          else
+            pragma Assert (First_Image_Value /= "");
+
             Set_First_Image_Spec ((Class    => External,
                                    Filename => To_Unbounded_String (First_Image_Value)));
 
@@ -584,8 +591,8 @@ package body Config with SPARK_Mode is
    function Reset_Each_Frame return Boolean
    is (Memory_Dynamic.Is_Reset (Config.Data.Decay));
 
-   function Reset_Value return Images.Pixel_Value
-   is (Memory_Dynamic.Reset_Value (Config.Data.Decay));
+   function Neutral_Value return Images.Pixel_Value
+   is (Get (Neutral));
 
    function Rectify_Events return Boolean
    is (Get (Rectify));

@@ -127,10 +127,6 @@ begin
 
    end case;
 
-   if Config.Metadata_Requested then
-      Logging_Utilities.Dump_Metadata (Config.Metadata_Filename);
-   end if;
-
    Put_Maybe (Config.Verbosity_Level = Config.Interactive,
               "Reading event list...");
 
@@ -155,6 +151,10 @@ begin
 
    pragma Assert (Config.T0_Fixed);
 
+   if Config.Metadata_Requested then
+      Logging_Utilities.Dump_Metadata (Config.Metadata_Filename);
+   end if;
+
    declare
       use Camera_Events;
       use Times;
@@ -173,7 +173,7 @@ begin
       Reset_Frame   : constant Images.Image_Type :=
                         Images.Uniform (X_Size => Metadata.Size_X,
                                         Y_Size => Metadata.Size_Y,
-                                        Value  => Config.Reset_Value);
+                                        Value  => Config.Neutral_Value);
 
       Frame_Number : Config.Frame_Index := 0;
 
@@ -292,8 +292,8 @@ exception
       Put_Line (Standard_Error, "Empty event stream");
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
-   when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
-      Put_Line (Standard_Error, Exception_Message (E));
-
-      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+   --  when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
+   --     Put_Line (Standard_Error, Exception_Message (E));
+   --
+   --     Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 end Main;

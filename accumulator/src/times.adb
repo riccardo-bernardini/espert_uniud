@@ -1,3 +1,4 @@
+with Ada.Text_IO; use Ada.Text_IO;
 with Time_Syntax;
 
 package body Times is
@@ -42,10 +43,17 @@ package body Times is
       Relative : Boolean;
       Value    : Time_Syntax.Time_In_Microseconds;
    begin
+      --  Put_Line ("valid duration """ & Spec & """");
+
       Time_Syntax.Parse_Time (Input    => Spec,
                               Success  => Success,
                               Relative => Relative,
                               Value    => Value);
+
+      --  Put_Line ("Success  : " & (if Success then "Yes" else "No"));
+      --
+      --  Put_Line ("Relative : " & (if Relative then "Yes" else "No"));
+      --  Put_Line ("Value    : " & Value'Image);
 
       return Success and then not Relative;
    end Is_Valid_Duration;

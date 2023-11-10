@@ -101,9 +101,10 @@ package body Logging_Utilities is
 
       Append ("Min", Images.Pixel_Value'Image (Config.Pixel_Min));
       Append ("Max", Images.Pixel_Value'Image (Config.Pixel_Max));
+      Append ("Neutral", Images.Pixel_Value'Image (Config.Neutral_Value));
 
       if Config.Reset_Each_Frame then
-         Append ("Reset at", Images.Pixel_Value'Image (Config.Reset_Value));
+         Append ("Reset at", Images.Pixel_Value'Image (Config.Neutral_Value));
       end if;
 
       Append ("Memory", Memory_Dynamic.Image (Config.Forgetting_Method));

@@ -122,9 +122,9 @@ package body Time_Syntax is
                          Data       => Input,
                          Matches    => Matches);
 
-      for I in Matches'range loop
-         Put_Line (Matches (I).First'Image & " .. " & Matches (I).Last'Image);
-      end loop;
+      --  for I in Matches'range loop
+      --     Put_Line (Matches (I).First'Image & " .. " & Matches (I).Last'Image);
+      --  end loop;
 
       if
         (Matches (All_Regexp) = No_Match)

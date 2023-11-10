@@ -1,4 +1,5 @@
 with Ada.Strings.Fixed;
+with Ada.Text_IO; use Ada.Text_IO;
 with Gnat.Regpat;
 
 package body Time_Syntax is
@@ -30,7 +31,7 @@ package body Time_Syntax is
 
       Time_Regexp : constant Pattern_Matcher :=
                       Compile ("^ *(@\+)?"
-                               & "(^[0-9_]+)"
+                               & "([0-9_]+)"
                                & "(\.[0-9_]+(?:[eE][-+]?[0-9_]+)?)?"
                                & " *"
                                & "([a-z]+)? *$");
@@ -53,6 +54,7 @@ package body Time_Syntax is
 
       function Parse_Number return Float
         with
+
           Pre => Found (Integer_Section);
 
       function Parse_Number return Float
@@ -106,6 +108,7 @@ package body Time_Syntax is
          begin
             for Table_Entry of Unit_Table loop
                if Padded = Table_Entry.Name then
+                  --  Put_Line (">> """& Padded & """ " & Table_Entry.Value'Image & ", " & Value'Image);
                   return Time_In_Microseconds (Table_Entry.Value * Value);
                end if;
             end loop;
@@ -119,10 +122,13 @@ package body Time_Syntax is
                          Data       => Input,
                          Matches    => Matches);
 
+      for I in Matches'range loop
+         Put_Line (Matches (I).First'Image & " .. " & Matches (I).Last'Image);
+      end loop;
 
       if
         (Matches (All_Regexp) = No_Match)
-        or else (not Found (Fractional_Section)  and Found (Unit_Section))
+        or else (Found (Fractional_Section)  and not Found (Unit_Section))
       then
          Success := False;
          Relative := False;
@@ -135,6 +141,8 @@ package body Time_Syntax is
       Relative := Found (Relative_Section);
 
       Value := Apply_Unit (Parse_Number, Get_Unit);
+
+      Success := True;
    end Parse_Time;
 
    -------------------

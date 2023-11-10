@@ -530,7 +530,7 @@ package body Event_Streams is
    -- Save_CSV_Event_Stream --
    ---------------------------
 
-   procedure Save_CVS_Event_Stream
+   procedure Save_CSV_Event_Stream
      (Filename : String;
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map)
@@ -558,7 +558,7 @@ package body Event_Streams is
             Close (Output);
          end;
       end if;
-   end Save_CVS_Event_Stream;
+   end Save_CSV_Event_Stream;
 
    -----------------------
    -- Save_Event_Stream --
@@ -572,7 +572,7 @@ package body Event_Streams is
       Extension : constant String := Get_Extension (Filename);
    begin
       if Extension = ".csv" or Filename = "-" then
-         Save_CVS_Event_Stream (Filename => Filename,
+         Save_CSV_Event_Stream (Filename => Filename,
                                 Events   => Events,
                                 Metadata => Metadata);
 

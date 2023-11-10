@@ -2,16 +2,16 @@ with Ada.Strings.Fixed;
 with Gnat.Regpat;
 
 package body Time_Syntax is
-   function Parse_Time_Spec (Spec : String) return Time_In_microseconds
+   function Parse_Time_Spec (Spec : String) return Time_In_Microseconds
    is
       Success  : Boolean;
       Relative : Boolean;
-      Value    : Time_In_microseconds;
+      Value    : Time_In_Microseconds;
    begin
-      Parse_General_Time (Input    => Spec,
-                          Success  => Success,
-                          Relative => Relative,
-                          Value    => Value);
+      Parse_Time (Input    => Spec,
+                  Success  => Success,
+                  Relative => Relative,
+                  Value    => Value);
 
       if (not Success) or else (Relative or Value < 0.0) then
          raise Constraint_Error with "Bad time spec";
@@ -21,10 +21,10 @@ package body Time_Syntax is
    end Parse_Time_Spec;
    pragma Unreferenced (Parse_Time_Spec);
 
-   procedure Parse_General_Time (Input    : String;
-                                 Success  : out Boolean;
-                                 Relative : out Boolean;
-                                 Value    : out Time_In_microseconds)
+   procedure Parse_Time (Input    : String;
+                         Success  : out Boolean;
+                         Relative : out Boolean;
+                         Value    : out Time_In_Microseconds)
    is
       use Gnat.Regpat;
 
@@ -80,7 +80,7 @@ package body Time_Syntax is
 
          type Unit_Entry is
             record
-               Name : Unit_Name;
+               Name  : Unit_Name;
                Value : Float;
             end record;
 
@@ -104,7 +104,7 @@ package body Time_Syntax is
 
             Padded : constant Unit_Name := ((2 - Unit'Length) * " ") & Unit;
          begin
-            for table_entry of Unit_Table loop
+            for Table_Entry of Unit_Table loop
                if Padded = Table_Entry.Name then
                   return Time_In_Microseconds (Table_Entry.Value * Value);
                end if;
@@ -135,7 +135,7 @@ package body Time_Syntax is
       Relative := Found (Relative_Section);
 
       Value := Apply_Unit (Parse_Number, Get_Unit);
-   end Parse_General_Time;
+   end Parse_Time;
 
    -------------------
    -- Is_Valid_Time --
@@ -145,12 +145,12 @@ package body Time_Syntax is
    is
       Success  : Boolean;
       Relative : Boolean;
-      Value    : Time_In_microseconds;
+      Value    : Time_In_Microseconds;
    begin
-      Parse_General_Time (Input    => Spec,
-                          Success  => Success,
-                          Relative => Relative,
-                          Value    => Value);
+      Parse_Time (Input    => Spec,
+                  Success  => Success,
+                  Relative => Relative,
+                  Value    => Value);
 
       return Success and then (not Relative and Value >= 0.0);
    end Is_Valid_Time;

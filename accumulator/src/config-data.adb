@@ -10,9 +10,9 @@ package body Config.Data with SPARK_Mode is
 
    type Boolean_Field_Array is array (Boolean_Field) of Boolean;
 
-   type Duration_Field_Array is array (Duration_Field) of Camera_Events.Duration;
+   type Duration_Field_Array is array (Duration_Field) of Times.Duration;
 
-   type Timestamp_Field_Array is array (Timestamp_Field) of Camera_Events.Timestamp;
+   type Timestamp_Field_Array is array (Timestamp_Field) of Times.Timestamp;
 
    --
    --  Why using a record? Wouldn't be it simpler to use just variables?
@@ -162,7 +162,7 @@ package body Config.Data with SPARK_Mode is
    ------------
 
    procedure Update  (Field : Timestamp_Field;
-                      Value : Camera_Events.Timestamp)is
+                      Value : Times.Timestamp)is
    begin
       Config_Data.Timestamp_Fields (Field) := Value;
    end Update;
@@ -179,7 +179,7 @@ package body Config.Data with SPARK_Mode is
    -- Set --
    ---------
 
-   procedure Set (Field : Timestamp_Field; Value : Camera_Events.Timestamp) is
+   procedure Set (Field : Timestamp_Field; Value : Times.Timestamp) is
    begin
       Config_Data.Timestamp_Fields (Field) := Value;
       Is_Set (Field);
@@ -189,14 +189,14 @@ package body Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Timestamp_Field) return Camera_Events.Timestamp
+   function Get (Field : Timestamp_Field) return Times.Timestamp
    is (Config_Data.Timestamp_Fields (Field));
 
    ---------
    -- Set --
    ---------
 
-   procedure Set (Field : Duration_Field; Value : Camera_Events.Duration) is
+   procedure Set (Field : Duration_Field; Value : Times.Duration) is
    begin
       Config_Data.Duration_Fields (Field) := Value;
       Is_Set (Field);
@@ -206,7 +206,7 @@ package body Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Duration_Field) return Camera_Events.Duration
+   function Get (Field : Duration_Field) return Times.Duration
    is (Config_Data.Duration_Fields (Field));
 
 

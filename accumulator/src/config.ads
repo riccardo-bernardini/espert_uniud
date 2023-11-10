@@ -1,4 +1,5 @@
 with Camera_Events;
+with Times;
 with Memory_Dynamic;
 with Images;
 with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
@@ -52,15 +53,15 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
-   function Sampling_Period return Camera_Events.Duration
+   function Sampling_Period return Times.Duration
      with
        Pre => Package_Ready;
 
-   function Start_At  return Camera_Events.Timestamp
+   function Start_At  return Times.Timestamp
      with
        Pre => Package_Ready and then T0_Fixed;
 
-   function Stop_At  return Camera_Events.Timestamp
+   function Stop_At  return Times.Timestamp
      with
        Pre => Package_Ready and then T0_Fixed;
 
@@ -128,10 +129,10 @@ package Config with SPARK_Mode is
      with
        Pre => Package_Ready and then Metadata_Requested;
 
-   procedure Fix_T0 (T0 : Camera_Events.Timestamp)
+   procedure Fix_T0 (T0 : Times.Timestamp)
      with
        Pre => Package_Ready and not T0_Fixed,
-       Post => T0_Fixed;
+     Post => T0_Fixed;
 
 
 end Config;

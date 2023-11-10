@@ -1,10 +1,11 @@
+with Times;
 with Config.Syntax;
 
 private package Config.Data with SPARK_Mode is
    use type Memory_Dynamic.Dynamic_Type;
    use type Images.Pixel_Value;
-   use type Camera_Events.Timestamp;
-   use type Camera_Events.Duration;
+   use type Times.Timestamp;
+   use type Times.Duration;
 
    type Configuration_Field is
      (
@@ -126,28 +127,28 @@ private package Config.Data with SPARK_Mode is
        Pre => Is_Set (Field);
 
    procedure Set (Field : Timestamp_Field;
-                  Value : Camera_Events.Timestamp)
+                  Value : Times.Timestamp)
      with
        Pre =>  not Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
    procedure Update  (Field : Timestamp_Field;
-                      Value : Camera_Events.Timestamp)
+                      Value : Times.Timestamp)
      with
        Pre =>  Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
-   function Get (Field : Timestamp_Field) return Camera_Events.Timestamp
+   function Get (Field : Timestamp_Field) return Times.Timestamp
      with
        Pre => Is_Set (Field);
 
    procedure Set (Field : Duration_Field;
-                  Value : Camera_Events.Duration)
+                  Value : Times.Duration)
      with
        Pre =>  not Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
-   function Get (Field : Duration_Field) return Camera_Events.Duration
+   function Get (Field : Duration_Field) return Times.Duration
      with
        Pre => Is_Set (Field);
 

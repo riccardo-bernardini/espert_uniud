@@ -17,15 +17,15 @@ package body Memory_Dynamic is
    function Evolve
      (Initial_Value   : Images.Pixel_Value;
       Dynamic         : Dynamic_Type;
-      Delta_T         : Camera_Events.Duration)
+      Delta_T         : Times.Duration)
       return Images.Pixel_Value
    is
       use Images;
-      use type Camera_Events.Duration;
+      use type Times.Duration;
       use Ada.Numerics.Elementary_Functions;
 
    begin
-      --  Put_Line ("delta_t=" & Camera_Events.Image (Delta_T));
+      --  Put_Line ("delta_t=" & Times.Image (Delta_T));
       case Dynamic.Class is
          when Step | None =>
             return Initial_Value;
@@ -74,10 +74,10 @@ package body Memory_Dynamic is
             return "Reset at " & X.Reset_Value'Image;
 
          when Linear =>
-            return "Linear, tau=" & Camera_Events.Image (X.Inverse_Slope, True);
+            return "Linear, tau=" & Times.Image (X.Inverse_Slope, True);
 
          when Exponential =>
-            return "Exponential, tau=" & Camera_Events.Image (X.Time_Constant, True);
+            return "Exponential, tau=" & Times.Image (X.Time_Constant, True);
 
       end case;
    end Image;

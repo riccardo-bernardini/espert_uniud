@@ -18,10 +18,9 @@ with Patterns;
 with Event_Sequences;
 with Event_Streams;
 
-with Time_Syntax;
 
 package body Config with SPARK_Mode is
-   use type Camera_Events.Timestamp;
+   use type Times.Timestamp;
 
    T0_Has_Been_Fixed : Boolean := False;
 
@@ -228,15 +227,15 @@ package body Config with SPARK_Mode is
 
 
       procedure Set_Sampling_Spec (Msg : out Unbounded_String) is
-         use Time_Syntax;
+         use Times;
 
-         T : Camera_Events.Duration;
+         T : Times.Duration;
       begin
          if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
-            T := Parse_Duration (Parsed_Options (Frame_Rate).Value & "fps");
+            T := Value (To_String (Parsed_Options (Frame_Rate).Value & "fps"));
 
          elsif not Parsed_Options (Sampling).Missing and Parsed_Options (Frame_Rate).Missing then
-            T := Parse_Duration (Parsed_Options (Sampling).Value);
+            T := Value (To_String (Parsed_Options (Sampling).Value));
 
          else
             Msg := To_Unbounded_String ("Sampling or framerate, but not both");
@@ -252,20 +251,19 @@ package body Config with SPARK_Mode is
       end Set_Sampling_Spec;
 
       procedure Set_Start_And_Stop_Times is
-         use Time_Syntax;
 
-         Start : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
-         Stop  : Camera_Events.Timestamp := Camera_Events.Infinity;
+         Start : Times.Timestamp := Times.Minus_Infinity;
+         Stop  : Times.Timestamp := Times.Infinity;
       begin
          Start := (if Parsed_Options (Start_Time).Missing then
-                      Camera_Events.Minus_Infinity
+                      Times.Minus_Infinity
                    else
-                      Parse_Timestamp (To_String (Parsed_Options (Start_Time).Value)));
+                      Times.Value (To_String (Parsed_Options (Start_Time).Value)));
 
          Stop := (if Parsed_Options (Stop_Time).Missing then
-                     Camera_Events.Infinity
+                     Times.Infinity
                   else
-                     Parse_Timestamp (To_String (Parsed_Options (Stop_Time).Value)));
+                     Times.Value (To_String (Parsed_Options (Stop_Time).Value)));
 
          if not Parsed_Options (Synch_With).Missing then
             declare
@@ -280,8 +278,8 @@ package body Config with SPARK_Mode is
                                                 Events                 => Events,
                                                 Metadata               => Metadata);
 
-               Start := Camera_Events.Max (Start, Event_Sequences.T_Min (Events));
-               Stop := Camera_Events.Min (Stop, Event_Sequences.T_Max (Events));
+               Start := Times.Max (Start, Event_Sequences.T_Min (Events));
+               Stop := Times.Min (Stop, Event_Sequences.T_Max (Events));
             end;
          end if;
 
@@ -410,11 +408,11 @@ package body Config with SPARK_Mode is
    -- Fix_T0 --
    ------------
 
-   procedure Fix_T0 (T0 : Camera_Events.Timestamp) is
+   procedure Fix_T0 (T0 : Times.Timestamp) is
    begin
       for Field in Data.Timestamp_Field loop
-         if Camera_Events.Is_Relative (Get (Field)) then
-            Update (Field, Camera_Events.Fix_T0 (T => Get (Field), T0 => T0));
+         if Times.Is_Relative (Get (Field)) then
+            Update (Field, Times.Fix_T0 (T => Get (Field), T0 => T0));
          end if;
       end loop;
 
@@ -432,14 +430,14 @@ package body Config with SPARK_Mode is
    -- Sampling_Period --
    ---------------------
 
-   function Sampling_Period return Camera_Events.Duration
+   function Sampling_Period return Times.Duration
    is (Get (Sampling_Period));
 
    --------------
    -- Start_At --
    --------------
 
-   function Start_At  return Camera_Events.Timestamp
+   function Start_At  return Times.Timestamp
    is (Get (Start_Time));
 
 
@@ -447,7 +445,7 @@ package body Config with SPARK_Mode is
    -- Stop_At --
    -------------
 
-   function Stop_At return Camera_Events.Timestamp
+   function Stop_At return Times.Timestamp
    is (Get (Stop_Time));
 
 

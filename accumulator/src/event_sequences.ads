@@ -6,6 +6,7 @@ with Ada.Iterator_Interfaces;
 use Ada;
 
 with Camera_Events;
+with Times;
 
 package Event_Sequences is
    use type Camera_Events.Event_Type;
@@ -67,14 +68,14 @@ package Event_Sequences is
 
    subtype Event_Sequence is Event_Vectors.List;
 
-   function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp;
+   function T_Min (Events : Event_Sequence) return Times.Timestamp;
 
-   function T_Max (Events : Event_Sequence) return Camera_Events.Timestamp;
+   function T_Max (Events : Event_Sequence) return Times.Timestamp;
 
    function "<" (A, B : Camera_Events.Point_Type) return Boolean;
 
    --  package Point_Event_Maps is
-   --    new Ada.Containers.Ordered_Maps (Key_Type     => Camera_Events.Point_Type,
+   --    new Ada.Containers.Ordered_Maps (Key_Type     => Times.Point_Type,
    --                                     Element_Type => Event_Sequence);
    --
    --  subtype Point_Event_Map is Point_Event_Maps.Map;
@@ -109,16 +110,16 @@ package Event_Sequences is
 
    procedure Collect_By_Point
      (Events         : Event_Sequence;
-      Last_Timestamp : Camera_Events.Timestamp;
+      Last_Timestamp : Times.Timestamp;
       Synchronous    : Boolean;
       Result         : out Point_Event_Map);
 
    -- Commented out, its role now is played by Collect_By_Point
    --  procedure Fill_Frame
    --    (Events_At : in out Point_Event_Map;
-   --     Time      : Camera_Events.Timestamp;
-   --     Size_X    : Camera_Events.X_Coordinate_Type;
-   --     Size_Y    : Camera_Events.Y_Coordinate_Type);
+   --     Time      : Times.Timestamp;
+   --     Size_X    : Times.X_Coordinate_Type;
+   --     Size_Y    : Times.Y_Coordinate_Type);
 
 private
    package Metadata_Maps is
@@ -137,10 +138,10 @@ private
                      return Boolean
    is (Map.Contains (Key));
 
-   function T_Min (Events : Event_Sequence) return Camera_Events.Timestamp
+   function T_Min (Events : Event_Sequence) return Times.Timestamp
    is (Camera_Events.T (Events.First_Element));
 
-   function T_Max (Events : Event_Sequence) return Camera_Events.Timestamp
+   function T_Max (Events : Event_Sequence) return Times.Timestamp
    is (Camera_Events.T (Events.Last_Element));
 
    procedure Append (Map   : in out Point_Event_Map;

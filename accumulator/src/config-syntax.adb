@@ -2,8 +2,6 @@ with Ada.Strings.Fixed;        use Ada.Strings;
 with Ada.Characters.Handling;
 --  with Ada.Strings.Maps.Constants;
 
-with Time_Syntax; use Time_Syntax;
-
 package body Config.Syntax is
    function Strip_Spaces (S : String) return String
    is (Fixed.Trim (Source => S,
@@ -52,14 +50,14 @@ package body Config.Syntax is
             raise Bad_Syntax with "'linear' needs a time constant";
          end if;
 
-         return (Class => Linear, Tau => Parse_Duration (Parameter));
+         return (Class => Linear, Tau => Times.Value (Parameter));
 
       elsif Method = "exponential" or Method = "exp" or Method = "e" then
          if Parameter = "" then
             raise Bad_Syntax with "'exponential' needs a time constant";
          end if;
 
-         return (Class => Exponential, Tau => Parse_Duration (Parameter));
+         return (Class => Exponential, Tau => Times.Value (Parameter));
 
       else
          raise Bad_Syntax with "Unknown dynamic '" & Method & "'";

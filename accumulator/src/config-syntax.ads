@@ -2,9 +2,9 @@
 private package Config.Syntax is
 
 
-   --  function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp;
+   --  function Parse_Start_Time (Spec : String) return Times.Timestamp;
    --
-   --  function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp;
+   --  function Parse_Stop_Time (Spec : String) return Times.Timestamp;
 
 
    type Decay_Type is (None, Reset, Linear, Exponential);
@@ -16,7 +16,7 @@ private package Config.Syntax is
                null;
 
             when Linear | Exponential =>
-               Tau : Camera_Events.Duration;
+               Tau : Times.Duration;
          end case;
       end record;
 
@@ -42,9 +42,9 @@ private package Config.Syntax is
 
    type Sampling_Spec is
       record
-         Start           : Camera_Events.Timestamp;
-         Stop            : Camera_Events.Timestamp;
-         Sampling_Period : Camera_Events.Duration;
+         Start           : Times.Timestamp;
+         Stop            : Times.Timestamp;
+         Sampling_Period : Times.Duration;
       end record;
 
    function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec;

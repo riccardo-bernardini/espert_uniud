@@ -1,4 +1,4 @@
-with Camera_Events;
+with Times;
 with Images;
 
 package Memory_Dynamic is
@@ -8,17 +8,17 @@ package Memory_Dynamic is
 
    function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type;
 
-   function Linear (T       : Camera_Events.Duration;
+   function Linear (T       : Times.Duration;
                     Neutral : Images.Pixel_Value)
                     return Dynamic_Type;
 
-   function Exponential (T          : Camera_Events.Duration;
+   function Exponential (T          : Times.Duration;
                          Zero_Level : Images.Pixel_Value)
                          return Dynamic_Type;
 
    function Evolve (Initial_Value   : Images.Pixel_Value;
       Dynamic         : Dynamic_Type;
-      Delta_T         : Camera_Events.Duration)
+      Delta_T         : Times.Duration)
                     return Images.Pixel_Value;
 
    function Is_Reset (X : Dynamic_Type) return Boolean;
@@ -42,11 +42,11 @@ private
 
 
             when Exponential =>
-               Time_Constant : Camera_Events.Duration;
+               Time_Constant : Times.Duration;
                Zero_Level    : Images.Pixel_Value;
 
             when Linear =>
-               Inverse_Slope : Camera_Events.Duration;
+               Inverse_Slope : Times.Duration;
                Neutral_Level : Images.Pixel_Value;
 
          end case;
@@ -65,14 +65,14 @@ private
    function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type
    is (Dynamic_Type'(Class  => Step, Reset_Value => Reset_To));
 
-   function Linear (T       : Camera_Events.Duration;
+   function Linear (T       : Times.Duration;
                     Neutral : Images.Pixel_Value)
                     return Dynamic_Type
    is (Dynamic_Type'(Class => Linear,
                      Inverse_Slope => T,
                      Neutral_Level => Neutral));
 
-   function Exponential (T          : Camera_Events.Duration;
+   function Exponential (T          : Times.Duration;
                          Zero_Level : Images.Pixel_Value)
                          return Dynamic_Type
    is (Dynamic_Type'(Class => Exponential,

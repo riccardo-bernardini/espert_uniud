@@ -28,7 +28,7 @@ package body Event_Sequences is
 
    procedure Collect_By_Point
      (Events         : Event_Sequence;
-      Last_Timestamp : Camera_Events.Timestamp;
+      Last_Timestamp : Times.Timestamp;
       Synchronous    : Boolean;
       Result         : out Point_Event_Map)
    is

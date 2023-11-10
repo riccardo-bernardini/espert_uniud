@@ -42,15 +42,15 @@ package body Logging_Utilities is
    -- Show_Progress_Bar --
    -----------------------
 
-   procedure Show_Progress_Bar (Start_Time   : Camera_Events.Timestamp;
-                                Stop_Time    : Camera_Events.Timestamp;
-                                Current_Time : Camera_Events.Timestamp)
+   procedure Show_Progress_Bar (Start_Time   : Times.Timestamp;
+                                Stop_Time    : Times.Timestamp;
+                                Current_Time : Times.Timestamp)
    is
-      use Camera_Events;
+      use Times;
       use Ada.Strings.Fixed;
 
-      Full     : constant Camera_Events.Duration := Stop_Time - Start_Time;
-      Done     : constant Camera_Events.Duration := Current_Time - Start_Time;
+      Full     : constant Times.Duration := Stop_Time - Start_Time;
+      Done     : constant Times.Duration := Current_Time - Start_Time;
       Fraction : constant Float := Done / Full;
 
       N_Columns : constant Integer := Integer (Terminal_Width)-10;
@@ -97,7 +97,7 @@ package body Logging_Utilities is
       end Append;
    begin
       Append ("Input", Config.Input);
-      Append ("Sampling", Camera_Events.Image (Config.Sampling_Period, True));
+      Append ("Sampling", Times.Image (Config.Sampling_Period, True));
 
       Append ("Min", Images.Pixel_Value'Image (Config.Pixel_Min));
       Append ("Max", Images.Pixel_Value'Image (Config.Pixel_Max));
@@ -108,8 +108,8 @@ package body Logging_Utilities is
 
       Append ("Memory", Memory_Dynamic.Image (Config.Forgetting_Method));
 
-      Append ("Start", Camera_Events.Image (Config.Start_At));
-      Append ("Stop", Camera_Events.Image (Config.Stop_At));
+      Append ("Start", Times.Image (Config.Start_At));
+      Append ("Stop", Times.Image (Config.Stop_At));
       return Result;
    end Get_Metadata_Text;
 

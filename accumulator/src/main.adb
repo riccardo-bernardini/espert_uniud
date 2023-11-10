@@ -10,6 +10,7 @@ with Event_Sequences;
 with Event_Streams;
 with Images;
 with Memory_Dynamic;
+with Times;
 with Logging_Utilities; use Logging_Utilities;
 
 with Profiling;
@@ -29,7 +30,7 @@ procedure Main is
    package My_Profiler is
      new Profiling (Program_Sections);
 
-   use type Camera_Events.Timestamp;
+   use type Times.Timestamp;
    use type Ada.Containers.Count_Type;
 
    --
@@ -39,8 +40,8 @@ procedure Main is
    --
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
-                              From    : in Camera_Events.Timestamp;
-                              To      : in Camera_Events.Timestamp)
+                              From    : in Times.Timestamp;
+                              To      : in Times.Timestamp)
      with
        Pre => From < To,
        Post =>
@@ -53,8 +54,8 @@ procedure Main is
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
-                              From    : in Camera_Events.Timestamp;
-                              To      : in Camera_Events.Timestamp)
+                              From    : in Times.Timestamp;
+                              To      : in Times.Timestamp)
    is
       use Camera_Events;
    begin
@@ -69,14 +70,15 @@ procedure Main is
       end loop;
    end Extract_Segment;
 
-   procedure Update_Pixel (Start  : Camera_Events.Timestamp;
+   procedure Update_Pixel (Start  : Times.Timestamp;
                            Pixel  : in out Images.Pixel_Value;
                            Events : Event_Sequences.Event_Sequence)
    is
-      use Camera_Events;
+      use Times;
       use Images;
+      use Camera_Events;
 
-      Current_Time : Timestamp := Start;
+      Current_Time : Times.Timestamp := Start;
    begin
       --  Put_Line ("IN " & Pixel'Image);
 
@@ -155,13 +157,14 @@ begin
 
    declare
       use Camera_Events;
+      use Times;
       use type Config.Frame_Index;
 
       Start_Time    : constant Timestamp := Max (Config.Start_At,  Event_Sequences.T_Min (Events));
       Stopping_Time : constant Timestamp := Min (Config.Stop_At, Event_Sequences.T_Max (Events));
 
-      Current_Time : Camera_Events.Timestamp := Start_Time;
-      Next_Time    : Camera_Events.Timestamp;
+      Current_Time : Times.Timestamp := Start_Time;
+      Next_Time    : Times.Timestamp;
 
 
       Current_Frame : Images.Image_Type :=
@@ -179,8 +182,8 @@ begin
       Events_At    : Event_Sequences.Point_Event_Map :=
                        Event_Sequences.Create (Metadata.Size_X, Metadata.Size_Y);
    begin
-      pragma Assert (Camera_Events.Is_Finite (Start_Time));
-      pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
+      pragma Assert (Is_Finite (Start_Time));
+      pragma Assert (Is_Finite (Stopping_Time));
       pragma Assert (Start_Time < Stopping_Time);
 
       --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));

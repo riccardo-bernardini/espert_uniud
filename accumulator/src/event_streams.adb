@@ -17,7 +17,7 @@ with Camera_Events;
 use Ada;
 use Ada.Strings;
 
-with Time_Syntax;
+with Times;
 
 package body Event_Streams is
    type Counter is mod 2 ** 64;
@@ -126,7 +126,7 @@ package body Event_Streams is
             Weight := -1;
          end if;
 
-         return New_Event (T      => Time_Syntax.Parse_Timestamp (Fields (1)),
+         return New_Event (T      => Times.Value (Fields (1)),
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
                            Weight => Weight);
@@ -276,8 +276,8 @@ package body Event_Streams is
       end Read_Metadata;
 
       Header_Seen        : Boolean := False;
-      Previous_Timestamp : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
-      Timestamp_Offset   : Camera_Events.Duration;
+      Previous_Timestamp : times.Timestamp := times.Minus_Infinity;
+      Timestamp_Offset   : times.Duration;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -304,15 +304,16 @@ package body Event_Streams is
 
                   declare
                      use Camera_Events;
+                     use Times;
 
                      Event : constant Event_Type :=
                                Read_Data_Line (Line, Polarity_Format (Metadata));
                   begin
                      if Events.Is_Empty then
                         Timestamp_Offset := (if Use_Absolute_Timestamp then
-                                                To_Duration (0.0)
+                                                Times.To_Duration (0.0)
                                              else
-                                                To_Duration (T (Event)));
+                                                Times.To_Duration (T (Event)));
 
                      else
                         if Previous_Timestamp > T (Event) then
@@ -517,7 +518,7 @@ package body Event_Streams is
       Put_Line (Output, "timestamp,x,y,polarity");
 
       for Event of Events loop
-         Put_Line (Output, Image (T (Event))
+         Put_Line (Output, Times.Image (T (Event))
                    & ","
                    & X (Event)'Image
                    & ","

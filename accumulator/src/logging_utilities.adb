@@ -168,9 +168,12 @@ package body Logging_Utilities is
 
    procedure Close (File : in out Log_Progress_File)
    is
-      End_Of_Log: constant Unsigned_8 := 16#FF#;
+      End_Of_Log : constant Unsigned_8 := 16#FF#;
    begin
-      Byte_Io.Write (File.F, End_Of_Log);
+      Byte_Io.Write (File => File.F,
+                     Item => End_Of_Log,
+                     To   => 1);
+      Byte_Io.Flush (File.F);
       Byte_Io.Close (File.F);
    end Close;
 
@@ -192,8 +195,14 @@ package body Logging_Utilities is
       Full     : constant Times.Duration := Stop_Time - Start_Time;
       Done     : constant Times.Duration := Current_Time - Start_Time;
       Fraction : constant Float := Done / Full;
+      Progress : constant Unsigned_8 := Unsigned_8 (200.0 * Fraction);
    begin
-      Byte_Io.Write (Target.F, Unsigned_8 (200.0 * Fraction));
+      Put_Line ("Writing " & Progress'Image);
+
+      Byte_Io.Write (File => Target.F,
+                     Item => Progress,
+                     To   => 1);
+
       Byte_Io.Flush (Target.F);
    end Log_Progress;
 

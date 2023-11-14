@@ -276,6 +276,10 @@ begin
       end if;
 
       Profiler.Dump;
+
+      if Config.Log_Progress then
+         Close (Log_Progress_Target);
+      end if;
    end;
 exception
    when E : Bad_Command_Line =>

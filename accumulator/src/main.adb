@@ -181,10 +181,20 @@ begin
 
       Events_At    : Event_Sequences.Point_Event_Map :=
                        Event_Sequences.Create (Metadata.Size_X, Metadata.Size_Y);
+
+      Log_Progress_Target : Log_Progress_File;
    begin
       pragma Assert (Is_Finite (Start_Time));
       pragma Assert (Is_Finite (Stopping_Time));
       pragma Assert (Start_Time < Stopping_Time);
+
+      if Config.Log_Progress then
+        Open
+          (File => Log_Progress_Target,
+           Name => Config.Log_progress_filename);
+      end if;
+
+      pragma Assert (Config.Log_Progress = Is_Open (Log_Progress_Target));
 
       --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
 
@@ -192,6 +202,10 @@ begin
 
          if Config.Show_Progress_Bar then
             Show_Progress_Bar (Start_Time, Stopping_Time, Current_Time);
+         end if;
+
+         if Config.Log_Progress then
+            Log_Progress (Log_Progress_Target, Start_Time, Stopping_Time, Current_Time);
          end if;
 
          Next_Time := Current_Time + Config.Sampling_Period;

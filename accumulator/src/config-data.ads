@@ -15,6 +15,7 @@ private package Config.Data with SPARK_Mode is
       First_Image,
       -- String fields
       Input,
+      Log_Progress,
       Metadata_Filename,
       -- Numeric fields
       Min,

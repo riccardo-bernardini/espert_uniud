@@ -1,5 +1,5 @@
 pragma Ada_2012;
-with Ada.Text_IO; use Ada.Text_IO;
+--  with Ada.Text_IO; use Ada.Text_IO;
 
 with Aida.Command_Line;
 with Ada.Strings.Fixed;        use Ada.Strings;
@@ -73,6 +73,7 @@ package body Config with SPARK_Mode is
          Frame_Rate,
          Output_Template,
          Input_Spec,
+         Log_Progress,
          Synch_With,
          First_Image,
          Metadata_Filename,
@@ -96,6 +97,7 @@ package body Config with SPARK_Mode is
                         Frame_Rate           => +"framerate|frame-rate|fps",
                         Output_Template      => +"output",
                         Input_Spec           => +"input",
+                        Log_Progress         => +"log-progress|log-to|progress|log",
                         Synch_With           => +"synch-with|synch",
                         First_Image          => +"first-image|first",
                         Metadata_Filename    => +"metadata|meta",
@@ -116,6 +118,7 @@ package body Config with SPARK_Mode is
                     Frame_Rate           => CL_Parser.Ignore_If_Missing,
                     Output_Template      => CL_Parser.Mandatory_Option,
                     Input_Spec           => CL_Parser.Ignore_If_Missing,
+                    Log_Progress         => (CL_Parser.Use_Default, +""),
                     Synch_With           => CL_Parser.Ignore_If_Missing,
                     First_Image          => (CL_Parser.Use_Default, +""),
                     Metadata_Filename    => CL_Parser.Ignore_If_Missing,
@@ -391,6 +394,8 @@ package body Config with SPARK_Mode is
       Set_Output_Filename_Template
         (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
 
+      Set (Data.Log_Progress, To_String (Parsed_Options (Log_Progress).Value));
+
       Handle_Metadata_Request;
 
       if Parsed_Options (Input_Spec).Missing  then
@@ -603,4 +608,9 @@ package body Config with SPARK_Mode is
    function Metadata_Filename return String
    is (Get (Metadata_Filename));
 
+   function Log_Progress return Boolean
+   is (Get (Log_Progress) /= "");
+
+   function Log_Progress_Filename return String
+   is (Get (Log_Progress));
 end Config;

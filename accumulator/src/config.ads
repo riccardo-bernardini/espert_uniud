@@ -134,5 +134,11 @@ package Config with SPARK_Mode is
        Pre => Package_Ready and not T0_Fixed,
      Post => T0_Fixed;
 
+   function Log_Progress return Boolean
+     with
+       Pre => Package_Ready;
 
+   function Log_Progress_Filename return String
+     with
+       Pre => Package_Ready and then Log_Progress;
 end Config;

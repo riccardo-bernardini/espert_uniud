@@ -148,4 +148,53 @@ package body Logging_Utilities is
          end;
       end if;
    end Dump_Metadata;
+
+   ----------
+   -- Open --
+   ----------
+
+   procedure Open (File : in out Log_Progress_File;
+                   Name : String)
+   is
+   begin
+      Byte_Io.Create (File => File.F,
+                      Mode => Byte_Io.Out_File,
+                      Name => Name);
+   end Open;
+
+   -----------
+   -- Close --
+   -----------
+
+   procedure Close (File : in out Log_Progress_File)
+   is
+      End_Of_Log: constant Unsigned_8 := 16#FF#;
+   begin
+      Byte_Io.Write (File.F, End_Of_Log);
+      Byte_Io.Close (File.F);
+   end Close;
+
+   function Is_Open (File : Log_Progress_File) return Boolean
+   is (Byte_Io.Is_Open (File.F));
+
+
+   ------------------
+   -- Log_Progress --
+   ------------------
+
+   procedure Log_Progress (Target       : in out Log_Progress_File;
+                           Start_Time   : Times.Timestamp;
+                           Stop_Time    : Times.Timestamp;
+                           Current_Time : Times.Timestamp)
+   is
+      use Times;
+
+      Full     : constant Times.Duration := Stop_Time - Start_Time;
+      Done     : constant Times.Duration := Current_Time - Start_Time;
+      Fraction : constant Float := Done / Full;
+   begin
+      Byte_Io.Write (Target.F, Unsigned_8 (200.0 * Fraction));
+      Byte_Io.Flush (Target.F);
+   end Log_Progress;
+
 end Logging_Utilities;

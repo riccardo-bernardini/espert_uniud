@@ -5,13 +5,17 @@ with Ada.Direct_IO;
 with Interfaces.C;  use Interfaces;
 
 with Config;
+with ada.Finalization;
 
 -----------------------
 -- Logging_Utilities --
 -----------------------
 
 package Logging_Utilities is
-   type Log_Progress_File is limited private;
+   type Log_Progress_File is
+     new Ada.Finalization.Limited_Controlled
+   with
+     private;
 
    procedure Open (File : in out Log_Progress_File;
                    Name : String)
@@ -58,8 +62,12 @@ private
    package Byte_Io is new Ada.Direct_IO (Unsigned_8);
 
    type Log_Progress_File is
+     new Ada.Finalization.Limited_Controlled
+       with
       record
          F : Byte_Io.File_Type;
       end record;
+
+   overriding procedure Finalize (Obj : in out Log_Progress_File);
 
 end Logging_Utilities;

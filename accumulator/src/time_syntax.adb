@@ -1,5 +1,5 @@
 with Ada.Strings.Fixed;
-with Ada.Text_IO; use Ada.Text_IO;
+--  with Ada.Text_IO; use Ada.Text_IO;
 with Gnat.Regpat;
 
 package body Time_Syntax is

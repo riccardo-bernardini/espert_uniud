@@ -206,4 +206,16 @@ package body Logging_Utilities is
       Byte_Io.Flush (Target.F);
    end Log_Progress;
 
+   --------------
+   -- Finalize --
+   --------------
+
+   procedure Finalize (Obj : in out Log_Progress_File)
+   is
+   begin
+      if Obj.Is_Open then
+         Obj.Close;
+      end if;
+   end Finalize;
+
 end Logging_Utilities;

@@ -1,0 +1,21 @@
+#!/usr/bin/env ruby
+
+require 'cgi'
+require 'stringio'
+
+def env_table
+    ENV
+end
+
+class CGIbis < CGI
+  include CGI::QueryExtension
+end
+
+cgi=CGIbis.new
+cgi.initialize_query
+
+cgi.print (cgi.params.inspect)
+
+cgi.print(cgi.params['myfile'].first)
+
+cgi.print(cgi.files.inspect)

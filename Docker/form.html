@@ -15,10 +15,23 @@
 
 	  document.getElementById('template').value = event_filename + '-%d.png';
       }
+
+      function template_changed() {
+	  document.getElementById('default-template').value = 0;
+      }
+
+      function validate() {
+	  return true;
+      }
+
+      function decay_changed() {
+	  decay=document.getElementById('decay').value;
+	  document.getElementById('tau').disabled= (decay == "none" || decay == "step");
+      }
     </script>
   </head>
   <body>
-    <form action="pippo.xx" method="post" enctype='multipart/form-data'>
+    <form action="pippo.xx" method="post" enctype='multipart/form-data' onsubmit='return validate();'>
       <table>
 	<tr>
 	  <td><label for="fps">Frame rate</label>
@@ -26,21 +39,21 @@
 	</tr>
 	<tr>
 	  <td><label for="template">Frame filename template</label>
-	  <td><input type="text" id="template" name="template" value="">
+	  <td><input type="text" id="template" name="template" value="" onchange="template_changed();">
 	    <input type='hidden' id='default-template' name='default-template' value="1">
 	</tr>
 	<tr>
 	  <td>
 	    <fieldset>
 	      <legend>Decay model</legend>
-	    <select id="decay" name="decay">
+	    <select id="decay" name="decay" onchange="decay_changed();">
 	      <option value="none">None</option>
 	      <option value="lin">Linear</option>
 	      <option value="exp">Exponential</option>
 	      <option value="step">Step</option>
 	    </select><br>
 	    <label for="tau">Time constant</label>
-	    <input type="text" id="tau" name="tau">
+	    <input type="text" id="tau" name="tau" disabled>
 	    </fieldset>
 	  </td>
 	</tr>

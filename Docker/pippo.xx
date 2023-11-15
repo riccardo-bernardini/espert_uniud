@@ -2,18 +2,44 @@
 
 require 'cgi'
 require 'stringio'
-
-class CGIbis < CGI
-  include CGI::QueryExtension
-end
+require 'tempfile'
 
 cgi=CGI.new
-$stderr.puts (cgi.params.inspect)
 
-cgi.print("Panini fritti!!!")
-cgi.print (cgi.params.inspect)
+frame_rate = cgi.params['fps'][0]
+template   = cgi.params['template'][0]
+decay      = cgi.params['decay'][0]
+tau        = cgi.params['tau'][0]
+event_file = cgi.params['myfile'][0]
 
-cgi.print(cgi.params['myfile'].first.read)
-  
-cgi.print(cgi.files.inspect)
+$stderr.puts "[#{frame_rate}]"
+$stderr.puts "[#{template}]"
+$stderr.puts "[#{decay}]"
+$stderr.puts "[#{tau}]"
 
+if event_file.is_a?(StringIO)
+  t =Tempfile.new('pippo')
+  t.write(event_file.read)
+  t.flush
+  event_file = t
+end
+
+$stderr.puts(event_file.path)
+
+cgi.print("pippo")
+sleep(30)
+
+# $stderr.puts (cgi.params.inspect)
+# 
+# cgi.print("Panini fritti!!!")
+# cgi.print (cgi.params.inspect)
+# 
+# cgi.print(cgi.params['myfile'].first.read)
+#   
+# cgi.print(cgi.files.inspect)
+
+# class CGIbis < CGI
+#   include CGI::QueryExtension
+# end
+# 
+# 

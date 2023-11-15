@@ -3,31 +3,68 @@
 require 'cgi'
 require 'stringio'
 require 'tempfile'
+require 'tmpdir'
+
+
+def despace(x)
+  x.is_a?(String) ? x.tr(' ', '') : x
+end
+
+def ensure_tempfile(events)
+  case events
+  when StringIO
+    t =Tempfile.new('pippo')
+    t.write(events.read)
+    t.flush
+    return t
+
+  when Tempfile
+    return events
+
+  else
+    raise "Boh.  I should never arrive here"
+  end
+end
+
+def make_decay(decay, tau)
+  case decay
+  when "none", "step"
+    return decay
+
+  when "lin"
+    return "linear:#{despace(tau)}"
+
+  when "exp"
+    return "exp:#{despace(tau)}"
+
+  else
+    raise "I shouldn't be here"
+  end
+
+end
 
 cgi=CGI.new
 
-frame_rate = cgi.params['fps'][0]
-template   = cgi.params['template'][0]
-decay      = cgi.params['decay'][0]
-tau        = cgi.params['tau'][0]
-event_file = cgi.params['myfile'][0]
+Dir.mktmpdir do |dir|
+  frame_rate = despace(cgi.params['fps'][0])
 
-$stderr.puts "[#{frame_rate}]"
-$stderr.puts "[#{template}]"
-$stderr.puts "[#{decay}]"
-$stderr.puts "[#{tau}]"
+  decay    = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
 
-if event_file.is_a?(StringIO)
-  t =Tempfile.new('pippo')
-  t.write(event_file.read)
-  t.flush
-  event_file = t
+  template = File.basename(cgi.params['template'][0])
+  template = File.join(dir, template)
+
+  event_file = ensure_tempfile(cgi.params['myfile'][0])
+
+
+
+  $stderr.puts "[#{frame_rate}]"
+  $stderr.puts "[#{template}]"
+  $stderr.puts "[#{decay}]"
+  $stderr.puts(event_file.path)
+
+  cgi.print("pippo")
+  sleep(30)
 end
-
-$stderr.puts(event_file.path)
-
-cgi.print("pippo")
-sleep(30)
 
 # $stderr.puts (cgi.params.inspect)
 # 

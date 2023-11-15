@@ -20,8 +20,62 @@
 	  document.getElementById('default-template').value = 0;
       }
 
+      function display_error_message(msg) {
+	  document.getElementById('message-area').innerHTML
+	      = `<ul>${msg}</ul>`;
+      }
+
+      function clean_error_message() {
+	  document.getElementById('message-area').innerHTML = '';
+      }
+
+      function has_valid_time(id) {
+	  t = document.getElementById(id).value;
+
+	  pattern=/^ *[0-9]+(\.[0-9]*([eE][-+][0-9]+)?)? *(s|ms|us|ns|fps)? *$/;
+	  return pattern.test(t)
+      }
+
+      function mark(id) {
+	  document.getElementById(id).style
+	      ="border-color:red; background-color:faa";
+      }
+
+      function unmark(id) {
+	  document.getElementById(id).style ="";
+      }
+
       function validate() {
-	  return true;
+	  error_msg = "";
+	  
+	  decay=document.getElementById('decay').value;
+
+	  if (decay == "lin" || decay == "exp") {
+	      if (! has_valid_time('tau')) {
+		  mark('tau');
+		  error_msg = error_msg.concat("<li>Missing tau for decay");
+	      } else {
+		  unmark('tau');
+	      }
+	  }
+
+	  if (! has_valid_time('fps')) {
+	      mark('fps');
+	      error_msg = error_msg.concat("<li>Invalid FPS specs");
+	  }
+
+	  file=document.getElementById('myfile').value;
+	  if (file == "") {
+	      mark('myfile');
+	      error_msg = error_msg.concat("<li>Missing event file");
+	  }
+
+	  if (error_msg == "") {
+	      return true; 
+	  } else {
+	      display_error_message(error_msg);
+	      return false;
+	  }
       }
 
       function decay_changed() {
@@ -35,7 +89,7 @@
       <table>
 	<tr>
 	  <td><label for="fps">Frame rate</label>
-	  <td><input type="text" id="fps" name="fps">
+	  <td><input type="text" id="fps" name="fps" >
 	</tr>
 	<tr>
 	  <td><label for="template">Frame filename template</label>
@@ -62,5 +116,6 @@
       <input type="file" id="myfile" name="myfile" onchange="upload_changed();" value=""><br>
       <input type="submit" value="Submit">
     </form>
+    <div id='message-area'></div>
   </body>
 </html>

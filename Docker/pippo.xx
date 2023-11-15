@@ -4,7 +4,7 @@ require 'cgi'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
-
+require 'open3'
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
@@ -43,27 +43,50 @@ def make_decay(decay, tau)
 
 end
 
-cgi=CGI.new
+def create_error_page(cgi, status, stderr)
+  cgi.out do
+    cgi.html do
+      cgi.body do
+        cgi.p do
+          CGI::escapeHTML(
+            "Command terminated with error: " + stderr
+          )
+        end
+      end
+    end
+  end
+end
+
+cgi=CGI.new("html4")
 
 Dir.mktmpdir do |dir|
   frame_rate = despace(cgi.params['fps'][0])
 
   decay    = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
 
-  template = File.basename(cgi.params['template'][0])
-  template = File.join(dir, template)
+  basename_template = File.basename(cgi.params['template'][0])
+  template = File.join(dir, basename_template)
 
   event_file = ensure_tempfile(cgi.params['myfile'][0])
 
+  params = []
+  params << "--sampling=#{frame_rate}"
+  params << "--decay=#{decay}"
+  params << "--output=#{template}"
+  params << "--input=#{event_file.path}"
 
+  $stderr.puts(params.inspect)
 
-  $stderr.puts "[#{frame_rate}]"
-  $stderr.puts "[#{template}]"
-  $stderr.puts "[#{decay}]"
-  $stderr.puts(event_file.path)
+  stdout, stderr, status=Open3.capture3("/tmp/www/html/accumulator.exe", *params)
 
-  cgi.print("pippo")
-  sleep(30)
+  if status.success?
+    create_success_page(cgi, dir, basename_template)
+
+  else
+    create_error_page(cgi, status, stderr)
+
+  end
+
 end
 
 # $stderr.puts (cgi.params.inspect)

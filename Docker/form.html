@@ -1,19 +1,52 @@
 <html>
+  <head>
+    <script>
+      function getFilename(fullPath) {
+	  return fullPath.replace(/^.*[\\\/]/, '').replace(/\.[^.]*$/, '');
+      }
+      
+      function upload_changed() {
+	  // document.getElementById('fps').value = document.getElementById('default-template').value;
+
+	  if (document.getElementById('default-template').value != '1')
+	  { return; }
+
+	  event_filename = getFilename(document.getElementById('myfile').value);
+
+	  document.getElementById('template').value = event_filename + '-%d.png';
+      }
+    </script>
+  </head>
   <body>
-    <form action="pippo.xx" method="post">
-      <label for="fname">First name:</label><br>
-      <input type="text" id="fname" name="fname"><br>
-      <label for="lname">Last name:</label><br>
-      <input type="text" id="lname" name="lname">
-      <label for="cars">Choose a car:</label>
-      <select id="cars" name="cars">
-	<option value="volvo">Volvo</option>
-	<option value="saab">Saab</option>
-	<option value="fiat">Fiat</option>
-	<option value="audi">Audi</option>
-      </select>
-      <label for="myfile">Select a file:</label>
-      <input type="file" id="myfile" name="myfile">
+    <form action="pippo.xx" method="post" enctype='multipart/form-data'>
+      <table>
+	<tr>
+	  <td><label for="fps">Frame rate</label>
+	  <td><input type="text" id="fps" name="fps">
+	</tr>
+	<tr>
+	  <td><label for="template">Frame filename template</label>
+	  <td><input type="text" id="template" name="template" value="">
+	    <input type='hidden' id='default-template' name='default-template' value="1">
+	</tr>
+	<tr>
+	  <td>
+	    <fieldset>
+	      <legend>Decay model</legend>
+	    <select id="decay" name="decay">
+	      <option value="none">None</option>
+	      <option value="lin">Linear</option>
+	      <option value="exp">Exponential</option>
+	      <option value="step">Step</option>
+	    </select><br>
+	    <label for="tau">Time constant</label>
+	    <input type="text" id="tau" name="tau">
+	    </fieldset>
+	  </td>
+	</tr>
+      </table>
+      <label for="myfile">Event file (CSV format):</label>
+      <input type="file" id="myfile" name="myfile" onchange="upload_changed();" value=""><br>
       <input type="submit" value="Submit">
     </form>
   </body>

@@ -3,19 +3,17 @@
 require 'cgi'
 require 'stringio'
 
-def env_table
-    ENV
-end
-
 class CGIbis < CGI
   include CGI::QueryExtension
 end
 
-cgi=CGIbis.new
-cgi.initialize_query
+cgi=CGI.new
+$stderr.puts (cgi.params.inspect)
 
+cgi.print("Panini fritti!!!")
 cgi.print (cgi.params.inspect)
 
-cgi.print(cgi.params['myfile'].first)
-
+cgi.print(cgi.params['myfile'].first.read)
+  
 cgi.print(cgi.files.inspect)
+

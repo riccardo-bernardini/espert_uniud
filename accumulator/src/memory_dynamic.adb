@@ -33,7 +33,7 @@ package body Memory_Dynamic is
          when Linear =>
             declare
                Variation : constant Pixel_Value :=
-                             Pixel_Value (Delta_T / Dynamic.Time_Constant);
+                             Pixel_Value (Delta_T / Dynamic.Inverse_Slope);
 
             begin
                if Initial_Value > Dynamic.Neutral_Level then

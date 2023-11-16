@@ -7,6 +7,13 @@
 # END HELP
 
 class Immutable_Expansion < String
+  #
+  # Are you wondering what this class is about?  It is used for 
+  # the macro definition defined on the CLI.  These definitions take
+  # precedence on any definition found in the expanded file.  In order
+  # to mark said definitions are "immutable", we will store them as
+  # Immutable_Expansion and not as String.
+  #
 end
 
 def extract_command(line)
@@ -25,13 +32,20 @@ def extract_command(line)
   end
 end
 
-def execute_command(command, macros)
+def execute_command(command, macros, missing)
+  return "" if command[0] == '--'
+  
   name, val=command.split('=', 2)
 
   if val.nil?
-    raise "Unknown name #{command}" unless macros.has_key?(command)
-    return macros[command]
+    if macros.has_key?(command)
+      return macros[command]
 
+    else
+      missing[command]=true
+      return ""
+
+    end
   else
     if ! macros[name].is_a?(Immutable_Expansion)
       macros[name]=val
@@ -89,6 +103,7 @@ end
 ###
 
 macros=Hash.new
+missing=Hash.new
 
 do_help_if_asked
 
@@ -102,10 +117,19 @@ while line = $stdin.gets
 
     break if command.nil?
 
-    replacement = execute_command(command, macros)
+    replacement = execute_command(command, macros, missing)
 
     line = pre + replacement + post
   end
 
   $stdout.puts(line)
 end
+
+missing = missing.keys
+
+if !missing.empty?
+  $stderr.puts("Found undefined macros: #{missing.join(', ')}")
+  exit 1
+end
+
+exit 0

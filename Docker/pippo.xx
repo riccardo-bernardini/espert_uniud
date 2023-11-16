@@ -76,8 +76,13 @@ end
 
 def create_success_page(cgi, dir, basename_template)
   zip_path=create_zip_archive(dir, basename_template)
+
+  $stderr.puts(cgi.inspect)
   
-  sleep(60)
+  cgi.out("type" => "application/zip",
+          "disposition" => "attachment; filename=#{File.basename(zip_path)}") {
+    File.read(zip_path)
+  }
 end
 
 def create_error_page(cgi, status, stderr)

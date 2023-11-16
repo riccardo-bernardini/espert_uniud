@@ -80,7 +80,8 @@ def create_success_page(cgi, dir, basename_template)
   $stderr.puts(cgi.inspect)
   
   cgi.out("type" => "application/zip",
-          "disposition" => "attachment; filename=#{File.basename(zip_path)}") {
+         # "disposition" => "attachment; filename=#{File.basename(zip_path)}"
+         ) {
     File.read(zip_path)
   }
 end

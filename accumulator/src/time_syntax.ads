@@ -1,6 +1,6 @@
 
 package Time_Syntax is
-   type Time_In_Microseconds is new Float;
+   type Time_In_Microseconds is range -2 ** 63 .. 2 ** 63 - 1;
 
    function Is_Valid_Time (Spec : String) return Boolean;
 

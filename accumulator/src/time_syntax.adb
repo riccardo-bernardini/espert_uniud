@@ -14,7 +14,7 @@ package body Time_Syntax is
                   Relative => Relative,
                   Value    => Value);
 
-      if (not Success) or else (Relative or Value < 0.0) then
+      if (not Success) or else (Relative or Value < 0) then
          raise Constraint_Error with "Bad time spec";
       end if;
 
@@ -52,38 +52,37 @@ package body Time_Syntax is
       function Found (Section : Integer) return Boolean
       is (Matches (Section) /= No_Match);
 
-      function Parse_Number return Float
+      type Floating_Time is digits 10 range -2.0 ** 63 .. 2.0 ** 63;
+
+      function Parse_Number return Floating_Time
         with
 
           Pre => Found (Integer_Section);
 
-      function Parse_Number return Float
+      function Parse_Number return Floating_Time
       is
-      begin
-         if not Found (Fractional_Section)  then
-            return Float (Integer'Value (Section (Integer_Section)));
+         Fraction : constant String := (if Found (Fractional_Section)
+                                        then Section (Fractional_Section)
+                                        else "0.0");
 
-         else
-            declare
-               Full_Number : constant String :=
-                               Section (Integer_Section) & Section (Fractional_Section);
-            begin
-               return Float'Value (Full_Number);
-            end;
-         end if;
+         Full_Number : constant String :=
+                         Section (Integer_Section) & Fraction;
+
+      begin
+         return Floating_Time'Value (Full_Number);
       end Parse_Number;
 
       function Get_Unit return String
       is (if not Found (Unit_Section) then "" else Section (Unit_Section));
 
-      function Apply_Unit (Value : Float; Unit : String) return Time_In_Microseconds
+      function Apply_Unit (Value : Floating_Time; Unit : String) return Time_In_Microseconds
       is
          subtype Unit_Name is String (1 .. 2);
 
          type Unit_Entry is
             record
                Name  : Unit_Name;
-               Value : Float;
+               Value : Floating_Time;
             end record;
 
          Unit_Table : constant array (1 .. 5) of Unit_Entry :=
@@ -132,7 +131,7 @@ package body Time_Syntax is
       then
          Success := False;
          Relative := False;
-         Value := 0.0;
+         Value := 0;
          return;
       end if;
 
@@ -140,7 +139,21 @@ package body Time_Syntax is
 
       Relative := Found (Relative_Section);
 
-      Value := Apply_Unit (Parse_Number, Get_Unit);
+      if not Found (Unit_Section) then
+         --
+         -- No unit specified: this is a timestamp and it must be an integer number
+         --
+         pragma Assert (not Found (Fractional_Section));
+         Value := Time_In_Microseconds'Value (Section (Integer_Section));
+
+      else
+         --
+         -- Here a unit is given
+         --
+         Value := Apply_Unit (Parse_Number, Get_Unit);
+
+      end if;
+
 
       Success := True;
    end Parse_Time;
@@ -160,7 +173,7 @@ package body Time_Syntax is
                   Relative => Relative,
                   Value    => Value);
 
-      return Success and then (not Relative and Value >= 0.0);
+      return Success and then (not Relative and Value >= 0);
    end Is_Valid_Time;
    pragma Unreferenced (Is_Valid_Time);
 

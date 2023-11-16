@@ -30,7 +30,7 @@ package body Times is
                               Relative => Relative,
                               Value    => Value);
 
-      return Success and then (Relative or Value >= 0.0);
+      return Success and then (Relative or Value >= 0);
    end Is_Valid_Timestamp;
 
    -----------------------

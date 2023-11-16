@@ -5,6 +5,7 @@ require 'stringio'
 require 'tempfile'
 require 'tmpdir'
 require 'open3'
+require 'zip'
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
@@ -41,6 +42,42 @@ def make_decay(decay, tau)
     raise "I shouldn't be here"
   end
 
+end
+
+def create_zip_archive(dir, basename_template)
+  pos = basename_template.index('%d')
+  return nil if pos.nil?
+
+  root = basename_template[0...pos];
+  pattern =  root + "*" + basename_template[pos+2..-1];
+  
+  pos = pattern.index('%d')
+  return nil unless pos.nil?
+
+  
+  zipfile_name = File.join(dir, "#{root}.zip");
+  $stderr.puts(zipfile_name);
+  
+  input_filenames = Dir.glob(File.join(dir, pattern));
+  return nil if input_filenames.empty?
+
+
+  Zip::File.open(zipfile_name, Zip::File::CREATE) do |zipfile|
+    input_filenames.each do |path|
+      # Two arguments:
+      # - The name of the file as it will appear in the archive
+      # - The original file, including the path to find it
+      zipfile.add(File.basename(path), path)
+    end
+  end
+
+  return zipfile_name
+end
+
+def create_success_page(cgi, dir, basename_template)
+  zip_path=create_zip_archive(dir, basename_template)
+  
+  sleep(60)
 end
 
 def create_error_page(cgi, status, stderr)

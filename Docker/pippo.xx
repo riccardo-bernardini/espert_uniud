@@ -100,9 +100,15 @@ def create_error_page(cgi, status, stderr)
   end
 end
 
+def with_status_dir
+  my_dir = File.dirname(File.absolute_path(__FILE__))
+  status_dir = File.absolute_path(File.join(my_dir, '../status/001'))
+  yield(status_dir)
+end
+
 cgi=CGI.new("html4")
 
-Dir.mktmpdir do |dir|
+with_status_dir do |dir|
   frame_rate = despace(cgi.params['fps'][0])
 
   decay    = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
@@ -117,9 +123,24 @@ Dir.mktmpdir do |dir|
   params << "--decay=#{decay}"
   params << "--output=#{template}"
   params << "--input=#{event_file.path}"
+  params << "--progress=#{File.join(dir, 'progress')}"
+
+  cgi.out do
+    cgi.html do
+      cgi.body do
+        cgi.p do
+          CGI::escapeHTML(
+            "Creating your images. Please wait"
+          )
+        end
+      end
+    end
+  end
+
 
   $stderr.puts(params.inspect)
 
+  
   stdout, stderr, status=Open3.capture3("/tmp/www/html/accumulator.exe", *params)
 
   if status.success?

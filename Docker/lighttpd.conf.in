@@ -8,7 +8,7 @@ server.modules = (
 	"mod_cgi"
 )
 
-%{root=/tmp}%
+%{-- root=/tmp}%
 
 server.document-root        = "%{root}%/www/html"
 server.upload-dirs          = ( "%{root}%/cache/lighttpd/uploads" )

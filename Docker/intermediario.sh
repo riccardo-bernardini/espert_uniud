@@ -2,5 +2,11 @@
 
 my_dir=`dirname $0`
 
-$my_dir/accumulator.exe "$@" 2> /tmp/qq  <&- > /tmp/qq &
+stderr=$1
+shift
+
+stdout=$2
+shift
+
+$my_dir/inter2.sh "$@" 2> $stderr > $stdout <&- &
 

@@ -2,5 +2,7 @@
 Creating your image, please wait
 </p>
 <p>
-You will find your result <a href="%{zipfile}%">here</a>.  Current status at %{status_file}%, standard error at %{stderr}%
+You will find your result <a href="%{zipfile}%">here</a>.  </p>
+<p>Current status <a href="%{status_file}%">here</a></p>
+<p>Standard error <a href="%{stderr}%">here</a></p>
 </p>

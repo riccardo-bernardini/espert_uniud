@@ -14,6 +14,8 @@ $LOAD_PATH.unshift(File.join($my_dir, "lib"))
 
 require 'micro_macro_proc'
 
+Zipname="images.zip"
+
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
 end
@@ -45,17 +47,7 @@ def make_decay(decay, tau)
 end
 
 def create_zip_archive(dir, basename_template)
-  pos = basename_template.index('%d')
-  return nil if pos.nil?
-
-  root = basename_template[0...pos];
-  pattern =  root + "*" + basename_template[pos+2..-1];
-  
-  pos = pattern.index('%d')
-  return nil unless pos.nil?
-
-  
-  zipfile_name = File.join(dir, "#{root}.zip");
+  zipfile_name = File.join(dir, "#{Zipname}");
   $stderr.puts(zipfile_name);
   
   input_filenames = Dir.glob(File.join(dir, pattern));
@@ -126,7 +118,6 @@ end
 
 cgi=CGI.new("html4")
 
-Zipname="images.zip"
 
 with_status_dir do |dir|
   # $stderr.puts(cgi.params.inspect)
@@ -143,11 +134,14 @@ with_status_dir do |dir|
 
   progress_file=File.join(dir, 'progress')
   stderr_file=File.join(dir, 'stderr')
+  stdout_file=File.join(dir, 'stderr')
   event_file=File.join(dir, 'events.csv')
 
   save_to(cgi.params['myfile'][0], event_file)
 
   params = []
+  params << stderr_file
+  params << stdout_file
   params << "--sampling=#{frame_rate}"
   params << "--decay=#{decay}"
   params << "--output=#{template}"

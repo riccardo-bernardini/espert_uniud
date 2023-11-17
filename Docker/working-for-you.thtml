@@ -1,0 +1,6 @@
+<p>
+Creating your image, please wait
+</p>
+<p>
+You will find your result <a href="%{zipfile}%">here</a>.  Current status at %{status_file}%, standard error at %{stderr}%
+</p>

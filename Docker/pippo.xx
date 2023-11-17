@@ -1,29 +1,29 @@
 #!/usr/bin/env ruby --enable=frozen-string-literal
 
+$my_dir = File.dirname(File.absolute_path(__FILE__))
+
 require 'cgi'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
 require 'open3'
 require 'zip'
+require 'fileutils'
+
+$LOAD_PATH.unshift(File.join($my_dir, "lib"))
+
+require 'micro_macro_proc'
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
 end
 
-def ensure_tempfile(events)
-  case events
-  when StringIO
-    t =Tempfile.new('pippo')
-    t.write(events.read)
-    t.flush
-    return t
+def save_to(events, target)
+  File.open(target, 'w') do
+    |output|
 
-  when Tempfile
-    return events
-
-  else
-    raise "Boh.  I should never arrive here"
+    output.write(events.read)
+    
   end
 end
 
@@ -100,14 +100,33 @@ def create_error_page(cgi, status, stderr)
   end
 end
 
-$my_dir = File.dirname(File.absolute_path(__FILE__))
+
+def timestamp
+  t=Time.now;
+
+  return t.tv_sec.to_s + t.tv_usec.to_s
+end
+
+def to_link(path)
+  if (path[0...$my_dir.size] == $my_dir && path[$my_dir.size]='/')
+    return path[$my_dir.size+1 .. -1]
+  else
+    raise "Boh"
+  end
+end
 
 def with_status_dir
-  status_dir = File.absolute_path(File.join($my_dir, '../status/001'))
+  t = Time.now.sec
+  status_dir = File.absolute_path(File.join($my_dir, "status/#{timestamp}"))
+
+  FileUtils.mkpath(status_dir)
+  
   yield(status_dir)
 end
 
 cgi=CGI.new("html4")
+
+Zipname="images.zip"
 
 with_status_dir do |dir|
   # $stderr.puts(cgi.params.inspect)
@@ -121,42 +140,77 @@ with_status_dir do |dir|
   basename_template = File.basename(cgi.params['template'][0])
   template = File.join(dir, basename_template)
 
-  event_file = ensure_tempfile(cgi.params['myfile'][0])
+
+  progress_file=File.join(dir, 'progress')
+  stderr_file=File.join(dir, 'stderr')
+  event_file=File.join(dir, 'events.csv')
+
+  save_to(cgi.params['myfile'][0], event_file)
 
   params = []
   params << "--sampling=#{frame_rate}"
   params << "--decay=#{decay}"
   params << "--output=#{template}"
-  params << "--input=#{event_file.path}"
-  params << "--progress=#{File.join(dir, 'progress')}"
+  params << "--input=#{event_file}"
+  params << "--progress=#{progress_file}"
 
   cgi.out do
     cgi.html do
       cgi.body do
-        cgi.p do
-          CGI::escapeHTML(
-            "Creating your images. Please wait"
-          )
-        end
+        expanded=Array.new
+
+        macros = { "status_dir"  => dir,
+                   "zipfile"     => to_link(File.join(dir, Zipname)),
+                   "status_file" => to_link(progress_file),
+                   "stderr"      => to_link(stderr_file)
+                 }
+
+        Micro_Macro_Proc.expand(File.readlines(File.join($my_dir, 'working-for-you.thtml')),
+                                expanded,
+                                macros,
+                                :on_undefined => :die)
+
+        expanded.join('')
+                                
       end
     end
   end
 
   $stderr.puts(params.inspect)
-  sleep(30)
+
+  system(File.join($my_dir, "../exe/intermediario.sh"), *params)
+
+  $stderr.puts(44)
   
-  stdout, stderr, status=Open3.capture3(File.join($my_dir, "../exe/accumulator.exe"), *params)
-
-  if status.success?
-    $stderr.puts('ok')
+#  child_pid=fork
+#
+#  if child_pid
+#    # I'm the parent.  Just exit
+#    Process.detach(child_pid)
+#  else
+#    # I'm the child.  Do stderr redirection
+#    $stdin.close
+#    $stderr.close
+#    $stdout.close
+#    
+#    $stderr=File.open(stderr_file, 'w')
+#    $stdout=$stderr
+#
+#    exec(File.join($my_dir, "../exe/accumulator.exe"), *params)
+#  end
     
-    create_success_page(cgi, dir, basename_template)
-
-  else
-    $stderr.puts('NO')
-    create_error_page(cgi, status, stderr)
-
-  end
+#  stdout, stderr, status=Open3.capture3(File.join($my_dir, "../exe/accumulator.exe"), *params)
+#
+#  if status.success?
+#    $stderr.puts('ok')
+#    
+#    create_success_page(cgi, dir, basename_template)
+#
+#  else
+#    $stderr.puts('NO')
+#    create_error_page(cgi, status, stderr)
+#
+#  end
 
 end
 

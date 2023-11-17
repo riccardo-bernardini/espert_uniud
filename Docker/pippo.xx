@@ -100,15 +100,20 @@ def create_error_page(cgi, status, stderr)
   end
 end
 
+$my_dir = File.dirname(File.absolute_path(__FILE__))
+
 def with_status_dir
-  my_dir = File.dirname(File.absolute_path(__FILE__))
-  status_dir = File.absolute_path(File.join(my_dir, '../status/001'))
+  status_dir = File.absolute_path(File.join($my_dir, '../status/001'))
   yield(status_dir)
 end
 
 cgi=CGI.new("html4")
 
 with_status_dir do |dir|
+  # $stderr.puts(cgi.params.inspect)
+  # cgi.out { 'pippo' }
+  # exit
+  
   frame_rate = despace(cgi.params['fps'][0])
 
   decay    = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
@@ -137,16 +142,18 @@ with_status_dir do |dir|
     end
   end
 
-
   $stderr.puts(params.inspect)
-
+  sleep(30)
   
-  stdout, stderr, status=Open3.capture3("/tmp/www/html/accumulator.exe", *params)
+  stdout, stderr, status=Open3.capture3(File.join($my_dir, "../exe/accumulator.exe"), *params)
 
   if status.success?
+    $stderr.puts('ok')
+    
     create_success_page(cgi, dir, basename_template)
 
   else
+    $stderr.puts('NO')
     create_error_page(cgi, status, stderr)
 
   end

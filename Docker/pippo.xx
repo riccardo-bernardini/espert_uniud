@@ -136,12 +136,14 @@ with_status_dir do |dir|
   stderr_file=File.join(dir, 'stderr')
   stdout_file=File.join(dir, 'stderr')
   event_file=File.join(dir, 'events.csv')
-
+  image_dir=dir
+  
   save_to(cgi.params['myfile'][0], event_file)
 
   params = []
   params << stderr_file
   params << stdout_file
+  params << image_dir
   params << "--sampling=#{frame_rate}"
   params << "--decay=#{decay}"
   params << "--output=#{template}"

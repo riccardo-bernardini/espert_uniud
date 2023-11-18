@@ -9,7 +9,7 @@ require 'zip'
 require 'channel'
 
 
-Accumulator_Path = File.join($my_dir, "../exe/accumulator.exe");
+Accumulator_Path = File.join($my_dir, "accumulator.exe");
 
 def create_zip_archive(pattern, zipfile_name)
   input_filenames = Dir.glob(pattern);

@@ -170,7 +170,7 @@ begin
                    }
 
           
-          expanded_template(File.join($my_dir, 'working-for-you.thtml'),
+          expanded_template(File.join($my_dir, 'lib/working-for-you.thtml'),
                             macros)
           
         end

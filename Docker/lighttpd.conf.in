@@ -3,7 +3,7 @@ server.modules = (
 #	"mod_access",
 #	"mod_alias",
 # 	"mod_redirect",
-#	"mod_auth",
+	"mod_auth",
 #	"mod_fastcgi",
 	"mod_cgi"
 )

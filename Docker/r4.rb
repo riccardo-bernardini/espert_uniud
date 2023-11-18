@@ -6,7 +6,10 @@
 # no skipping
 # END HELP
 
-require './micro_macro_proc.rb'
+$my_dir = File.dirname(File.absolute_path(__FILE__))
+$LOAD_PATH.unshift($my_dir)
+
+require 'micro_macro_proc'
 
 def dump_help_text(target)
   myself=File.expand_path(__FILE__)

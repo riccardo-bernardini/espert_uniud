@@ -13,7 +13,7 @@ require 'fileutils'
 
 require 'micro_macro_proc'
 require 'my_config.rb'
-
+require 'channel'
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
@@ -162,6 +162,21 @@ begin
     params << "--input=#{event_file}"
     params << "--progress=#{progress_file}"
 
+    $stderr.puts('pippo')
+
+
+    to_server = Client_Side.new
+
+    $stderr.puts 422
+
+    params.each {|p| to_server.puts(p)}
+
+    $stderr.puts 4222
+    
+    to_server.close
+
+    $stderr.puts('Done, bye!')
+
     cgi.out do
       cgi.html do
         cgi.body do
@@ -179,21 +194,8 @@ begin
       end
     end
 
-    $stderr.puts(params.inspect)
+    # $stderr.puts(params.inspect)
 
-    $stderr.puts 42
-
-    to_server = Client_Side.new
-
-    $stderr.puts 422
-
-    params.each {|p| to_server.puts(p)}
-
-    $stderr.puts 4222
-    
-    to_server.close
-
-    $stderr.puts('Done, bye!')
 
   end
 rescue Bad_Parameters => e

@@ -7,6 +7,7 @@ require 'open3'
 require 'zip'
 
 require 'channel'
+require 'my_config'
 
 
 Accumulator_Path = File.join($my_dir, "accumulator.exe");

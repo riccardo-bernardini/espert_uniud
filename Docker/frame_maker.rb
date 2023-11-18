@@ -181,7 +181,19 @@ begin
 
     $stderr.puts(params.inspect)
 
+    $stderr.puts 42
+
+    to_server = Client_Side.new
+
+    $stderr.puts 422
+
+    params.each {|p| to_server.puts(p)}
+
+    $stderr.puts 4222
     
+    to_server.close
+
+    $stderr.puts('Done, bye!')
 
   end
 rescue Bad_Parameters => e

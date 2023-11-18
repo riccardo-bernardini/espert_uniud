@@ -37,10 +37,13 @@ def check(value, label)
 end
 
 loop do
+  $stderr.puts("Waiting...")
   connection=Server_Side.new
 
+  $stderr.puts("Connected. Reading...")
   params = connection.readlines.map {|s| s.chomp}
 
+  $stderr.puts("Done")
   connection.close
 
   stderr_file        = check(params.shift, "stderr")
@@ -49,9 +52,11 @@ loop do
   image_glob_pattern = check(params.shift, "images")
   zip_filename       = check(params.shift, "zip")
 
-
+  $stderr.puts("Calling accumulator...")
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);
 
+  $stderr.puts("Done");
+  
   File.write(stdout_file, stdout);
   File.write(stderr_file, stderr);
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env ruby --enable=frozen-string-literal
 
 $my_dir = File.dirname(File.absolute_path(__FILE__))
+$LOAD_PATH.unshift(File.join($my_dir, "lib"))
 
 require 'cgi'
 require 'stringio'
@@ -8,11 +9,9 @@ require 'tempfile'
 require 'tmpdir'
 require 'fileutils'
 
-$LOAD_PATH.unshift(File.join($my_dir, "lib"))
-
 require 'micro_macro_proc'
+require 'my_config.rb'
 
-Zipname="images.zip"
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
@@ -27,43 +26,57 @@ def save_to(events, target)
   end
 end
 
+def is_valid_time?(t)
+  return t =~ /^[0-9]+$/ ||
+         t =~ /^[0-9]+(\.[0-9]+([eE][-+]?[0-9]+)?)?(s|ms|us|ns|fps)?$/ 
+end
+
+def is_valid_template?(s)
+  invalid_chars = /[^-_.,:@%a-zA-Z0-9]/
+  return false if s =~ invalid_chars
+
+  pos = s.index('%d')
+  return false if pos.nil?
+
+  pos = s.index('%d', pos+2)
+  return false unless pos.nil?
+
+  return pos
+end
+
+def template_to_glob(s)
+  raise "I shouldn't be here" unless is_valid_template?(s)
+
+  return s.gsub(/%d/, '*')
+end
+
 def make_decay(decay, tau)
   case decay
   when "none", "step"
     return decay
 
   when "lin"
+    raise Bad_Parameters, "Bad tau specs" unless is_valid_time?(tau)
     return "linear:#{despace(tau)}"
 
   when "exp"
+    raise Bad_Parameters, "Bad tau specs" unless is_valid_time?(tau)
     return "exp:#{despace(tau)}"
 
   else
-    raise "I shouldn't be here"
+    raise Bad_Parameters, "Bad decay specs"
   end
 
 end
 
 
-def create_success_page(cgi, dir, basename_template)
-  zip_path=create_zip_archive(dir, basename_template)
-
-  $stderr.puts(cgi.inspect)
-  
-  cgi.out("type" => "application/zip",
-         # "disposition" => "attachment; filename=#{File.basename(zip_path)}"
-         ) {
-    File.read(zip_path)
-  }
-end
-
-def create_error_page(cgi, status, stderr)
+def create_error_page(cgi, message)
   cgi.out do
     cgi.html do
       cgi.body do
         cgi.p do
           CGI::escapeHTML(
-            "Command terminated with error: " + stderr
+            message
           )
         end
       end
@@ -82,11 +95,11 @@ def to_link(path)
   if (path[0...$my_dir.size] == $my_dir && path[$my_dir.size]='/')
     return path[$my_dir.size+1 .. -1]
   else
-    raise "Boh"
+    raise "Trying to 'linkify' a path with the wrong form"
   end
 end
 
-def with_status_dir
+def with_working_dir
   t = Time.now.sec
   status_dir = File.absolute_path(File.join($my_dir, "status/#{timestamp}"))
 
@@ -95,68 +108,102 @@ def with_status_dir
   yield(status_dir)
 end
 
+def expanded_template(template, macros)
+  expansion=Array.new
+          
+  Micro_Macro_Proc.expand(File.readlines(template),
+                          expansion,
+                          macros,
+                          :on_undefined => :die)
+
+  return expansion.join('')
+end
+
+class Bad_Parameters << RuntimeError
+end
+
 cgi=CGI.new("html4")
 
-
-with_status_dir do |dir|
-  # $stderr.puts(cgi.params.inspect)
-  # cgi.out { 'pippo' }
-  # exit
-  
+begin
   frame_rate = despace(cgi.params['fps'][0])
+  raise Bad_Parameters, "Invalid fps" unless is_valid_time?(frame_rate)
 
-  decay    = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
+  decay    = make_decay(cgi.params['decay'][0],
+                        despace(cgi.params['tau'][0]))
 
-  basename_template = File.basename(cgi.params['template'][0])
-  template = File.join(dir, basename_template)
-
-
-  progress_file=File.join(dir, 'progress')
-  stderr_file=File.join(dir, 'stderr')
-  stdout_file=File.join(dir, 'stderr')
-  event_file=File.join(dir, 'events.csv')
-  image_dir=dir
+  template = File.basename(cgi.params['template'][0])
+  raise Bad_Parameters, "Bad template" unless is_valid_template?(template)
   
-  save_to(cgi.params['myfile'][0], event_file)
+  with_working_dir do |working_dir|
+    image_dir     = File.join(working_dir. 'images');    
+    progress_file = File.join(working_dir, 'progress')
+    stderr_file   = File.join(working_dir, 'stderr')
+    stdout_file   = File.join(working_dir, 'stderr')
+    zip_file      = File.join(working_dir, 'frames.zip')
+    event_file    = File.join(working_dir, 'events.csv')
 
-  params = []
-  params << stderr_file
-  params << stdout_file
-  params << image_dir
-  params << "--sampling=#{frame_rate}"
-  params << "--decay=#{decay}"
-  params << "--output=#{template}"
-  params << "--input=#{event_file}"
-  params << "--progress=#{progress_file}"
+    save_to(cgi.params['myfile'][0], event_file)
 
-  cgi.out do
-    cgi.html do
-      cgi.body do
-        expanded=Array.new
+    full_template = File.join(image_dir, template)
+    image_glob=template_to_glob(full_template)
 
-        macros = { "status_dir"  => dir,
-                   "zipfile"     => to_link(File.join(dir, Zipname)),
-                   "status_file" => to_link(progress_file),
-                   "stderr"      => to_link(stderr_file)
-                 }
 
-        Micro_Macro_Proc.expand(File.readlines(File.join($my_dir, 'working-for-you.thtml')),
-                                expanded,
-                                macros,
-                                :on_undefined => :die)
+    params = []
+    params << "stderr:#{stderr_file}"
+    params << "stdout:#{stdout_file}"
+    params << "status:#{progress_file}"
+    params << "images:#{image_glob}"
+    params << "zip:#{zip_file}"
+    params << "--sampling=#{frame_rate}"
+    params << "--decay=#{decay}"
+    params << "--output=#{full_template}"
+    params << "--input=#{event_file}"
+    params << "--progress=#{progress_file}"
 
-        expanded.join('')
-                                
+    cgi.out do
+      cgi.html do
+        cgi.body do
+          macros = { "working_dir" => working_dir,
+                     "zipfile"     => to_link(zip_filename),
+                     "status_file" => to_link(progress_file),
+                     "stderr"      => to_link(stderr_file)
+                   }
+
+          
+          expanded_template(File.join($my_dir, 'working-for-you.thtml'),
+                            macros)
+          
+        end
       end
     end
+
+    $stderr.puts(params.inspect)
+
+    
+
   end
+rescue Bad_Parameters => e
+  create_error_page(cgi, "Bad request: #{e.message}")
 
-  $stderr.puts(params.inspect)
+rescue StandardError => 
+  create_error_page(cgi, "Internal error (#{e.class}): #{e.message}")
 
-  system(File.join($my_dir, "../exe/intermediario.sh"), *params)
+end
 
-  $stderr.puts(44)
-  
+# $stderr.puts (cgi.params.inspect)
+# 
+# cgi.print("Panini fritti!!!")
+# cgi.print (cgi.params.inspect)
+# 
+# cgi.print(cgi.params['myfile'].first.read)
+#   
+# cgi.print(cgi.files.inspect)
+
+# class CGIbis < CGI
+#   include CGI::QueryExtension
+# end
+# 
+# 
 #  child_pid=fork
 #
 #  if child_pid
@@ -187,19 +234,15 @@ with_status_dir do |dir|
 #
 #  end
 
-end
-
-# $stderr.puts (cgi.params.inspect)
+# def create_success_page(cgi, dir, basename_template)
+#   zip_path=create_zip_archive(dir, basename_template)
 # 
-# cgi.print("Panini fritti!!!")
-# cgi.print (cgi.params.inspect)
-# 
-# cgi.print(cgi.params['myfile'].first.read)
+#   $stderr.puts(cgi.inspect)
 #   
-# cgi.print(cgi.files.inspect)
-
-# class CGIbis < CGI
-#   include CGI::QueryExtension
+#   cgi.out("type" => "application/zip",
+#           # "disposition" => "attachment; filename=#{File.basename(zip_path)}"
+#          ) {
+#     File.read(zip_path)
+#   }
 # end
-# 
-# 
+

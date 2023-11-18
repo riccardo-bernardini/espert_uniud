@@ -1,10 +1,13 @@
 #!/usr/bin/env ruby
 
-require 'socket'
+$my_dir = File.dirname(File.absolute_path(__FILE__))
+$LOAD_PATH.unshift(File.join($my_dir, "lib"))
+
 require 'open3'
 require 'zip'
 
-socket_name = '/tmp/aaa'
+require 'channel'
+
 
 Accumulator_Path = File.join($my_dir, "../exe/accumulator.exe");
 
@@ -25,23 +28,27 @@ def create_zip_archive(pattern, zipfile_name)
   return zipfile_name
 end
 
+def check(value, label)
+  head, body = value.split(':', 2)
 
-File.unlink(socket_name) if File.exists?(socket_name)
+  raise "This shouldn't happen" unless head == label
 
-server=UNIXSocket.new(socket_name)
+  return body
+end
 
 loop do
-  connection=server.accept
+  connection=Server_Side.new
 
   params = connection.readlines.map {|s| s.chomp}
 
   connection.close
 
-  stderr_file=params.shift
-  stdout_file=params.shift
-  status_file=params.shift
-  zip_filename=params.shift
-  image_dir=params.shift
+  stderr_file        = check(params.shift, "stderr")
+  stdout_file        = check(params.shift, "stdout")
+  status_file        = check(params.shift, "status")
+  image_glob_pattern = check(params.shift, "images")
+  zip_filename       = check(params.shift, "zip")
+
 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);
 
@@ -51,7 +58,7 @@ loop do
   if status.success?
     File.write(status_file, Accumulator_Done);
 
-    if create_zip_archive(zip_filename, File.join(image_dir, '*.png'))
+    if create_zip_archive(zip_filename, image_glob_pattern)
       File.write(status_file, Archive_Ready)
     else
       File.write(status_file, Error_while_Zipping)

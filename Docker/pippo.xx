@@ -6,8 +6,6 @@ require 'cgi'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
-require 'open3'
-require 'zip'
 require 'fileutils'
 
 $LOAD_PATH.unshift(File.join($my_dir, "lib"))
@@ -46,25 +44,6 @@ def make_decay(decay, tau)
 
 end
 
-def create_zip_archive(dir, basename_template)
-  zipfile_name = File.join(dir, "#{Zipname}");
-  $stderr.puts(zipfile_name);
-  
-  input_filenames = Dir.glob(File.join(dir, pattern));
-  return nil if input_filenames.empty?
-
-
-  Zip::File.open(zipfile_name, Zip::File::CREATE) do |zipfile|
-    input_filenames.each do |path|
-      # Two arguments:
-      # - The name of the file as it will appear in the archive
-      # - The original file, including the path to find it
-      zipfile.add(File.basename(path), path)
-    end
-  end
-
-  return zipfile_name
-end
 
 def create_success_page(cgi, dir, basename_template)
   zip_path=create_zip_archive(dir, basename_template)
@@ -195,7 +174,7 @@ with_status_dir do |dir|
 #    exec(File.join($my_dir, "../exe/accumulator.exe"), *params)
 #  end
     
-#  stdout, stderr, status=Open3.capture3(File.join($my_dir, "../exe/accumulator.exe"), *params)
+#  
 #
 #  if status.success?
 #    $stderr.puts('ok')

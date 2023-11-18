@@ -1,14 +1,18 @@
-def percentage_to_status(x)
-  [(2*x).to_i].pack('C')
+def impacca(n)
+  [n].pack('C')
 end
 
-Fully_done = percentage_to_status(100)
+def percentage_to_status(x)
+  impacca((2*x).to_i)
+end
 
-Accumulator_Done    = Fully_done + 1
-Archive_Ready       = Accumulator_Done + 1
-Error_while_Zipping = Archive_Ready + 1
+Fully_done = impacca(200)
+
+Accumulator_Done    = impacca(201)
+Archive_Ready       = impacca(202)
+Error_while_Zipping = impacca(203)
 
 def exitcode_to_status(x)
-  [x + Error_while_Zipping + 1].pack('C')
+  impacca(x + 204)
 end
 

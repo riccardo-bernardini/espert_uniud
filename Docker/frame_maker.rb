@@ -1,7 +1,9 @@
 #!/usr/bin/env ruby --enable=frozen-string-literal
 
 $my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir, "lib"))
+$LOAD_PATH.unshift(File.join($my_dir, "../exe/lib"))
+
+# $stderr.puts($LOAD_PATH.inspect)
 
 require 'cgi'
 require 'stringio'
@@ -41,11 +43,11 @@ def is_valid_template?(s)
   pos = s.index('%d', pos+2)
   return false unless pos.nil?
 
-  return pos
+  return true
 end
 
 def template_to_glob(s)
-  raise "I shouldn't be here" unless is_valid_template?(s)
+  raise "I shouldn't be here" unless is_valid_template?(File.basename(s))
 
   return s.gsub(/%d/, '*')
 end
@@ -119,7 +121,7 @@ def expanded_template(template, macros)
   return expansion.join('')
 end
 
-class Bad_Parameters << RuntimeError
+class Bad_Parameters < RuntimeError
 end
 
 cgi=CGI.new("html4")
@@ -135,7 +137,7 @@ begin
   raise Bad_Parameters, "Bad template" unless is_valid_template?(template)
   
   with_working_dir do |working_dir|
-    image_dir     = File.join(working_dir. 'images');    
+    image_dir     = File.join(working_dir, 'images');    
     progress_file = File.join(working_dir, 'progress')
     stderr_file   = File.join(working_dir, 'stderr')
     stdout_file   = File.join(working_dir, 'stderr')
@@ -164,13 +166,13 @@ begin
       cgi.html do
         cgi.body do
           macros = { "working_dir" => working_dir,
-                     "zipfile"     => to_link(zip_filename),
+                     "zipfile"     => to_link(zip_file),
                      "status_file" => to_link(progress_file),
                      "stderr"      => to_link(stderr_file)
                    }
 
           
-          expanded_template(File.join($my_dir, 'lib/working-for-you.thtml'),
+          expanded_template(File.join($my_dir, '../exe/lib/working-for-you.thtml'),
                             macros)
           
         end
@@ -185,7 +187,7 @@ begin
 rescue Bad_Parameters => e
   create_error_page(cgi, "Bad request: #{e.message}")
 
-rescue StandardError => 
+rescue StandardError => e
   create_error_page(cgi, "Internal error (#{e.class}): #{e.message}")
 
 end

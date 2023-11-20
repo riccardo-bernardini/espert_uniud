@@ -164,20 +164,12 @@ begin
     params << "--input=#{event_file}"
     params << "--progress=#{progress_file}"
 
-    $stderr.puts('pippo')
 
+    Client_Side.new {
+      |to_server|
+      params.each {|p| to_server.puts(p)}
+    }
 
-    to_server = Client_Side.new
-
-    $stderr.puts 422
-
-    params.each {|p| to_server.puts(p)}
-
-    $stderr.puts 4222
-    
-    to_server.close
-
-    $stderr.puts('Done, bye!')
 
     cgi.out do
       cgi.html do

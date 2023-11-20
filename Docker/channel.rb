@@ -13,6 +13,11 @@ class Server_Side
     end
 
     @to_client = @@listening_socket.accept
+
+    if block_given?
+      yield(self)
+      @to_client.close
+    end
   end
 
   def readlines
@@ -27,6 +32,11 @@ end
 class Client_Side
   def initialize
     @to_server = UNIXSocket.new(Socket_Name)
+
+    if block_given?
+      yield(self)
+      @to_server.close
+    end
   end
 
   def puts(x)

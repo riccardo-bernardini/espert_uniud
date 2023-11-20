@@ -41,14 +41,16 @@ end
 $verbose=true
 
 loop do
+  params = Array.new
+  
   $stderr.puts("Waiting...") if $verbose
-  connection=Server_Side.new
 
-  $stderr.puts("Connected. Reading...") if $verbose
-  params = connection.readlines.map {|s| s.chomp}
+  Server_Side.new do |connection|
+    $stderr.puts("Connected. Reading...") if $verbose
+    params = connection.readlines.map {|s| s.chomp}
+  end
 
   $stderr.puts("Done") if $verbose
-  connection.close
 
   stderr_file        = check(params.shift, "stderr")
   stdout_file        = check(params.shift, "stdout")

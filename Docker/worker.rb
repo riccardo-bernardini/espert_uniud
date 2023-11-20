@@ -14,6 +14,7 @@ Accumulator_Path = File.join($my_dir, "accumulator.exe");
 
 def create_zip_archive(pattern, zipfile_name)
   input_filenames = Dir.glob(pattern);
+
   return nil if input_filenames.empty?
 
 
@@ -37,14 +38,16 @@ def check(value, label)
   return body
 end
 
+$verbose=true
+
 loop do
-  $stderr.puts("Waiting...")
+  $stderr.puts("Waiting...") if $verbose
   connection=Server_Side.new
 
-  $stderr.puts("Connected. Reading...")
+  $stderr.puts("Connected. Reading...") if $verbose
   params = connection.readlines.map {|s| s.chomp}
 
-  $stderr.puts("Done")
+  $stderr.puts("Done") if $verbose
   connection.close
 
   stderr_file        = check(params.shift, "stderr")
@@ -53,10 +56,10 @@ loop do
   image_glob_pattern = check(params.shift, "images")
   zip_filename       = check(params.shift, "zip")
 
-  $stderr.puts("Calling accumulator...")
+  $stderr.puts("Calling accumulator...") if $verbose
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);
 
-  $stderr.puts("Done");
+  $stderr.puts("Done") if $verbose
   
   File.write(stdout_file, stdout);
   File.write(stderr_file, stderr);
@@ -64,12 +67,16 @@ loop do
   if status.success?
     File.write(status_file, Accumulator_Done);
 
-    if create_zip_archive(zip_filename, image_glob_pattern)
+    $stderr.puts("Creating zip...") if $verbose
+
+    if create_zip_archive(image_glob_pattern, zip_filename)
+      $stderr.puts("Zip ready") if $verbose
       File.write(status_file, Archive_Ready)
     else
       File.write(status_file, Error_while_Zipping)
     end
   else
+    $stderr.puts("Accumulator error #{status.exitstatus}");
     File.write(status_file, exitcode_to_status(status.exitstatus));
   end
 end

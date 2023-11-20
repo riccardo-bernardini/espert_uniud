@@ -137,7 +137,9 @@ begin
   raise Bad_Parameters, "Bad template" unless is_valid_template?(template)
   
   with_working_dir do |working_dir|
-    image_dir     = File.join(working_dir, 'images');    
+    image_dir     = File.join(working_dir, 'images');
+    FileUtils.mkpath(image_dir)
+    
     progress_file = File.join(working_dir, 'progress')
     stderr_file   = File.join(working_dir, 'stderr')
     stdout_file   = File.join(working_dir, 'stderr')

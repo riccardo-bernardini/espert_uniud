@@ -100,8 +100,6 @@ module Micro_Macro_Proc
   def Micro_Macro_Proc.prefill_from_cli(macros=nil, argv=ARGV)
     macros = Hash.new if macros.nil?
 
-    $stderr.puts(">> "+macros.inspect)
-    
     argv.each do |arg|
       name, val=arg.split('=', 2)
 

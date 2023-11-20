@@ -1,8 +1,50 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="text/javascript">
+      function sleep(ms) {
+	  return new Promise(resolve => setTimeout(resolve, ms));
+      }
+      
+      async function barra()
+      {
+	  for(i=0; i<100; i+=10)
+	  {
+	      await sleep(500);
+	  
+//	      document.getElementById("bar").setAttribute("width", `${i}%`);
+	  }
+
+	  document.getElementById("download-button").disabled=false;
+      }
+    </script>
+  </head>
+<body onload="barra();">
 <p>
 Creating your image, please wait
 </p>
 <p>
-You will find your result <a href="%{zipfile}%">here</a>.  </p>
+  You will find your result <a href="%{zipfile}%">here</a>.
+</p>
+<table>
+  <tr>
+    <td>
+      <svg width="50%" height="1em">
+	<rect width="100%" height="100%" style="fill:rgb(255,255,255);stroke-width:1;stroke:rgb(0,0,0)" />
+	<rect width="10%" height="100%" style="fill:rgb(255,0,0);stroke-width:0" id="colored-bar"/>
+      </svg>
+    </td>
+    <td id="percentage"></td>
+    <td>
+      <form method="get" action="%{zipfile}%">
+	<button type="submit" disabled="true" id="download-button">Download!</button>
+      </form>
+    </td>
+  </tr>
+</table>
+
 <p>Current status <a href="%{status_file}%">here</a></p>
 <p>Standard error <a href="%{stderr}%">here</a></p>
 </p>
+</body>

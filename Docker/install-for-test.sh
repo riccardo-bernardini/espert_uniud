@@ -1,4 +1,4 @@
-#!/usr/bin/bash
+#!/usr/bin/bash -e
 
 my_dir=`dirname $0`
 cd $my_dir
@@ -18,6 +18,9 @@ mkdir -p $top_dir/www/exe
 
 ln -s $PWD/worker.rb       $top_dir/www/exe
 ln -s $PWD/frame_maker.rb  $top_dir/www/exe
+
+(cd ../accumulator ; gprbuild main)
+
 ln -s $PWD/../accumulator/obj/main  $top_dir/www/exe/accumulator.exe
 
 mkdir -p $top_dir/www/exe/lib

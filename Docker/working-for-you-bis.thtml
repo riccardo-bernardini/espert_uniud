@@ -1,0 +1,152 @@
+
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <script type="text/javascript">
+      "use strict";  // Ma chi le pensa certe cose?!?
+
+      var interval_ID;
+      
+      const accumulator_done = 201;
+      const archive_ready = 202;
+      const fetch_error = 203;
+
+      
+      function write_error_message(error_message)
+      {
+	  console.log(error_message);
+
+	  document
+	      .getElementById("message-area")
+	      .innerHTML = error_message;
+      }
+
+      function set_percentage(percent)
+      {
+	  if (typeof percent === 'number')
+	  {
+	      console.log(`Set % [${percent}]`);
+	      document
+		  .getElementById("colored-bar")
+		  .setAttribute("width", `${percent}%`);
+
+	      document
+		  .getElementById("percentage")
+		  .innerHTML = `${percent}%`;
+	      console.log("Done");
+	  }
+	  else
+	  {
+	      document
+		  .getElementById("colored-bar")
+		  .setAttribute("width", "100%");
+
+	      document
+		  .getElementById("colored-bar")
+		  .setAttribute("style", "fill:rgb(200,200,200);stroke-width:0");
+
+	  }
+      }
+
+      function update_status(x)
+      {
+	  let status=0;
+	  let error_message="";
+	  
+	  if (typeof x === "string")
+	  {
+	      error_message = x;
+	      status = fetch_error;
+	  }
+	  else
+	  {
+	      const buffer = new Uint8Array(x);
+
+	      status = buffer[0];
+	  }
+	  
+	  if (status <= 200)
+	  {
+	      set_percentage(status * 0.5);
+	  }
+	  else if (status == accumulator_done)
+	  {
+	      set_percentage(100.0);
+	  }
+	  else if (status == archive_ready)
+	  {
+	      set_percentage(100.0);
+	      
+	      document
+		  .getElementById("download-button")
+		  .disabled=false;
+
+	      clearInterval(interval_ID);
+	  }
+	  else if (status == fetch_error)
+	  {
+	      set_percentage(false);
+
+	      write_error_message(error_message);
+
+	      clearInterval(interval_ID);
+	  }
+	  else
+	  {
+	      set_percentage(false);
+	      
+	      fetch("%{stderr}%")
+		  .then((response) => response.ok? ? result.text() : Promise.resolve(response.statusText))
+		  .then((message) => write_error_message(message))
+	      
+	      clearInterval(interval_ID);
+	  }
+
+      }
+
+
+
+      function aggiorna()
+      {
+	  
+	  fetch("%{status_file}%")
+	      .then((response) => response.ok ? response.arrayBuffer() : Promise.resolve(response.statusText))
+	      .then(update_status)
+      }
+
+
+      function parti()
+      {
+	  interval_ID = setInterval(aggiorna, 500);
+      }
+    </script>
+  </head>
+<body onload="parti()">
+<p>
+Creating your image, please wait
+</p>
+<p>
+  You will find your result <a href="%{zipfile}%">here</a>.
+</p>
+<table>
+  <tr>
+    <td>
+      <svg width="50%" height="1em">
+	<rect width="100%" height="100%" style="fill:rgb(255,255,255);stroke-width:1;stroke:rgb(0,0,0)" />
+	<rect width="0%" height="100%" style="fill:rgb(255,0,0);stroke-width:0" id="colored-bar"/>
+      </svg>
+    </td>
+    <td id="percentage"></td>
+    <td>
+      <form method="get" action="%{zipfile}%">
+	<button type="submit" disabled="true" id="download-button">Download!</button>
+      </form>
+    </td>
+  </tr>
+</table>
+<div id='message-area'></div>
+<p>Current status <a href="%{status_file}%">here</a></p>
+<p>Standard error <a href="%{stderr}%">here</a></p>
+</p>
+</body>
+

@@ -181,7 +181,7 @@ begin
                    }
 
           
-          expanded_template(File.join($my_dir, '../exe/lib/working-for-you.thtml'),
+          expanded_template(File.join($my_dir, '../exe/lib/working-for-you-bis.thtml'),
                             macros)
           
         end

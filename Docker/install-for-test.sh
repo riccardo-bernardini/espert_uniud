@@ -30,6 +30,7 @@ ln -s $PWD/channel.rb          $top_dir/www/exe/lib
 ln -s $PWD/micro_macro_proc.rb $top_dir/www/exe/lib
 
 ln -s $PWD/working-for-you.thtml $top_dir/www/exe/lib
+ln -s $PWD/working-for-you-bis.thtml $top_dir/www/exe/lib
 
 
 mkdir -p $top_dir/cache/lighttpd/uploads

@@ -5,8 +5,6 @@
     <script type="text/javascript">
       "use strict";  // Ma chi le pensa certe cose?!?
 
-      var remote_status = 0;
-      var error_message = "";
       var interval_ID;
       
       const accumulator_done = 201;
@@ -14,29 +12,13 @@
       const fetch_error = 203;
 
       
-
-      function inner_sleep(ms) {
-	  return new Promise(resolve => setTimeout(resolve, ms));
-      }
-
-      async function sleep(ms) {
-	  await inner_sleep(ms)
-      }
-
-      async function load_stderr()
+      function write_error_message(error_message)
       {
-	  const response = await fetch("%{stderr}%");
+	  console.log(error_message);
 
-	  if (response.ok)
-	  {
-	      error_message = await response.text();
-
-	      console.log("Stderr=" + error_message);
-	  }
-	  else
-	  {
-	      error_message = "Error while fetching stderr: " + response.statusText;
-	  }
+	  document
+	      .getElementById("message-area")
+	      .innerHTML = error_message;
       }
 
       function set_percentage(percent)
@@ -66,36 +48,22 @@
 	  }
       }
 
-      async function get_status()
+      function update_status(x)
       {
-	  const response = await fetch("%{status_file}%");
-
-	  if (response.ok)
+	  let status=0;
+	  let error_message="";
+	  
+	  if (typeof x === "string")
 	  {
-	      const buffer = await response.arrayBuffer();
-	      const status = new Uint8Array(buffer);
-
-	      console.log(status[0].constructor.name);
-	      
-	      remote_status = status[0];
+	      error_message = x;
+	      status = fetch_error;
 	  }
 	  else
 	  {
-	      console.log(response.statusText);
+	      const buffer = new Uint8Array(x);
 
-	      remote_status = fetch_error;
-	      error_message = response.statusText;
+	      status = buffer[0];
 	  }
-      }
-      
-      async function aggiorna_barra()
-      {
-	  
-	  get_status();
-
-	  console.log(`Eccomi [${remote_status}]`)
-
-	  status = remote_status;
 	  
 	  if (status <= 200)
 	  {
@@ -118,29 +86,38 @@
 	  else if (status == fetch_error)
 	  {
 	      set_percentage(false);
-	      document
-		  .getElementById("message-area")
-		  .innerHTML = error_message;
+
+	      write_error_message(error_message);
 
 	      clearInterval(interval_ID);
 	  }
 	  else
 	  {
 	      set_percentage(false);
-	      load_stderr();
 	      
-	      document
-		  .getElementById("message-area")
-		  .innerHTML = error_message;
-
+	      fetch("%{stderr}%")
+		  .then((response) => response.ok ? result.text() : Promise.resolve(response.statusText))
+		  .then((message) => write_error_message(message))
+	      
 	      clearInterval(interval_ID);
 	  }
 
       }
 
+
+
+      function aggiorna()
+      {
+	  
+	  fetch("%{status_file}%")
+	      .then((response) => response.ok ? response.arrayBuffer() : Promise.resolve(response.statusText))
+	      .then(update_status)
+      }
+
+
       function parti()
       {
-	  interval_ID = setInterval(aggiorna_barra, 500);
+	  interval_ID = setInterval(aggiorna, 500);
       }
     </script>
   </head>
@@ -161,7 +138,7 @@ Creating your image, please wait
     </td>
     <td id="percentage"></td>
     <td>
-      <form method="get" action="%{zipfile}%">
+      <form method="get" action="%{zipfile}%" accept-charset="utf-8">
 	<button type="submit" disabled="true" id="download-button">Download!</button>
       </form>
     </td>
@@ -172,3 +149,4 @@ Creating your image, please wait
 <p>Standard error <a href="%{stderr}%">here</a></p>
 </p>
 </body>
+

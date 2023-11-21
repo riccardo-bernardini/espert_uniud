@@ -14,6 +14,8 @@ package Config with SPARK_Mode is
       Interactive   -- Stuff that makes sense only on a terminal (e.g., progress bar)
      );
 
+   procedure Dump_Cli;
+
    -- Used in contracts
    function Package_Ready return Boolean
      with Ghost;

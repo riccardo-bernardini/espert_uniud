@@ -113,6 +113,8 @@ procedure Main is
 
    Report : Config.Parsing_Report;
 begin
+   Config.Dump_Cli;
+
    Config.Parse_Command_Line (Report);
 
    case Report.Status is

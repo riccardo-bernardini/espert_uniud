@@ -1,4 +1,5 @@
 pragma Ada_2012;
+with Ada.Text_IO; use Ada.Text_IO;
 --  with Ada.Text_IO; use Ada.Text_IO;
 
 with Aida.Command_Line;
@@ -18,6 +19,7 @@ with Config.Data;    use Config.Data;
 with Patterns;
 with Event_Sequences;
 with Event_Streams;
+with Ada.Command_Line;
 
 
 package body Config with SPARK_Mode is
@@ -310,8 +312,8 @@ package body Config with SPARK_Mode is
                                To_String (Parsed_Options (First_Image).Value);
       begin
          if First_Image_Value = "" then
-               Set_First_Image_Spec ((Class    => Uniform,
-                                      Level    => Get(Neutral)));
+            Set_First_Image_Spec ((Class    => Uniform,
+                                   Level    => Get (Neutral)));
 
          elsif Patterns.Is_Float (First_Image_Value) then
             declare
@@ -613,4 +615,20 @@ package body Config with SPARK_Mode is
 
    function Log_Progress_Filename return String
    is (Get (Log_Progress));
+
+
+
+   procedure Dump_Cli is
+      use Ada.Command_Line;
+   begin
+      Put_Line (Standard_Error, "CLI DUMP BEGIN");
+
+      for I in 1 .. Argument_Count loop
+         Put_Line (Standard_Error, "[" & Argument (I) & "]");
+      end loop;
+
+      Put_Line (Standard_Error, "CLI DUMP END");
+      New_Line (Standard_Error);
+   end Dump_Cli;
+
 end Config;

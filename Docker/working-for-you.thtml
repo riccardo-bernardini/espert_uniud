@@ -3,20 +3,86 @@
 <html lang="en">
   <head>
     <script type="text/javascript">
-      function sleep(ms) {
+      function inner_sleep(ms) {
 	  return new Promise(resolve => setTimeout(resolve, ms));
+      }
+
+      async function sleep(ms) {
+	  await inner_sleep(ms)
+      }
+
+      function load_stderr()
+      {
+
+      }
+
+      function set_percentage(percent)
+      {
+	  console.log(`Set % [${percent}]`);
+	  document
+	      .getElementById("colored-bar")
+	      .setAttribute("width", `${percent}%`);
+
+	  document
+	      .getElementById("percentage")
+	      .innerHTML = `${percent}%`;
+	  console.log("Done");
+      }
+
+      async function get_status()
+      {
+	  const response = await fetch("%{status_file}%");
+
+	  if (response.ok)
+	  {
+	      const buffer = await response.arrayBuffer();
+	      const status = new Uint8Array(buffer);
+
+	      console.log(status[0].constructor.name);
+	      
+	      return status[0];
+	  }
+	  else
+	  {
+	      console.log(response.statusText);
+	  }
       }
       
       async function barra()
       {
-	  for(i=0; i<100; i+=10)
-	  {
-	      await sleep(500);
+	  const accumulator_done = 201;
+	  const archive_ready = 202;
 	  
-//	      document.getElementById("bar").setAttribute("width", `${i}%`);
+	  while (true)
+	  {
+	      sleep(500);
+	  
+	      status = get_status();
+
+	      console.log(`Eccomi [${status}]`)
+	      
+	      if (status <= 200)
+	      { set_percentage(status * 0.5); }
+	      else if (status >= accumulator_done)
+	      { set_percentage(100.0); }
+	      else if (status == archive_ready)
+	      {
+		  set_percentage(100.0);
+		  
+		  document
+		      .getElementById("download-button")
+		      .disabled=false;
+
+		  break;
+	      }
+	      else
+	      {
+		  set_percentage(100.0);
+		  load_stderr();
+		  break;
+	      }
 	  }
 
-	  document.getElementById("download-button").disabled=false;
       }
     </script>
   </head>
@@ -32,7 +98,7 @@ Creating your image, please wait
     <td>
       <svg width="50%" height="1em">
 	<rect width="100%" height="100%" style="fill:rgb(255,255,255);stroke-width:1;stroke:rgb(0,0,0)" />
-	<rect width="10%" height="100%" style="fill:rgb(255,0,0);stroke-width:0" id="colored-bar"/>
+	<rect width="0%" height="100%" style="fill:rgb(255,0,0);stroke-width:0" id="colored-bar"/>
       </svg>
     </td>
     <td id="percentage"></td>

@@ -7,6 +7,7 @@
 
       var remote_status = 0;
       var error_message = "";
+      var interval_ID;
       
       const accumulator_done = 201;
       const archive_ready = 202;
@@ -87,58 +88,63 @@
 	  }
       }
       
-      async function barra()
+      async function aggiorna_barra()
       {
 	  
-	  while (true)
-	  {
-	      sleep(500);
+	  get_status();
+
+	  console.log(`Eccomi [${remote_status}]`)
+
+	  status = remote_status;
 	  
-	      get_status();
-
-	      console.log(`Eccomi [${remote_status}]`)
+	  if (status <= 200)
+	  {
+	      set_percentage(status * 0.5);
+	  }
+	  else if (status == accumulator_done)
+	  {
+	      set_percentage(100.0);
+	  }
+	  else if (status == archive_ready)
+	  {
+	      set_percentage(100.0);
 	      
-	      if (status <= 200)
-	      {
-		  set_percentage(status * 0.5);
-	      }
-	      else if (status == accumulator_done)
-	      {
-		  set_percentage(100.0);
-	      }
-	      else if (status == archive_ready)
-	      {
-		  set_percentage(100.0);
-		  
-		  document
-		      .getElementById("download-button")
-		      .disabled=false;
+	      document
+		  .getElementById("download-button")
+		  .disabled=false;
 
-		  break;
-	      }
-	      else if (status == fetch_error)
-	      {
-		  set_percentage(false);
-		  document
-		      .getElementById("message-area")
-		      .innerHTML = error_message;
-	      }
-	      else
-	      {
-		  set_percentage(false);
-		  load_stderr();
+	      clearInterval(interval_ID);
+	  }
+	  else if (status == fetch_error)
+	  {
+	      set_percentage(false);
+	      document
+		  .getElementById("message-area")
+		  .innerHTML = error_message;
 
-		  document
-		      .getElementById("message-area")
-		      .innerHTML = error_message;
-		  break;
-	      }
+	      clearInterval(interval_ID);
+	  }
+	  else
+	  {
+	      set_percentage(false);
+	      load_stderr();
+	      
+	      document
+		  .getElementById("message-area")
+		  .innerHTML = error_message;
+
+	      clearInterval(interval_ID);
 	  }
 
       }
+
+      function parti()
+      {
+	  interval_ID = setInterval(aggiorna_barra, 500);
+      }
     </script>
   </head>
-<body onload="barra();">
+<body onload="parti()">
 <p>
 Creating your image, please wait
 </p>

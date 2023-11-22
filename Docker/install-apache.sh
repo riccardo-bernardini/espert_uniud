@@ -32,7 +32,7 @@ cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
 
 cd ../accumulator
-gprbuild
+gprbuild main
 
 cp obj/main              $lib_dir/accumulator
 

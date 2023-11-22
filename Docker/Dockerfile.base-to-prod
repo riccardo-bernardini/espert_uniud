@@ -5,6 +5,10 @@ FROM fintatarta/espert_uniud:building
 # RUN gem install cgi zip stringio tempfile tmpdir fileutils
 WORKDIR /tmp
 RUN git clone https://github.com/riccardo-bernardini/espert_uniud.git
-WORKDIR espert_uniud/Docker
+
+WORKDIR espert_uniud
+RUN git checkout compatibility
+
+WORKDIR Docker
 RUN ./install-apache.sh
 

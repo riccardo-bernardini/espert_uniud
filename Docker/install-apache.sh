@@ -1,6 +1,6 @@
 #!/bin/bash -e
 
-my_dir=`dirnname $0`
+my_dir=`dirname $0`
 cd $my_dir
 
 configuration_file=/usr/local/apache2/conf/httpd.conf

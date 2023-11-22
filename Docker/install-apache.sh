@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/bin/bash -e -u
 
 my_dir=`dirname $0`
 cd $my_dir
@@ -16,14 +16,14 @@ cp index.html $html_dir
 
 
 cgi_dir=$root/cgi-bin
-mkdir -p $cgi_bin
+mkdir -p $cgi_dir
 
 cp frame_maker.rb $cgi_bin
 
 
 lib_dir=$root/library
 
-mkdir -p $lib_dirb
+mkdir -p $lib_dir
 
 cp working_for_you.thtml $lib_dir
 cp worker.rb             $lib_dir

@@ -1,5 +1,7 @@
 ```mermaid
-stateDiagram-v2 
+stateDiagram-v2
+    classDef job_specific fill:green 
+
     Start-->form
     form --> frame_maker : call
     frame_maker --> my_lib : load
@@ -20,4 +22,10 @@ stateDiagram-v2
     working_for_you --> stderr_file : get
     working_for_you --> progress_file : get
     working_for_you --> zip_file : get
+
+    class zip_file job_specific
+    class frames   job_specific
+    class progress_file job_specific
+    class stderr_file job_specific
+    class stdout_file job_specific
 ```

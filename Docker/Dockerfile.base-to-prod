@@ -1,4 +1,4 @@
-FROM base-httpd
+FROM fintatarta/espert_uniud:building
 # RUN apt update
 # RUN apt upgrade
 # RUN apt install -y make git gprbuild gnat libpng-dev ruby ruby-dev rubygems build-essential libtool

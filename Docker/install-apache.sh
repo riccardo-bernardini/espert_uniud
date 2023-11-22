@@ -1,9 +1,11 @@
-#!/bin/sh
+#!/bin/bash -e
 
 my_dir=`dirnname $0`
 cd $my_dir
 
 configuration_file=/usr/local/apache2/conf/httpd.conf
+
+cp ./my-httpd.conf $configuration_file
 
 root=`awk '/^ServerRoot *"([^"]+)" *$/ {print $2} ' $configuration_file | tr -d '"'`
 
@@ -27,12 +29,14 @@ cp working_for_you.thtml $lib_dir
 cp worker.rb             $lib_dir
 cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir
-cp my_config.rb          $lib_dir
+cp definitions.rb        $lib_dir
 
 cd ../accumulator
 gprbuild
 
 cp obj/main              $lib_dir/accumulator
+
+cd $my_dir
 
 job_dir=$root/jobs
 

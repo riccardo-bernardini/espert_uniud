@@ -1,16 +1,16 @@
 #!/usr/bin/env ruby
 
 $my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir, "lib"))
+$LOAD_PATH.unshift(File.join($my_dir))
 
 require 'open3'
 require 'zip'
 
 require 'channel'
-require 'my_config'
+require 'definitions'
 
 
-Accumulator_Path = File.join($my_dir, "accumulator.exe");
+Accumulator_Path = File.join($my_dir, "accumulator");
 
 def create_zip_archive(pattern, zipfile_name)
   input_filenames = Dir.glob(pattern);

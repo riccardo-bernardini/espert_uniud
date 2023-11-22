@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 $my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir, "../exe/lib"))
+$LOAD_PATH.unshift(File.join($my_dir, "../lib"))
 
 # $stderr.puts($LOAD_PATH.inspect)
 
@@ -12,7 +12,7 @@ require 'tmpdir'
 require 'fileutils'
 
 require 'micro_macro_proc'
-require 'my_config.rb'
+require 'definitions'
 require 'channel'
 
 def despace(x)
@@ -87,12 +87,6 @@ def create_error_page(cgi, message)
 end
 
 
-def timestamp
-  t=Time.now;
-
-  return t.tv_sec.to_s + t.tv_usec.to_s
-end
-
 def to_link(path)
   if (path[0...$my_dir.size] == $my_dir && path[$my_dir.size]='/')
     return path[$my_dir.size+1 .. -1]
@@ -101,9 +95,16 @@ def to_link(path)
   end
 end
 
+def timestamp
+  t=Time.now;
+
+  return t.strftime('%Y-%m-%d/%H:%M:%S%L')
+  #return t.tv_sec.to_s + t.tv_usec.to_s
+end
+
 def with_working_dir
-  t = Time.now.sec
-  status_dir = File.absolute_path(File.join($my_dir, "status/#{timestamp}"))
+  job_dir = convert_dir($my_dir, :cgi, :jobs)
+  status_dir = File.absolute_path(File.join(job_dir, "#{timestamp}"))
 
   FileUtils.mkpath(status_dir)
   
@@ -180,8 +181,8 @@ begin
                      "stderr"      => to_link(stderr_file)
                    }
 
-          
-          expanded_template(File.join($my_dir, '../exe/lib/working-for-you-bis.thtml'),
+          lib_dir=convert_dir($my_dir, :cgi, :lib)
+          expanded_template(File.join(lib_dir, 'working-for-you-bis.thtml'),
                             macros)
           
         end
@@ -199,60 +200,3 @@ rescue StandardError => e
   create_error_page(cgi, "Internal error (#{e.class}): #{e.message}")
 
 end
-
-# $stderr.puts (cgi.params.inspect)
-# 
-# cgi.print("Panini fritti!!!")
-# cgi.print (cgi.params.inspect)
-# 
-# cgi.print(cgi.params['myfile'].first.read)
-#   
-# cgi.print(cgi.files.inspect)
-
-# class CGIbis < CGI
-#   include CGI::QueryExtension
-# end
-# 
-# 
-#  child_pid=fork
-#
-#  if child_pid
-#    # I'm the parent.  Just exit
-#    Process.detach(child_pid)
-#  else
-#    # I'm the child.  Do stderr redirection
-#    $stdin.close
-#    $stderr.close
-#    $stdout.close
-#    
-#    $stderr=File.open(stderr_file, 'w')
-#    $stdout=$stderr
-#
-#    exec(File.join($my_dir, "../exe/accumulator.exe"), *params)
-#  end
-    
-#  
-#
-#  if status.success?
-#    $stderr.puts('ok')
-#    
-#    create_success_page(cgi, dir, basename_template)
-#
-#  else
-#    $stderr.puts('NO')
-#    create_error_page(cgi, status, stderr)
-#
-#  end
-
-# def create_success_page(cgi, dir, basename_template)
-#   zip_path=create_zip_archive(dir, basename_template)
-# 
-#   $stderr.puts(cgi.inspect)
-#   
-#   cgi.out("type" => "application/zip",
-#           # "disposition" => "attachment; filename=#{File.basename(zip_path)}"
-#          ) {
-#     File.read(zip_path)
-#   }
-# end
-

@@ -1,6 +1,11 @@
 require 'socket'
+require 'definitions'
 
-Socket_Name = '/tmp/aaa'
+def socket_dir
+  return File.dirname(File.absolute_path(__FILE__))
+end
+
+Socket_Name = File.join(socket_dir, worker)
 
 class Server_Side
   @@listening_socket = nil

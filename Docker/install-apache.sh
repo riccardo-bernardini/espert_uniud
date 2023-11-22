@@ -18,7 +18,7 @@ cp index.html $html_dir
 cgi_dir=$root/cgi-bin
 mkdir -p $cgi_dir
 
-cp frame_maker.rb $cgi_bin
+cp frame_maker.rb $cgi_dir
 
 
 lib_dir=$root/library

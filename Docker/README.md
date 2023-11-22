@@ -23,11 +23,11 @@ stateDiagram-v2
     accumulator --> progress_file : write
     accumulator --> stdout_file : write
     accumulator --> stderr_file : write
-    stderr_file --> job_dir : in
-    stdout_file --> job_dir : in
-    frames      --> job_dir : in
-    progress_file --> job_dir : in
-    zip_file    --> job_dir : in
+    job_dir     --> stderr_file : contains
+    job_dir     --> stdout_file : contains
+    job_dir     --> frames : contains
+    job_dir     --> progress_file : contains
+    job_dir     --> zip_file : contains
     working_for_you --> stderr_file : get
     working_for_you --> progress_file : get
     working_for_you --> zip_file : get

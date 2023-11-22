@@ -25,7 +25,7 @@ lib_dir=$root/library
 
 mkdir -p $lib_dir
 
-cp working_for_you.thtml $lib_dir
+cp working-for-you.thtml $lib_dir
 cp worker.rb             $lib_dir
 cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir

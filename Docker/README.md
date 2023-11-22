@@ -47,11 +47,14 @@ stateDiagram-v2
 ```
 
 We need
-* A directory for html files (in web tree)
-* A directory for cgi (in web tree)
-* A directory for other executable (outside)
-* A directory for "libraries" (Ruby libs and templates, outside)
-* A location for the socket  (outside)
-* A directory for job dirs (outside)
-* httpd stuff (use the default)
+
+| What | Where |
+|------|-------|
+| A directory for html files | $root/htdocs |  
+| A directory for cgi | $root/cgi-bin |  
+| A directory for other executable | $root/lib |  
+| A directory for "libraries" (ruby and templates)  | $root/lib | 
+| A location for the socket  | $root/lib/worker | 
+| A directory for job dirs | $root/jobs |
+| httpd stuff | use the default| 
 

@@ -1,3 +1,4 @@
+# coding: utf-8
 def impacca(n)
   [n].pack('C')
 end
@@ -16,3 +17,35 @@ def exitcode_to_status(x)
   impacca(x + 204)
 end
 
+def to_root(path, type)
+  File.dirname(path)
+end
+
+def rooo_to(root, type)
+  case type
+  when :html
+    File.join(root, 'htdocs')
+
+  when :cgi
+    File.join(root, 'cgi-bin')
+
+  when :exe
+    File.join(root, 'library')
+
+  when :lib
+    File.join(root, 'library')
+
+  when :jobs
+    File.join(root, 'jobs')
+
+  else
+    raise "Che è 'sta robba? #{type}"
+  end
+end
+
+def convert_dir(path, from, to)
+  root = to_root(path, from)
+  return root_to(root, to)
+end
+
+  

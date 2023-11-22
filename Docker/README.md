@@ -58,3 +58,4 @@ We need
 | A directory for job dirs | $root/jobs |
 | httpd stuff | use the default| 
 
+where $root is ServerRoot in the httpd.conf file

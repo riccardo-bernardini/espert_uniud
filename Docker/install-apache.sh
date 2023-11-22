@@ -1,4 +1,4 @@
-#!/bin/bash -e -u
+#!/bin/bash -e
 
 my_dir=`dirname $0`
 cd $my_dir

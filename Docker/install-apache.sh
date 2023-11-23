@@ -18,18 +18,21 @@ cp index.html $html_dir
 mkdir -p $cgi_dir
 
 cp frame_maker.rb $cgi_dir
-
+chmod a+x $cgi_dir/frame_maker.rb
 
 
 mkdir -p $lib_dir
 
 cp working-for-you.thtml $lib_dir
-cp worker.rb             $lib_dir
 cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
-cp dir_names.sh          $lib_dir
-cp worker-manager.sh     $lib_dir
+
+for i in worker.rb dir_names.sh  worker-manager.sh ; do
+    cp $i $lib_dir
+    chmod a+x $lib_dir/$i
+done
+
 
 cd ../accumulator
 gprbuild main

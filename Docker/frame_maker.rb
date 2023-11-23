@@ -1,7 +1,7 @@
 #!/usr/bin/env ruby
 
 $my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir, "../lib"))
+$LOAD_PATH.unshift(File.join($my_dir, "../library"))
 
 # $stderr.puts($LOAD_PATH.inspect)
 

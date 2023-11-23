@@ -3,12 +3,13 @@
 $my_dir = File.dirname(File.absolute_path(__FILE__))
 $LOAD_PATH.unshift(File.join($my_dir))
 
+require 'logger'
 require 'open3'
 require 'zip'
-
 require 'channel'
 require 'definitions'
 
+$logger=Logger.new(STDERR)
 
 Accumulator_Path = File.join($my_dir, "accumulator");
 
@@ -43,14 +44,14 @@ $verbose=true
 loop do
   params = Array.new
   
-  $stderr.puts("Waiting...") if $verbose
+  logger.info("Waiting...") 
 
   Server_Side.new do |connection|
     $stderr.puts("Connected. Reading...") if $verbose
     params = connection.readlines.map {|s| s.chomp}
   end
 
-  $stderr.puts("Done") if $verbose
+  logger.info("Done") 
 
   stderr_file        = check(params.shift, "stderr")
   stdout_file        = check(params.shift, "stdout")
@@ -58,10 +59,10 @@ loop do
   image_glob_pattern = check(params.shift, "images")
   zip_filename       = check(params.shift, "zip")
 
-  $stderr.puts("Calling accumulator...") if $verbose
+  logger.info("Calling accumulator...") 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);
 
-  $stderr.puts("Done") if $verbose
+  logger.info("Done")
   
   File.write(stdout_file, stdout);
   File.write(stderr_file, stderr);
@@ -69,16 +70,21 @@ loop do
   if status.success?
     File.write(status_file, Accumulator_Done);
 
-    $stderr.puts("Creating zip...") if $verbose
+    logger.info("Creating zip...") 
 
     if create_zip_archive(image_glob_pattern, zip_filename)
-      $stderr.puts("Zip ready") if $verbose
+      logger.info("Zip ready") 
       File.write(status_file, Archive_Ready)
     else
+      logger.error("Could not create zip file")
       File.write(status_file, Error_while_Zipping)
     end
   else
-    $stderr.puts("Accumulator error #{status.exitstatus}");
+    logger.error("Accumulator error #{status.exitstatus}");
+    logger.error("Accumulator stderr begin-----------------------------");
+    logger.error(stderr)
+    logger.error("Accumulator stderr end-----------------------------");
+
     File.write(status_file, exitcode_to_status(status.exitstatus));
   end
 end

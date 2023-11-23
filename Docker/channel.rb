@@ -5,7 +5,7 @@ def socket_dir
   return File.dirname(File.absolute_path(__FILE__))
 end
 
-Socket_Name = File.join(socket_dir, worker)
+Socket_Name = File.join(socket_dir, 'worker')
 
 class Server_Side
   @@listening_socket = nil
@@ -36,6 +36,15 @@ end
 
 class Client_Side
   def initialize
+    timeout = 60
+    
+    until File.exists?(Socket_Name) do
+      sleep(1)
+      timeout = timeout - 1
+
+      raise "Cannot find server socket" if timeout == 0
+    end
+    
     @to_server = UNIXSocket.new(Socket_Name)
 
     if block_given?

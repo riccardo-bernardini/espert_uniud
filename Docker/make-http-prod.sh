@@ -20,4 +20,4 @@ if is_git_status_dirty ;  then
 fi
 
 
-sudo docker build -f ./Dockerfile.base-to-prod -t prod-httpd "$@" .
+sudo docker build --no-cache -f ./Dockerfile.base-to-prod -t prod-httpd "$@" .

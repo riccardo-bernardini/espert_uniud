@@ -1,8 +1,5 @@
 FROM fintatarta/espert_uniud:building
-# RUN apt update
-# RUN apt upgrade
-# RUN apt install -y make git gprbuild gnat libpng-dev ruby ruby-dev rubygems build-essential libtool
-# RUN gem install cgi zip stringio tempfile tmpdir fileutils
+
 WORKDIR /tmp
 RUN git clone https://github.com/riccardo-bernardini/espert_uniud.git
 
@@ -12,3 +9,4 @@ RUN git checkout compatibility
 WORKDIR Docker
 RUN ./install-apache.sh
 
+CMD ["/usr/local/bin/http-and-worker.sh"]

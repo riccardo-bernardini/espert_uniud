@@ -3,7 +3,4 @@ RUN apt update
 RUN apt upgrade
 RUN apt install -y make git gprbuild gnat libpng-dev ruby ruby-dev rubygems build-essential libtool
 RUN gem install cgi zip stringio tempfile tmpdir fileutils
-# WORKDIR /tmp
-# RUN git clone https://github.com/riccardo-bernardini/espert_uniud.git
-# WORKDIR espert_uniud/accumulator
-# RUN gprbuild
+

@@ -1,15 +1,14 @@
-#!/bin/bash -e
+#!/bin/bash -eu
 
 my_dir=`dirname $0`
 cd $my_dir
 
 source ./dir_names.sh
 
-configuration_file=$HTTPD_PREFIX/conf/httpd.conf
+cp ./my-httpd.conf $conf_dir/httpd.conf
 
-cp ./my-httpd.conf $configuration_file
-
-
+chmod a+x http-and-worker.sh
+cp http-and-worker.sh /usr/local/bin
 
 mkdir -p $html_dir
 

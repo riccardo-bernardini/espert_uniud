@@ -5,3 +5,6 @@ cgi_dir=$root/cgi-bin
 lib_dir=$root/library
 job_dir=$root/jobs
 log_dir=$root/logs
+conf_dir=$root/conf
+
+

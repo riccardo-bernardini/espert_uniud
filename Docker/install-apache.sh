@@ -29,6 +29,7 @@ cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
 cp dir_names.sh          $lib_dir
+cp worker-manager.sh     $lib_dir
 
 cd ../accumulator
 gprbuild main

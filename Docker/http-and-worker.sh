@@ -3,7 +3,7 @@
 set -e
 
 root=$HTTPD_PREFIX
-bin_dir=$root/bin
+bin_dir=$root/library
 
 $bin_dir/worker-manager.sh &
 

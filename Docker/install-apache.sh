@@ -28,6 +28,7 @@ cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
 
+
 for i in worker.rb dir_names.sh  worker-manager.sh ; do
     cp $i $lib_dir
     chmod a+x $lib_dir/$i
@@ -41,6 +42,8 @@ cp obj/main              $lib_dir/accumulator
 
 cd $my_dir
 
+mkdir -p $socket_dir
+chown www-data $socket_dir
 
 mkdir -p $job_dir
-chmod a+w $job_dir
+chown www-data $job_dir

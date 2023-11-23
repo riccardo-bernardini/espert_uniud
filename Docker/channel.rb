@@ -2,7 +2,8 @@ require 'socket'
 require 'definitions'
 
 def socket_dir
-  return File.dirname(File.absolute_path(__FILE__))
+  my_dir = File.dirname(File.absolute_path(__FILE__))
+  return File.join(my_dir, 'sockets')
 end
 
 Socket_Name = File.join(socket_dir, 'worker')

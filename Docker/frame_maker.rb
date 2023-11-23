@@ -10,10 +10,16 @@ require 'stringio'
 require 'tempfile'
 require 'tmpdir'
 require 'fileutils'
+require 'logger'
 
 require 'micro_macro_proc'
 require 'definitions'
 require 'channel'
+
+log_dir=convert_dir($my_dir, :cgi, :log)
+
+$logger=Logger.new(File.join(log_dir, 'cgi.log'))
+$logger.level = Logger::INFO
 
 def despace(x)
   x.is_a?(String) ? x.tr(' ', '') : x
@@ -125,9 +131,12 @@ end
 class Bad_Parameters < RuntimeError
 end
 
+$logger.info("Starting")
 cgi=CGI.new("html4")
 
 begin
+  $logger.info("Parameter checking")
+  
   frame_rate = despace(cgi.params['fps'][0])
   raise Bad_Parameters, "Invalid fps" unless is_valid_time?(frame_rate)
 
@@ -136,6 +145,8 @@ begin
 
   template = File.basename(cgi.params['template'][0])
   raise Bad_Parameters, "Bad template" unless is_valid_template?(template)
+
+  $logger.info("Open working dir")
   
   with_working_dir do |working_dir|
     image_dir     = File.join(working_dir, 'images');
@@ -165,13 +176,18 @@ begin
     params << "--input=#{event_file}"
     params << "--progress=#{progress_file}"
 
-
+    $logger.info("Calling worker server")
+    
     Client_Side.new {
       |to_server|
+      $logger.info("Got it.  Read stuff")
+      
       params.each {|p| to_server.puts(p)}
+
+      $logger.info("Done")
     }
 
-
+    $logger.info("Creating body")
     cgi.out do
       cgi.html do
         cgi.body do
@@ -189,7 +205,7 @@ begin
       end
     end
 
-    # $stderr.puts(params.inspect)
+    $logger.info("Done")
 
 
   end

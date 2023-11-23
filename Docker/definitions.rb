@@ -39,7 +39,7 @@ def root_to(root, type)
     File.join(root, 'jobs')
 
   when :log
-    File.join(root, 'logs/DV')
+    File.join(root, 'htdocs/logs')
 
   else
     raise "Che è 'sta robba? #{type}"

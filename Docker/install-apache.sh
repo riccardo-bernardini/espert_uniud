@@ -43,3 +43,4 @@ cd $my_dir
 
 
 mkdir -p $job_dir
+chmod a+w $job_dir

@@ -2,7 +2,7 @@
 
 source $HTTPD_PREFIX/library/dir_names.sh
 
-log_file=$log_dir/worker.log
+log_file=$DVlog_dir/worker.log
 
 max_fast_restart=10
 

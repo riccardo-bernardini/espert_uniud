@@ -38,6 +38,9 @@ def root_to(root, type)
   when :jobs
     File.join(root, 'jobs')
 
+  when :log
+    File.join(root, 'logs/DV')
+
   else
     raise "Che è 'sta robba? #{type}"
   end

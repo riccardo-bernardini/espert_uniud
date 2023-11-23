@@ -47,3 +47,10 @@ chown www-data $socket_dir
 
 mkdir -p $job_dir
 chown www-data $job_dir
+
+mkdir -p $DVlog_dir
+chown www-data $DVlog_dir
+chown www-data $log_dir
+
+ln -s $DVlog_dir/worker.log $html_dir/worker.txt
+ln -s $DVlog_dir/cgi.log    $html_dir/cgi_log.txt

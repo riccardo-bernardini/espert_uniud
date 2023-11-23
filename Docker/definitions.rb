@@ -21,7 +21,7 @@ def to_root(path, type)
   File.dirname(path)
 end
 
-def rooo_to(root, type)
+def root_to(root, type)
   case type
   when :html
     File.join(root, 'htdocs')

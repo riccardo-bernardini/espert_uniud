@@ -27,20 +27,22 @@ cp working-for-you.thtml $lib_dir
 cp channel.rb            $lib_dir
 cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
+cp tree.db               $lib_dir
 
+mkdir -p $bin_dir
 
 for i in worker.rb dir_names.sh  worker-manager.sh ; do
-    cp $i $lib_dir
-    chmod a+x $lib_dir/$i
+    cp $i $bin_dir
+    chmod a+x $bin_dir/$i
 done
 
 
-cd ../accumulator
-gprbuild main
+(
+    cd ../accumulator
+    gprbuild main
 
-cp obj/main              $lib_dir/accumulator
-
-cd $my_dir
+    cp obj/main  $bin_dir/accumulator
+)
 
 mkdir -p $socket_dir
 chown www-data $socket_dir
@@ -48,7 +50,6 @@ chown www-data $socket_dir
 mkdir -p $job_dir
 chown www-data $job_dir
 
-mkdir -p $DVlog_dir
-chown www-data $DVlog_dir
+mkdir -p $log_dir
 chown www-data $log_dir
 

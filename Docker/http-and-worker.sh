@@ -2,10 +2,9 @@
 
 set -e
 
-root=$HTTPD_PREFIX
-bin_dir=$root/library
+source $HTTPD_PREFIX/library/dir_names.sh
 
-$bin_dir/worker-manager.sh &
+$bin_dir/worker-manager.sh 2>$log_dir/manager.log &
 
 # Apache gets grumpy about PID files pre-existing
 rm -f /usr/local/apache2/logs/httpd.pid

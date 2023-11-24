@@ -2,7 +2,7 @@
 
 source $HTTPD_PREFIX/library/dir_names.sh
 
-log_file=$DVlog_dir/worker.log
+log_file=$log_dir/worker.log
 
 max_fast_restart=10
 
@@ -15,7 +15,7 @@ while true ; do
 
     echo "$(date) MANAGER: Starting worker" >> $log_file
 
-    $lib_dir/worker.rb 2>> $log_file
+    $bin_dir/worker.rb 2>> $log_file
 
     let stop=`date +%s`
 

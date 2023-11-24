@@ -1,7 +1,5 @@
 #!/usr/bin/env ruby
 
-$my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir))
 
 require 'logger'
 require 'open3'
@@ -11,7 +9,7 @@ require 'definitions'
 
 $logger=Logger.new(STDERR)
 
-Accumulator_Path = File.join($my_dir, "accumulator");
+Accumulator_Path = Tree.join(:bin, "accumulator");
 
 def create_zip_archive(pattern, zipfile_name)
   input_filenames = Dir.glob(pattern);
@@ -44,14 +42,14 @@ $verbose=true
 loop do
   params = Array.new
   
-  logger.info("Waiting...") 
+  $logger.info("Waiting...") 
 
   Server_Side.new do |connection|
     $stderr.puts("Connected. Reading...") if $verbose
     params = connection.readlines.map {|s| s.chomp}
   end
 
-  logger.info("Done") 
+  $logger.info("Done") 
 
   stderr_file        = check(params.shift, "stderr")
   stdout_file        = check(params.shift, "stdout")
@@ -59,10 +57,10 @@ loop do
   image_glob_pattern = check(params.shift, "images")
   zip_filename       = check(params.shift, "zip")
 
-  logger.info("Calling accumulator...") 
+  $logger.info("Calling accumulator...") 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);
 
-  logger.info("Done")
+  $logger.info("Done")
   
   File.write(stdout_file, stdout);
   File.write(stderr_file, stderr);
@@ -70,20 +68,20 @@ loop do
   if status.success?
     File.write(status_file, Accumulator_Done);
 
-    logger.info("Creating zip...") 
+    $logger.info("Creating zip...") 
 
     if create_zip_archive(image_glob_pattern, zip_filename)
-      logger.info("Zip ready") 
+      $logger.info("Zip ready") 
       File.write(status_file, Archive_Ready)
     else
-      logger.error("Could not create zip file")
+      $logger.error("Could not create zip file")
       File.write(status_file, Error_while_Zipping)
     end
   else
-    logger.error("Accumulator error #{status.exitstatus}");
-    logger.error("Accumulator stderr begin-----------------------------");
-    logger.error(stderr)
-    logger.error("Accumulator stderr end-----------------------------");
+    $logger.error("Accumulator error #{status.exitstatus}");
+    $logger.error("Accumulator stderr begin-----------------------------");
+    $logger.error(stderr)
+    $logger.error("Accumulator stderr end-----------------------------");
 
     File.write(status_file, exitcode_to_status(status.exitstatus));
   end

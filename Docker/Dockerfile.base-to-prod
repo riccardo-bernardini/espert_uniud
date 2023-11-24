@@ -9,4 +9,6 @@ RUN git checkout compatibility
 WORKDIR Docker
 RUN ./install-apache.sh
 
+ENV RUBYLIB=${HTTPD_PREFIX}/library
+
 CMD ["/usr/local/bin/http-and-worker.sh"]

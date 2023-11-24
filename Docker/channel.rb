@@ -1,28 +1,36 @@
 require 'socket'
 require 'definitions'
+require 'logger'
 
-def socket_dir
-  my_dir = File.dirname(File.absolute_path(__FILE__))
-  return File.join(my_dir, 'sockets')
-end
-
-Socket_Name = File.join(socket_dir, 'worker')
+Socket_Name = File.join(Tree[:socket], 'worker')
 
 class Server_Side
+  @@logger = Logger.new(Tree.join(:log, 'channel-server.log'))
+  
   @@listening_socket = nil
   
   def initialize
     if @@listening_socket.nil?
       File.unlink(Socket_Name) if File.exists?(Socket_Name)
 
+      @@logger.info('Opening listening socket')
       @@listening_socket=UNIXServer.new(Socket_Name)
+      @@logger.info('Done')
     end
+
+    @@logger.info('Waiting for clients')
 
     @to_client = @@listening_socket.accept
 
+    @@logger.info('Client connected')
+    
     if block_given?
+      @@logger.info('Yielding')
+
       yield(self)
       @to_client.close
+      
+      @@logger.info('Done')
     end
   end
 
@@ -36,21 +44,35 @@ class Server_Side
 end
 
 class Client_Side
+  @@logger = Logger.new(Tree.join(:log, 'channel-client.log'))
+  
   def initialize
     timeout = 60
-    
-    until File.exists?(Socket_Name) do
+
+    @@logger.info("Checking for socket at #{Socket_Name}")
+
+    while ! File.exists?(Socket_Name) do
+      @@logger.info("Not there. Sleeping")
+      
       sleep(1)
       timeout = timeout - 1
 
       raise "Cannot find server socket" if timeout == 0
     end
+
+    @@logger.info("Got it")
     
     @to_server = UNIXSocket.new(Socket_Name)
 
+    @@logger.info("Connected to server")
+
     if block_given?
+      @@logger.info("Yielding")
+
       yield(self)
       @to_server.close
+
+      @@logger.info("Done")
     end
   end
 

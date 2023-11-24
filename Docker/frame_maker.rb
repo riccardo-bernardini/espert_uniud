@@ -1,10 +1,5 @@
 #!/usr/bin/env ruby
 
-$my_dir = File.dirname(File.absolute_path(__FILE__))
-$LOAD_PATH.unshift(File.join($my_dir, "../library"))
-
-# $stderr.puts($LOAD_PATH.inspect)
-
 require 'cgi'
 require 'stringio'
 require 'tempfile'
@@ -16,9 +11,7 @@ require 'micro_macro_proc'
 require 'definitions'
 require 'channel'
 
-log_dir=convert_dir($my_dir, :cgi, :log)
-
-$logger=Logger.new(File.join(log_dir, 'cgi.log'))
+$logger=Logger.new(Tree.join(:log, 'cgi.log'))
 $logger.level = Logger::INFO
 
 def despace(x)
@@ -101,7 +94,7 @@ def to_link(path)
   end
 end
 
-def timestamp
+def get_timestamp
   t=Time.now;
 
   return t.strftime('%Y-%m-%d/%H:%M:%S%L')
@@ -109,8 +102,7 @@ def timestamp
 end
 
 def with_working_dir
-  job_dir = convert_dir($my_dir, :cgi, :jobs)
-  status_dir = File.absolute_path(File.join(job_dir, "#{timestamp}"))
+  status_dir = Tree.join(:job, get_timestamp)
 
   FileUtils.mkpath(status_dir)
   
@@ -197,9 +189,8 @@ begin
                      "stderr"      => to_link(stderr_file)
                    }
 
-          lib_dir=convert_dir($my_dir, :cgi, :lib)
-          expanded_template(File.join(lib_dir, 'working-for-you-bis.thtml'),
-                            macros)
+          template=Tree.join(:lib, 'working-for-you.thtml')
+          expanded_template(template, macros)
           
         end
       end

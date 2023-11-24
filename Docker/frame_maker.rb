@@ -90,8 +90,10 @@ end
 
 
 def to_link(path)
-  if (path[0...$my_dir.size] == $my_dir && path[$my_dir.size]='/')
-    return path[$my_dir.size+1 .. -1]
+  html_dir = Tree[:html] + '/'
+  
+  if (path[0...html_dir.size] == html_dir)
+    return path[html_dir.size .. -1]
   else
     raise "Trying to 'linkify' a path with the wrong form"
   end

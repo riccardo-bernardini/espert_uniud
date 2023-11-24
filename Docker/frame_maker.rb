@@ -1,4 +1,4 @@
-#!/usr/bin/env ruby
+#!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
 require 'cgi'
 require 'stringio'
@@ -7,9 +7,11 @@ require 'tmpdir'
 require 'fileutils'
 require 'logger'
 
+
 require 'micro_macro_proc'
 require 'definitions'
 require 'channel'
+
 
 $logger=Logger.new(Tree.join(:log, 'cgi.log'))
 $logger.level = Logger::INFO

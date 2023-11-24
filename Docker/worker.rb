@@ -1,5 +1,4 @@
-#!/usr/bin/env ruby
-
+#!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
 require 'logger'
 require 'open3'

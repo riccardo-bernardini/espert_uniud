@@ -24,7 +24,9 @@ chmod a+x $cgi_dir/frame_maker.rb
 mkdir -p $lib_dir
 
 cp working-for-you.thtml $lib_dir
-cp channel.rb            $lib_dir
+cp channel_client.rb     $lib_dir
+cp channel_server.rb     $lib_dir
+cp socket_name.rb        $lib_dir
 cp micro_macro_proc.rb   $lib_dir
 cp definitions.rb        $lib_dir
 cp tree.db               $lib_dir

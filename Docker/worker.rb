@@ -1,10 +1,11 @@
 #!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
+require 'definitions'
+
 require 'logger'
 require 'open3'
 require 'zip'
-require 'channel'
-require 'definitions'
+require 'channel_server'
 
 $logger=Logger.new(STDERR)
 

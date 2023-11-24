@@ -11,7 +11,7 @@ ENV['HTTPD_PREFIX']='/usr/local/apache2'
 
 require 'micro_macro_proc'
 require 'definitions'
-require 'channel'
+require 'channel_client'
 
 
 $logger=Logger.new(Tree.join(:log, 'cgi.log'))

@@ -5,11 +5,15 @@ require 'logger'
 Socket_Name = File.join(Tree[:socket], 'worker')
 
 class Server_Side
-  @@logger = Logger.new(Tree.join(:log, 'channel-server.log'))
+  @@logger = nil
   
   @@listening_socket = nil
   
   def initialize
+    if @@logger.nil?
+      @@logger=Logger.new(Tree.join(:log, 'channel-server.log'))
+    end
+      
     if @@listening_socket.nil?
       File.unlink(Socket_Name) if File.exists?(Socket_Name)
 

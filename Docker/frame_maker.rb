@@ -7,6 +7,7 @@ require 'tmpdir'
 require 'fileutils'
 require 'logger'
 
+ENV['HTTPD_PREFIX']='/usr/local/apache2'
 
 require 'micro_macro_proc'
 require 'definitions'

@@ -1,7 +1,7 @@
 root=$HTTPD_PREFIX
 
 eval `(while read dir path ; do 
-         echo dir_$dir=\$root/$path\; 
+         echo ${dir}_dir=\$root/$path\; 
        done) < tree.db`
 
 # html_dir=$root/htdocs

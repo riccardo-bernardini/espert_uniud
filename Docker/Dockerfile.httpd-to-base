@@ -2,5 +2,5 @@ FROM httpd
 RUN apt update
 RUN apt upgrade
 RUN apt install -y make git gprbuild gnat libpng-dev ruby ruby-dev rubygems build-essential libtool
-RUN gem install cgi zip stringio tempfile tmpdir fileutils
+RUN gem install cgi rubyzip stringio tempfile tmpdir fileutils
 

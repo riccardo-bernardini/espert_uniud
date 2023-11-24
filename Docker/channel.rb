@@ -19,6 +19,9 @@ class Server_Side
 
       @@logger.info('Opening listening socket')
       @@listening_socket=UNIXServer.new(Socket_Name)
+      @@logger.info(File.stat(Socket_name).mode.to_s(8))
+      File.chmod(0777, Socket_name)
+
       @@logger.info('Done')
     end
 

@@ -1,8 +1,5 @@
 #!/usr/bin/bash -eu
 
-id
-
-su www-data
 
 source /usr/local/apache2/library/dir_names.sh
 

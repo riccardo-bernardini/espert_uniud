@@ -1,5 +1,10 @@
 #!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
+Username = 'www-data'
+User_UID = Process::UID.from_name(Username)
+
+Process::UID.change_privilege(User_UID)
+
 require 'definitions'
 
 require 'logger'

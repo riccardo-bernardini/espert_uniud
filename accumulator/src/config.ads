@@ -1,8 +1,10 @@
 with Camera_Events;
+with Times;
 with Memory_Dynamic;
 with Images;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
-package Config is
+package Config with SPARK_Mode is
    type Frame_Index is range 0 .. Integer'Last;
 
    type Verbosity is
@@ -12,14 +14,28 @@ package Config is
       Interactive   -- Stuff that makes sense only on a terminal (e.g., progress bar)
      );
 
+   procedure Dump_Cli;
+
    -- Used in contracts
    function Package_Ready return Boolean
      with Ghost;
 
-   procedure Parse_Command_Line
+   function T0_Fixed return Boolean
+     with
+       Ghost;
+
+   type Parsing_Status is (Success, Full_Help_Asked, Bad_Command_Line);
+
+   type Parsing_Report is
+      record
+         Status  : Parsing_Status;
+         Message : Unbounded_String;
+      end record;
+
+   procedure Parse_Command_Line (Report : out Parsing_Report)
      with
        Pre => not Package_Ready,
-       Post => Package_Ready;
+       Post => (Report.Status = Success) = Package_Ready;
 
 
    function Short_Help_Text return String;
@@ -39,19 +55,17 @@ package Config is
      with
        Pre => Package_Ready;
 
-   function Sampling_Period return Camera_Events.Duration
+   function Sampling_Period return Times.Duration
      with
        Pre => Package_Ready;
 
-   function Start_At (T_Min : Camera_Events.Timestamp)
-                      return Camera_Events.Timestamp
+   function Start_At  return Times.Timestamp
      with
-       Pre => Package_Ready;
+       Pre => Package_Ready and then T0_Fixed;
 
-   function Stop_At (T_Max : Camera_Events.Timestamp)
-                     return Camera_Events.Timestamp
+   function Stop_At  return Times.Timestamp
      with
-       Pre => Package_Ready;
+       Pre => Package_Ready and then T0_Fixed;
 
 
    function Forgetting_Method return  Memory_Dynamic.Dynamic_Type
@@ -64,6 +78,36 @@ package Config is
                          return Images.Image_Type
      with
        Pre => Package_Ready;
+
+   function Event_Contribution return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Pixel_Min return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Pixel_Max return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+   function Synchronous_Update return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Reset_Each_Frame return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Neutral_Value return Images.Pixel_Value
+     with
+       Pre => Package_Ready;
+
+
+   function Rectify_Events return Boolean
+     with
+       Pre => Package_Ready;
+
 
    function Verbosity_Level return Verbosity
      with
@@ -79,9 +123,25 @@ package Config is
      with
        Pre => Package_Ready;
 
-   Bad_Command_Line : exception;
+   function Metadata_Requested return Boolean
+     with
+       Pre => Package_Ready;
 
+   function Metadata_Filename return String
+     with
+       Pre => Package_Ready and then Metadata_Requested;
 
-   Full_Help_Asked : exception;
+   procedure Fix_T0 (T0 : Times.Timestamp)
+     with
+       Pre => Package_Ready and not T0_Fixed,
+     Post => T0_Fixed;
+
+   function Log_Progress return Boolean
+     with
+       Pre => Package_Ready;
+
+   function Log_Progress_Filename return String
+     with
+       Pre => Package_Ready and then Log_Progress;
 
 end Config;

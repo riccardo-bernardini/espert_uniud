@@ -51,7 +51,7 @@ write_png_file (char *filename, png_bytep image, png_uint_32 width,
     {
       error = ERR_OPEN;
 
-      goto die;
+      goto couldnt_open;
     }
 
   png_structp png
@@ -114,6 +114,7 @@ write_png_file (char *filename, png_bytep image, png_uint_32 width,
       png_destroy_write_struct (&png, &info);
     }
 
+ couldnt_open:
   if (fp != NULL)
     {
       fclose (fp);

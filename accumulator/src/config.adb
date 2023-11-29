@@ -1,345 +1,169 @@
 pragma Ada_2012;
+with Ada.Text_IO; use Ada.Text_IO;
+--  with Ada.Text_IO; use Ada.Text_IO;
 
-with Ada.Command_Line;
-with Ada.Containers;
-with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
+with Aida.Command_Line;
 with Ada.Strings.Fixed;        use Ada.Strings;
 
-with Ada.Characters.Handling;
-with Ada.Strings.Maps.Constants;
 
 with Ada.Characters.Latin_9;
-with Gnat.Regpat;
-with Tokenize;
---  with Ada.Text_IO; use Ada.Text_IO;
+with Generic_Command_Line_Parser;
 
 with Interfaces.C;
 
 use Interfaces;
 
-package body Config is
-   function Is_A_Tty (Descriptor : C.Int) return Boolean
-   is
-      use type C.int;
+with Config.Syntax;  use Config.Syntax;
+with Config.Data;    use Config.Data;
 
-      function C_Is_A_Tty (Descriptor : C.Int) return C.Int
-        with
-          Import => True,
-          Convention => C,
-          External_Name => "isatty";
-   begin
-      return (C_Is_A_Tty (Descriptor) = 1);
-   end Is_A_Tty;
-
-   use type Camera_Events.Timestamp;
-
-   type Radix_Spec is
-      record
-         Head               : Unbounded_String;
-         Tail               : Unbounded_String;
-         Frame_Number_Width : Positive;
-         Padding_Char       : Character;
-      end record;
-
-   type Sampling_Spec is
-      record
-         Start           : Camera_Events.Timestamp;
-         Stop            : Camera_Events.Timestamp;
-         Sampling_Period : Camera_Events.Duration;
-      end record;
-
-   Frame_Number_Marker : constant String := "%d";
-
-   Frame_Number_Padding_Char : constant Character := '0';
-
-   Frame_Number_Default_Width : constant Positive := 5;
-
-   Frame_Format : Images.Format_Type;
-
-   I_Am_Ready   : Boolean := False;
-
-   Memory_Dynamic_Spec : Memory_Dynamic.Dynamic_Type;
+with Patterns;
+with Event_Sequences;
+with Event_Streams;
+with Ada.Command_Line;
 
 
-   Requested_Verbosity : Verbosity;
+package body Config with SPARK_Mode is
+   use type Times.Timestamp;
 
-   Input_Filename : Unbounded_String := Null_Unbounded_String;
+   T0_Has_Been_Fixed : Boolean := False;
 
-   Sampling_Info : Sampling_Spec;
+   function T0_Fixed return Boolean
+   is (T0_Has_Been_Fixed);
 
-   Frame_Filename_Spec : Radix_Spec;
-
-   First_Image_Filename : Unbounded_String;
-
-   function Package_Ready return Boolean
-   is (I_Am_Ready);
-
-   ------------------------
-   -- Parse_Command_Line --
-   ------------------------
+   function "+" (X : String) return Unbounded_String
+                 renames To_Unbounded_String;
 
    function Strip_Spaces (S : String) return String
    is (Fixed.Trim (Source => S,
                    Side   => Both));
 
-   procedure Parse_Command_Line is
-      use Ada.Command_Line;
 
-      Argument_Counter : Positive := 1;
 
-      function Current_Argument return String
+   function Is_A_Tty (Descriptor : C.Int) return Boolean
+   is
+      use type C.Int;
+
+      function C_Is_A_Tty (Descriptor : C.Int) return C.Int
         with
-          Pre => Argument_Counter <= Ada.Command_Line.Argument_Count;
+          Import => True,
+          Convention => C,
+          External_Name => "isatty",
+          Global => (null);
+   begin
+      return (C_Is_A_Tty (Descriptor) = 1);
+   end Is_A_Tty;
 
-      function Current_Argument return String
-      is (Argument (Argument_Counter));
 
-      procedure Next_Argument
+   function Package_Ready return Boolean
+   is (Data.Is_All_Set);
+
+   ------------------------
+   -- Parse_Command_Line --
+   ------------------------
+
+
+
+
+   procedure Parse_Command_Line (Report : out Parsing_Report) is
+      use Aida.Command_Line;
+      use type Images.Pixel_Value;
+
+      type Options is
+        (
+         Decay,
+         Sampling,
+         Frame_Rate,
+         Output_Template,
+         Input_Spec,
+         Log_Progress,
+         Synch_With,
+         First_Image,
+         Metadata_Filename,
+         Start_Time,
+         Stop_Time,
+         Min,
+         Max,
+         Neutral,
+         Event_Weigth,
+         Rectify,
+         Lazy_Decay
+        );
+
+      package CL_Parser is
+        new Generic_Command_Line_Parser (Options);
+
+      Option_Specs : constant CL_Parser.Option_Names :=
+                       (
+                        Decay                => +"decay",
+                        Sampling             => +"sampling",
+                        Frame_Rate           => +"framerate|frame-rate|fps",
+                        Output_Template      => +"output",
+                        Input_Spec           => +"input",
+                        Log_Progress         => +"log-progress|log-to|progress|log",
+                        Synch_With           => +"synch-with|synch",
+                        First_Image          => +"first-image|first",
+                        Metadata_Filename    => +"metadata|meta",
+                        Start_Time           => +"start",
+                        Stop_Time            => + "stop",
+                        Min                  => +"min",
+                        Max                  => +"max",
+                        Neutral              => +"neutral",
+                        Event_Weigth         => +"weigth",
+                        Rectify              => +"rectify",
+                        Lazy_Decay           => +"lazy"
+                       );
+
+      Defaults : constant CL_Parser.Option_Defaults :=
+                   (
+                    Decay                => CL_Parser.Mandatory_Option,
+                    Sampling             => CL_Parser.Ignore_If_Missing,
+                    Frame_Rate           => CL_Parser.Ignore_If_Missing,
+                    Output_Template      => CL_Parser.Mandatory_Option,
+                    Input_Spec           => CL_Parser.Ignore_If_Missing,
+                    Log_Progress         => (CL_Parser.Use_Default, +""),
+                    Synch_With           => CL_Parser.Ignore_If_Missing,
+                    First_Image          => (CL_Parser.Use_Default, +""),
+                    Metadata_Filename    => CL_Parser.Ignore_If_Missing,
+                    Start_Time           => CL_Parser.Ignore_If_Missing,
+                    Stop_Time            => CL_Parser.Ignore_If_Missing,
+                    Min                  => (CL_Parser.Use_Default, +"-1.0"),
+                    Max                  => (CL_Parser.Use_Default, +"1.0"),
+                    Neutral              => CL_Parser.Ignore_If_Missing,
+                    Event_Weigth         => (CL_Parser.Use_Default, +"0.25"),
+                    Rectify              => CL_Parser.Ignore_If_Missing,
+                    Lazy_Decay           => CL_Parser.Ignore_If_Missing
+                   );
+
+      procedure Set_Sampling_Spec (Msg : out Unbounded_String)
         with
-          Pre => Argument_Counter <= Ada.Command_Line.Argument_Count;
+          Pre => not Is_Set (Sampling_Period),
+          Post => Is_Set (Sampling_Period);
 
-      procedure Next_Argument is
-      begin
-         Argument_Counter := Argument_Counter + 1;
-      end Next_Argument;
+      procedure Set_Start_And_Stop_Times
+        with
+          Pre =>
+            not Is_Set (Start_Time)
+            and not Is_Set (Stop_Time),
+            Post =>
+              Is_Set (Start_Time)
+              and  Is_Set (Stop_Time);
 
-      function Parse_Time_Spec (Spec : String) return Float
-      is
-         use Ada.Strings.Fixed;
-         use Ada.Strings.Maps.Constants;
-         use Ada.Strings.Maps;
+      procedure Set_Levels
+        with
+          Pre => not Is_Set (Min)
+          and not Is_Set (Max)
+          and not Is_Set (Neutral)
+          and not Parsed_Options (Min).Missing
+          and not Parsed_Options (Max).Missing,
+          Post => Is_Set (Min)
+          and Is_Set (Max)
+          and Is_Set (Neutral);
 
-         Stripped : constant String := Strip_Spaces (Spec);
+      procedure Set_Decay
+        with
+          Pre => not Is_Set (Decay),
+          Post => Is_Set (Decay);
 
-         End_Of_Number : constant Natural :=
-                           Index (Source => Stripped,
-                                  Set    => Decimal_Digit_Set or To_Set ("._-+eE"),
-                                  Test   => Outside);
-
-         Unit : constant String :=
-                  (if End_Of_Number = 0
-                   then
-                      ""
-                   else
-                      Strip_Spaces (Stripped (End_Of_Number .. Stripped'Last)));
-
-         Value : constant String :=
-                   (if End_Of_Number = 0
-                    then
-                       Stripped
-                    else
-                       Stripped (Stripped'First .. End_Of_Number - 1));
-
-         --------------
-         -- To_Float --
-         --------------
-
-         function To_Float (X : String) return Float
-         is
-            use Gnat.Regpat;
-
-            Integer_Regexp : constant Pattern_Matcher :=
-                               Compile ("^[-+]?[0-9_]+$");
-
-            Float_Regexp : constant Pattern_Matcher :=
-                             Compile ("^[-+]?[0-9_]+\.[0-9_]+([eE][-+]?[0-9_]+)?$");
-         begin
-            return (if Match (Integer_Regexp, X) then
-                       Float (Integer'Value (X))
-
-                    elsif Match (Float_Regexp, X) then
-                       Float'Value (X)
-
-                    else
-                       raise Bad_Command_Line
-                         with "Bad number '" & X & "'");
-         end To_Float;
-      begin
-         if Unit = "" then
-            return To_Float (Value) * Camera_Events.Timestamps_Per_Second;
-
-         elsif Unit = "s" then
-            return To_Float (Value);
-
-         elsif Unit = "ms" then
-            return 1.0e-3 * To_Float (Value);
-
-         elsif Unit = "us" then
-            return 1.0e-6 * To_Float (Value);
-
-         elsif Unit = "ns" then
-            return 1.0e-9 * To_Float (Value);
-
-         elsif Unit = "fps" then
-            return 1.0 / To_Float (Value);
-
-         else
-            raise Bad_Command_Line with "Unknown unit '" & Unit & "'";
-         end if;
-      end Parse_Time_Spec;
-
-      function Parse_Time_Spec (Spec : String) return Camera_Events.Duration
-      is (Camera_Events.To_Duration (Parse_Time_Spec (Spec)));
-
-      function Parse_Time_Spec (Spec : String) return Camera_Events.Timestamp
-      is (Camera_Events.To_Timestamp (Parse_Time_Spec (Spec)));
-
-      function Parse_Memory_Spec (Spec : String)
-                                  return Memory_Dynamic.Dynamic_Type
-      is
-         use Ada.Strings.Fixed;
-         use Ada.Characters.Handling;
-
-         Colon_Pos : constant Natural := Index (Source  => Spec,
-                                                Pattern => ":");
-
-         Method : constant String :=
-                    Strip_Spaces (To_Lower ((if Colon_Pos = 0
-                                  then
-                                     Spec
-                                  else
-                                     Spec (Spec'First .. Colon_Pos - 1))));
-
-         Parameter : constant String :=
-                       Strip_Spaces ((if Colon_Pos = 0
-                                     then
-                                        ""
-                                     else
-                                        Spec (Colon_Pos + 1 .. Spec'Last)));
-      begin
-         if Method = "step" or Method = "s" then
-            if Parameter /= "" then
-               raise Bad_Command_Line with "'step' with parameter";
-            end if;
-
-            return Memory_Dynamic.Step;
-
-         elsif Method = "linear" or Method = "lin" or Method = "l" then
-            if Parameter = "" then
-               raise Bad_Command_Line with "'linear' needs a time constant";
-            end if;
-
-            return Memory_Dynamic.Linear (Parse_Time_Spec (Parameter));
-
-         elsif Method = "exponential" or Method = "exp" or Method = "e" then
-            if Parameter = "" then
-               raise Bad_Command_Line with "'exponential' needs a time constant";
-            end if;
-
-            return Memory_Dynamic.Exponential (Parse_Time_Spec (Parameter));
-
-         else
-            raise Bad_Command_Line with "Unknown dynamic '" & Method & "'";
-         end if;
-      end Parse_Memory_Spec;
-
-      function Parse_Sampling_Spec (Spec : String) return Sampling_Spec
-      is
-      begin
-         if 0 = Fixed.Index (Source  => Spec, Pattern => ":") then
-            --  Put_Line ("99(" & Spec & ")");
-            return Sampling_Spec'(Start           => Camera_Events.Minus_Infinity,
-                                  Stop            => Camera_Events.Infinity,
-                                  Sampling_Period => Parse_Time_Spec (Spec));
-
-         else
-            --  Put_Line ("88(" & Spec & ")");
-            declare
-               use type Ada.Containers.Count_Type;
-               use Ada.Strings.Fixed;
-
-               Pieces : constant Tokenize.Token_List :=
-                          Tokenize.Split (To_Be_Splitted => Spec,
-                                          Separator      => ':');
-
-               function Parse_Start_Time (Spec : String) return Camera_Events.Timestamp
-               is (if Spec = "" then
-                      Camera_Events.Minus_Infinity
-                   else
-                      Parse_Time_Spec (Spec));
-
-               function Parse_Stop_Time (Spec : String) return Camera_Events.Timestamp
-               is (if Spec  = "" then
-                      Camera_Events.Infinity
-                   else
-                      Parse_Time_Spec (Spec));
-            begin
-               if Pieces.Length /= 3 then
-                  raise Bad_Command_Line with "Bad sampling syntax";
-               end if;
-
-
-
-               return Result : constant Sampling_Spec :=
-                 (Start           => Parse_Start_Time (Trim (Pieces (1), Both)),
-                  Stop            => Parse_Stop_Time (Trim (Pieces (3), Both)),
-                  Sampling_Period => Parse_Time_Spec (Trim (Pieces (2), Both)))
-               do
-
-                  if Result.Stop < Result.Start then
-                     raise Bad_Command_Line
-                       with "Stopping time < start time";
-                  end if;
-
-               end return;
-            end;
-         end if;
-      end Parse_Sampling_Spec;
-
-      function Parse_Radix (Spec : String) return Radix_Spec
-      is
-         use Ada.Strings.Fixed;
-
-         function To_Unbounded (X : String) return Unbounded_String
-                                   renames To_Unbounded_String;
-
-
-         Frame_Number_Position : constant Natural :=
-                                   Index (Source  => Spec,
-                                          Pattern => Frame_Number_Marker);
-
-         function Extract_Format (Filename : String) return Images.Format_Type
-         is
-            subtype Extension is String (1 .. 3);
-
-            Format_To_Extension   : constant array (Images.Format_Type) of Extension :=
-                                      (Images.Raw_Image_8 => "raw",
-                                       Images.PGM         => "pgm",
-                                       Images.PNG         => "png");
-         begin
-            if Filename'Length < 5 or else Filename (Filename'Last - 3) /= '.' then
-               return Images.Raw_Image_8;
-            end if;
-
-            declare
-               Ext : constant Extension := Tail (Spec, 3);
-            begin
-               for Fmt in Format_To_Extension'Range loop
-                  if Ext = Format_To_Extension (Fmt) then
-                     return Fmt;
-                  end if;
-               end loop;
-
-               raise Bad_Command_Line
-                 with "Unknown extension: '" & Ext & "'";
-            end;
-         end Extract_Format;
-      begin
-         if Frame_Number_Position = 0 then
-            raise Bad_Command_Line
-              with "Missing '" & Frame_Number_Marker & "' in frame filename radix";
-         end if;
-
-         Frame_Format := Extract_Format (Spec);
-
-         return Radix_Spec'
-           (Head               =>
-              To_Unbounded (Spec (Spec'First .. Frame_Number_Position - 1)),
-            Tail               =>
-              To_Unbounded (Spec (Frame_Number_Position + Frame_Number_Marker'Length .. Spec'Last)),
-            Frame_Number_Width => Frame_Number_Default_Width,
-            Padding_Char       => Frame_Number_Padding_Char);
-      end Parse_Radix;
 
       function Help_Asked return Boolean
       is (Argument_Count = 0 or else
@@ -350,114 +174,293 @@ package body Config is
                 or Argument (1) = "--help"
                 or Argument (1) = "?")));
 
+      function To_Pixel_Value (X : Unbounded_String) return Images.Pixel_Value
+      is (Images.Pixel_Value'Value (To_String (X)));
 
-      Input_Filename_Given : Boolean := False;
-      First_Image_Given    : Boolean := False;
+
+
+      Parsed_Options       : CL_Parser.Option_Values;
+
+      procedure Parse_Options_And_Apply_Defaults (Missing_Options : out Unbounded_String)
+      is
+      begin
+         CL_Parser.Parse (Names  => Option_Specs,
+                          Result => Parsed_Options);
+
+         CL_Parser.Apply_Defaults (Values   => Parsed_Options,
+                                   Missing  => Missing_Options,
+                                   Defaults => Defaults);
+      end Parse_Options_And_Apply_Defaults;
+
+      procedure Set_Levels is
+      begin
+         Set (Min, To_Pixel_Value (Parsed_Options (Min).Value));
+         Set (Max, To_Pixel_Value (Parsed_Options (Max).Value));
+
+         if Parsed_Options (Neutral).Missing then
+
+            Set (Neutral, (Get (Min) + Get (Max)) / 2.0);
+
+         else
+            Set (Neutral, To_Pixel_Value (Parsed_Options (Neutral).Value));
+
+         end if;
+      end Set_Levels;
+
+      procedure Set_Decay is
+         use Memory_Dynamic;
+
+         Chosen_Decay : constant Decay_Spec :=
+                          Parse_Memory_Spec (To_String (Parsed_Options (Decay).Value));
+      begin
+         case Chosen_Decay.Class is
+            when None =>
+               Set_Decay (No_Decay);
+
+            when Linear =>
+               Set_Decay (Linear (T       => Chosen_Decay.Tau,
+                                  Neutral => Get (Neutral)));
+
+            when Exponential =>
+               Set_Decay (Exponential (T          => Chosen_Decay.Tau,
+                                       Zero_Level => Get (Neutral)));
+
+            when Reset =>
+               Set_Decay (Step (Reset_To => Get (Neutral)));
+
+         end case;
+      end Set_Decay;
+
+
+      procedure Set_Sampling_Spec (Msg : out Unbounded_String) is
+         use Times;
+
+         T : Times.Duration;
+      begin
+         if Parsed_Options (Sampling).Missing and not Parsed_Options (Frame_Rate).Missing then
+            T := Value (To_String (Parsed_Options (Frame_Rate).Value & "fps"));
+
+         elsif not Parsed_Options (Sampling).Missing and Parsed_Options (Frame_Rate).Missing then
+            T := Value (To_String (Parsed_Options (Sampling).Value));
+
+         else
+            Msg := To_Unbounded_String ("Sampling or framerate, but not both");
+            return;
+         end if;
+
+
+         Set (Sampling_Period, T);
+         --  Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
+         --  Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
+
+         Msg := Null_Unbounded_String;
+      end Set_Sampling_Spec;
+
+      procedure Set_Start_And_Stop_Times is
+
+         Start : Times.Timestamp := Times.Minus_Infinity;
+         Stop  : Times.Timestamp := Times.Infinity;
+      begin
+         Start := (if Parsed_Options (Start_Time).Missing then
+                      Times.Minus_Infinity
+                   else
+                      Times.Value (To_String (Parsed_Options (Start_Time).Value)));
+
+         Stop := (if Parsed_Options (Stop_Time).Missing then
+                     Times.Infinity
+                  else
+                     Times.Value (To_String (Parsed_Options (Stop_Time).Value)));
+
+         if not Parsed_Options (Synch_With).Missing then
+            declare
+               Filename : constant String :=
+                            To_String (Parsed_Options (Synch_With).Value);
+
+               Events   : Event_Sequences.Event_Sequence;
+               Metadata : Event_Sequences.Metadata_Map;
+            begin
+               Event_Streams.Read_Event_Stream (Filename               => Filename,
+                                                Use_Absolute_Timestamp => True,
+                                                Events                 => Events,
+                                                Metadata               => Metadata);
+
+               Start := Times.Max (Start, Event_Sequences.T_Min (Events));
+               Stop := Times.Min (Stop, Event_Sequences.T_Max (Events));
+            end;
+         end if;
+
+         Set (Start_Time, Start);
+         Set (Stop_Time, Stop);
+      end Set_Start_And_Stop_Times;
+
+      procedure Handle_Metadata_Request is
+      begin
+         if Parsed_Options (Metadata_Filename).Missing then
+            Set (Metadata_Filename, "");
+
+         elsif Parsed_Options (Metadata_Filename).Value /= Null_Unbounded_String then
+            Set (Metadata_Filename, To_String (Parsed_Options (Metadata_Filename).Value));
+
+         else
+            Set (Metadata_Filename, To_String (Output_Filename_Template.Head) & ".meta");
+
+         end if;
+      end Handle_Metadata_Request;
+
+      procedure Handle_First_Image (Err : out Unbounded_String)  is
+         First_Image_Value : constant String :=
+                               To_String (Parsed_Options (First_Image).Value);
+      begin
+         if First_Image_Value = "" then
+            Set_First_Image_Spec ((Class    => Uniform,
+                                   Level    => Get (Neutral)));
+
+         elsif Patterns.Is_Float (First_Image_Value) then
+            declare
+               use Images;
+
+               Level : constant Pixel_Value :=
+                         Pixel_Value'Value (First_Image_Value);
+            begin
+               if Level > Get (Max) or Level < Get (Min) then
+                  Err := To_Unbounded_String ("First image level out of bounds");
+                  return;
+               end if;
+
+               Set_First_Image_Spec ((Class    => Uniform,
+                                      Level    => Level));
+
+            end;
+
+         else
+            pragma Assert (First_Image_Value /= "");
+
+            Set_First_Image_Spec ((Class    => External,
+                                   Filename => To_Unbounded_String (First_Image_Value)));
+
+         end if;
+
+         Err := Null_Unbounded_String;
+
+      end Handle_First_Image;
+
+      function Make_Report (Msg : Unbounded_String) return Parsing_Report
+      is (Parsing_Report'(Status  => Bad_Command_Line,
+                          Message => Msg));
+
+      Error : Unbounded_String;
    begin
       if Help_Asked then
-         raise Full_Help_Asked;
+         Report := Parsing_Report'(Status  => Full_Help_Asked,
+                                   Message => Null_Unbounded_String);
+
+         return;
       end if;
 
-      --
-      -- CL syntax
-      --
-      --    main memory-spec  sampling-step  radix  [input-filename] [first-image]
-      --
-      if Argument_Count < 3 or Argument_Count > 5 then
-         raise Bad_Command_Line with "Wrong number of arguments";
 
-      elsif Argument_Count = 3 then
-         Input_Filename_Given := False;
-         First_Image_Given := False;
+      Set_Verbosity_Level ((if Is_A_Tty (2) then Interactive else Logging));
 
-      elsif Argument_Count = 4 then
-         Input_Filename_Given := True;
-         First_Image_Given := False;
+      declare
+         Missing_Options : Unbounded_String;
+      begin
+         Parse_Options_And_Apply_Defaults (Missing_Options);
 
-      elsif Argument_Count = 5 then
-         Input_Filename_Given := True;
-         First_Image_Given := True;
+         if Missing_Options /= Null_Unbounded_String then
+            Report := Parsing_Report'(Status  => Bad_Command_Line,
+                                      Message =>  "Missing mandatory options: " & Missing_Options);
 
+            return;
+         end if;
+      end;
+
+      Set_Levels;
+
+      Set_Decay;
+
+      Set_Start_And_Stop_Times;
+
+      Set_Sampling_Spec (Error);
+
+      if Error /= Null_Unbounded_String then
+         Report := Make_Report (Error);
+         return;
+      end if;
+
+      Handle_First_Image (Error);
+
+      if Error /= Null_Unbounded_String then
+         Report := Make_Report (Error);
+         return;
+      end if;
+
+      Set_Output_Filename_Template
+        (Parse_Output_Filename_Template (Parsed_Options (Output_Template).Value));
+
+      Set (Data.Log_Progress, To_String (Parsed_Options (Log_Progress).Value));
+
+      Handle_Metadata_Request;
+
+      if Parsed_Options (Input_Spec).Missing  then
+         Set (Input, "-");
       else
-         raise Program_Error; -- We should never arrive here
+         Set (Input, To_String (Parsed_Options (Input_Spec).Value));
       end if;
 
-      Requested_Verbosity := (if Is_A_Tty (2) then
-                                 Interactive
-                              else
-                                 Logging);
+      Set (Event_Weigth, To_Pixel_Value (Parsed_Options (Event_Weigth).Value));
 
-      Memory_Dynamic_Spec := Parse_Memory_Spec (Current_Argument);
-      Next_Argument;
+      Set (Lazy_Decay, not Parsed_Options (Lazy_Decay).Missing);
 
-      Sampling_Info := Parse_Sampling_Spec (Current_Argument);
-      Next_Argument;
+      Set (Rectify, not Parsed_Options (Rectify).Missing);
 
-      --  Ada.Text_IO.Put_Line (Camera_Events.Image (Sampling_Step));
+      pragma Assert (Is_All_Set);
 
-      Frame_Filename_Spec := Parse_Radix (Current_Argument);
-      Next_Argument;
-
-      if Input_Filename_Given  then
-         Input_Filename := To_Unbounded_String (Current_Argument);
-
-         Next_Argument;
-      else
-         Input_Filename := To_Unbounded_String ("-");
-
-      end if;
-
-      if First_Image_Given then
-         First_Image_Filename := To_Unbounded_String (Current_Argument);
-         Next_Argument;
-      else
-         First_Image_Filename := Null_Unbounded_String;
-      end if;
-
-      pragma Assert (Input_Filename /= Null_Unbounded_String);
-
-      I_Am_Ready := True;
-
+      Report := Parsing_Report'(Status  => Success,
+                                Message => Null_Unbounded_String);
    end Parse_Command_Line;
+
+   ------------
+   -- Fix_T0 --
+   ------------
+
+   procedure Fix_T0 (T0 : Times.Timestamp) is
+   begin
+      for Field in Data.Timestamp_Field loop
+         if Times.Is_Relative (Get (Field)) then
+            Update (Field, Times.Fix_T0 (T => Get (Field), T0 => T0));
+         end if;
+      end loop;
+
+      T0_Has_Been_Fixed := True;
+   end Fix_T0;
 
    -----------
    -- Input --
    -----------
 
    function Input return String
-   is (To_String (Input_Filename));
+   is (Get (Input));
 
    ---------------------
    -- Sampling_Period --
    ---------------------
 
-   function Sampling_Period return Camera_Events.Duration
-   is (Sampling_Info.Sampling_Period);
+   function Sampling_Period return Times.Duration
+   is (Get (Sampling_Period));
 
    --------------
    -- Start_At --
    --------------
 
-   function Start_At (T_Min : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Sampling_Info.Start > T_Min then
-          Sampling_Info.Start
-       else
-          T_Min);
+   function Start_At  return Times.Timestamp
+   is (Get (Start_Time));
 
 
    -------------
    -- Stop_At --
    -------------
 
-   function Stop_At (T_Max : Camera_Events.Timestamp) return Camera_Events.Timestamp
-   is (if Sampling_Info.Stop = Camera_Events.Infinity then
-          T_Max
-
-       elsif Sampling_Info.Stop = Camera_Events.Minus_Infinity then
-          raise Constraint_Error
-
-       else
-          Sampling_Info.Stop);
+   function Stop_At return Times.Timestamp
+   is (Get (Stop_Time));
 
 
    -----------------------
@@ -465,14 +468,14 @@ package body Config is
    -----------------------
 
    function Forgetting_Method return Memory_Dynamic.Dynamic_Type
-   is (Memory_Dynamic_Spec);
+   is (Config.Data.Decay);
 
    -------------------
    -- Output_Format --
    -------------------
 
    function Output_Format return Images.Format_Type
-   is (Frame_Format);
+   is (Config.Data.Output_Filename_Template.Frame_Format);
 
    -----------
    -- Radix --
@@ -481,6 +484,10 @@ package body Config is
 
    function Frame_Filename (N : Frame_Index) return String
    is
+
+      Frame_Filename_Spec : constant Radix_Spec :=
+                              Config.Data.Output_Filename_Template;
+
       function Format_Frame_Number (N : Frame_Index) return String
       is
          use Ada.Strings.Fixed;
@@ -499,57 +506,52 @@ package body Config is
       begin
          return Padding & Raw_Image;
       end Format_Frame_Number;
+
    begin
       return To_String (Frame_Filename_Spec.Head &
                           Format_Frame_Number (N) &
                           Frame_Filename_Spec.Tail);
    end Frame_Filename;
 
-   ---------------------
-   -- Has_Start_Image --
-   ---------------------
-
-   function Has_Start_Image return Boolean
-   is (First_Image_Filename /= Null_Unbounded_String);
 
    --------------------------
    -- Start_Image_Filename --
    --------------------------
 
-   function Start_Image_Filename return String
-   is (To_String (First_Image_Filename));
+   function Start_Image_Spec return Start_Image_Spec_Type
+   is (Get_First_Image_Spec);
 
 
    function Start_Image (Size_X : Camera_Events.X_Coordinate_Type;
                          Size_Y : Camera_Events.Y_Coordinate_Type)
-                            return Images.Image_Type
+                         return Images.Image_Type
    is
       use Camera_Events;
    begin
-      if Has_Start_Image then
-         return Result : constant Images.Image_Type :=
-           Images.Load (Start_Image_Filename) do
+      case Start_Image_Spec.Class is
+         when Uniform =>
+            return Images.Uniform (Size_X, Size_Y, Start_Image_Spec.Level);
 
-            if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
-               raise Constraint_Error
-                 with "Non-compatible start image size";
-            end if;
-         end return;
+         when External =>
+            return Result : constant Images.Image_Type :=
+              Images.Load (To_String (Start_Image_Spec.Filename)) do
 
-      else
-         return Images.Uniform (Size_X, Size_Y, 128.0);
-
-      end if;
+               if Result'Length (1) /= Size_X or Result'Length (2) /= Size_Y then
+                  raise Constraint_Error
+                    with "Non-compatible start image size";
+               end if;
+            end return;
+      end case;
    end Start_Image;
 
 
    function Verbosity_Level return Verbosity
-   is (Requested_Verbosity);
+   is (Config.Data.Verbosity_Level);
 
 
    function Short_Help_Text return String
    is ("Usage: "
-       & Ada.Command_Line.Command_Name
+       & Aida.Command_Line.Command_Name
        & " memory-spec  sampling  radix  [event-filename] [first-image]");
 
    function Long_Help_Text return String
@@ -580,5 +582,53 @@ package body Config is
         & "If missing the standard input is read"
         & LF;
    end Long_Help_Text;
+
+   function Event_Contribution return Images.Pixel_Value
+   is (Get (Event_Weigth));
+
+   function Pixel_Min return Images.Pixel_Value
+   is (Get (Min));
+
+   function Pixel_Max return Images.Pixel_Value
+   is (Get (Max));
+
+   function Synchronous_Update return Boolean
+   is (Get (Lazy_Decay));
+
+   function Reset_Each_Frame return Boolean
+   is (Memory_Dynamic.Is_Reset (Config.Data.Decay));
+
+   function Neutral_Value return Images.Pixel_Value
+   is (Get (Neutral));
+
+   function Rectify_Events return Boolean
+   is (Get (Rectify));
+
+   function Metadata_Requested return Boolean
+   is (Get (Metadata_Filename) /= "");
+
+   function Metadata_Filename return String
+   is (Get (Metadata_Filename));
+
+   function Log_Progress return Boolean
+   is (Get (Log_Progress) /= "");
+
+   function Log_Progress_Filename return String
+   is (Get (Log_Progress));
+
+
+
+   procedure Dump_Cli is
+      use Ada.Command_Line;
+   begin
+      Put_Line (Standard_Error, "CLI DUMP BEGIN");
+
+      for I in 1 .. Argument_Count loop
+         Put_Line (Standard_Error, "[" & Argument (I) & "]");
+      end loop;
+
+      Put_Line (Standard_Error, "CLI DUMP END");
+      New_Line (Standard_Error);
+   end Dump_Cli;
 
 end Config;

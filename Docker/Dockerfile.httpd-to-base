@@ -1,0 +1,9 @@
+FROM httpd
+RUN apt update
+RUN apt upgrade
+RUN apt install -y make git gprbuild gnat libpng-dev ruby ruby-dev rubygems build-essential libtool
+RUN gem install cgi
+RUN gem install rubyzip
+RUN gem install stringio
+RUN gem install tempfile tmpdir fileutils
+

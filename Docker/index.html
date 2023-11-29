@@ -1,0 +1,184 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <style>
+      input.default { color:#888 }
+      input.manual { color:#000 }
+    </style>
+    
+    <script>
+      function getFilename(fullPath) {
+	  return fullPath.replace(/^.*[\\\/]/, '').replace(/\.[^.]*$/, '');
+      }
+      
+      function upload_changed() {
+
+	  if (document.getElementById('template').className == 'manual')
+	  { return; }
+
+	  event_filename = getFilename(document.getElementById('myfile').value);
+
+	  document.getElementById('template').value = event_filename + '-%d.png';
+      }
+
+      function template_changed() {
+	  document.getElementById('template').className = 'manual';
+      }
+
+      function display_error_message(msg) {
+	  document.getElementById('message-area').innerHTML
+	      = `<ul>${msg}</ul>`;
+      }
+
+      function clean_error_message() {
+	  document.getElementById('message-area').innerHTML = '';
+      }
+
+      function has_valid_time(id) {
+	  t = document.getElementById(id).value;
+
+	  pattern=/^ *[0-9]+(\.[0-9]*([eE][-+][0-9]+)?)? *(s|ms|us|ns|fps)? *$/;
+	  return pattern.test(t)
+      }
+
+      function mark(id) {
+	  document.getElementById(id).style
+	      ="border-color:red; background-color:faa";
+      }
+
+      function unmark(id) {
+	  document.getElementById(id).style ="";
+      }
+
+      function validate() {
+	  error_msg = "";
+	  
+	  decay=document.getElementById('decay').value;
+
+	  if (decay == "lin" || decay == "exp") {
+	      if (! has_valid_time('tau')) {
+		  mark('tau');
+		  error_msg = error_msg.concat("<li>Missing tau for decay");
+	      } else {
+		  unmark('tau');
+	      }
+	  }
+
+	  if (! has_valid_time('fps')) {
+	      mark('fps');
+	      error_msg = error_msg.concat("<li>Invalid FPS specs");
+	  }
+
+	  file=document.getElementById('myfile').value;
+	  if (file == "") {
+	      mark('myfile');
+	      error_msg = error_msg.concat("<li>Missing event file");
+	  }
+
+	  if (error_msg == "") {
+	      return true; 
+	  } else {
+	      display_error_message(error_msg);
+	      return false;
+	  }
+      }
+
+      function update_default_neutral() {
+	  max=parseFloat(document.getElementById('max').value);
+	  min=parseFloat(document.getElementById('min').value);
+	  neutral= 0.5*(max + min);
+	  
+	  document.getElementById('neutral').value =neutral;
+      }
+
+      function use_default_neutral() {
+	  return document.getElementById('neutral').className == "default";
+      }
+
+      function max_changed() {
+	  if (use_default_neutral()) {
+	      update_default_neutral();
+	  }
+      }
+
+      function min_changed() {
+	  if (use_default_neutral()) {
+	      update_default_neutral();
+	  }
+      }
+
+      function neutral_changed() {
+	  document.getElementById('neutral').className="manual";
+      }
+
+      function decay_changed() {
+	  decay=document.getElementById('decay').value;
+	  document.getElementById('tau').disabled= (decay == "none" || decay == "step");
+      }
+    </script>
+  </head>
+  <body>
+    <form action="cgi-bin/frame_maker.rb" method="post" enctype='multipart/form-data' onsubmit='return validate();' accept-charset="utf-8">
+      <table>
+	<tr>
+	  <td><label for="fps">Frame rate</label>
+	  <td><input type="text" id="fps" name="fps" required>
+	</tr>
+	<tr>
+	  <td><label for="template">Frame filename template</label>
+	  <td><input type="text" id="template" name="template"
+		     value=""
+		     onchange="template_changed();"
+		     class="default">
+	</tr>
+	<tr>
+	  <td> <label for="decay"> Decay model </label>
+	  <td>
+	    <select id="decay" name="decay" onchange="decay_changed();">
+	      <option value="none">None</option>
+	      <option value="lin">Linear</option>
+	      <option value="exp">Exponential</option>
+	      <option value="step">Step</option>
+	    </select>
+	    <label for="tau">Time constant</label>
+	    <input type="text" id="tau" name="tau" disabled>
+	  </td>
+	</tr>
+	<tr>
+      <td> <label for="max">Max:</label>
+      <td> <input type="text" id="max" name="max" onchange="max_changed()"
+		  pattern="[+-]?[0-9]+(\.[0-9]+)?" value="1.0"
+		  />
+	</tr>
+	<tr>
+      <td> <label for="min">Min:</label>
+      <td> <input type="text" id="min" name="min" onchange="min_changed()"
+		  value="0.0"
+		  />
+	</tr>
+	<tr>
+      <td> <label for="neutral">Neutral:</label>
+      <td> <input type="text" id="neutral" name="neutral"
+		  onchange="neutral_changed()"
+		  class="default"
+		  value="0.5"
+		  />
+	</tr>
+	<tr>
+      <td> <label for="peso">Event weigth:</label>
+      <td> <input type="text" id="peso" name="peso" onchange="peso_changed()" />
+      </table>
+      <input type="checkbox" id="rectify" name="rectify" />
+      <label for="rectify">Rectify</label>
+      <br/>
+      <input type="checkbox" id="synch" name="synch" />
+      <label for="synch">Lazy decay</label>
+      <br/>
+      <label for="myfile">Event file (CSV format):</label>
+      <input type="file" id="myfile" name="myfile" onchange="upload_changed();" value=""><br>
+      <input type="submit" value="Submit">
+    </form>
+    <div id='message-area'></div>
+  </body>
+</html>

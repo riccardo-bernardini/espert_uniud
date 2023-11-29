@@ -1,4 +1,4 @@
-with Camera_Events;
+with Times;
 with Images;
 
 package Memory_Dynamic is
@@ -6,18 +6,28 @@ package Memory_Dynamic is
 
    function No_Decay return Dynamic_Type;
 
-   function Step return Dynamic_Type;
+   function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type;
 
-   function Linear (T       : Camera_Events.Duration;
+   function Linear (T       : Times.Duration;
                     Neutral : Images.Pixel_Value)
                     return Dynamic_Type;
 
-   function Exponential (T : Camera_Events.Duration) return Dynamic_Type;
+   function Exponential (T          : Times.Duration;
+                         Zero_Level : Images.Pixel_Value)
+                         return Dynamic_Type;
 
-   function Evolve (Start   : Images.Pixel_Value;
-                    Dynamic : Dynamic_Type;
-                    Delta_T : Camera_Events.Duration)
+   function Evolve (Initial_Value   : Images.Pixel_Value;
+      Dynamic         : Dynamic_Type;
+      Delta_T         : Times.Duration)
                     return Images.Pixel_Value;
+
+   function Is_Reset (X : Dynamic_Type) return Boolean;
+
+   function Reset_Value (X : Dynamic_Type) return Images.Pixel_Value
+     with
+       Pre => Is_Reset (X);
+
+   function Image (X : Dynamic_Type) return String;
 private
    type Dynamic_Class is (None, Step, Linear, Exponential);
 
@@ -28,10 +38,16 @@ private
                null;
 
             when Step =>
-               null;
+               Reset_Value : Images.Pixel_Value;
+
 
             when Exponential =>
-               Time_Constant : Camera_Events.Duration;
+               Time_Constant : Times.Duration;
+               Zero_Level    : Images.Pixel_Value;
+
+            when Linear =>
+               Inverse_Slope : Times.Duration;
+               Neutral_Level : Images.Pixel_Value;
 
             when Linear =>
                Inverse_Slope : Camera_Events.Duration;
@@ -40,16 +56,31 @@ private
          end case;
       end record;
 
+
+   function Is_Reset (X : Dynamic_Type) return Boolean
+   is (X.Class = Step);
+
+   function Reset_Value (X : Dynamic_Type) return Images.Pixel_Value
+   is (X.Reset_Value);
+
    function No_Decay return Dynamic_Type
    is (Dynamic_Type'(Class  => None));
 
-   function Step return Dynamic_Type
-   is (Dynamic_Type'(Class  => Step));
+   function Step (Reset_To : Images.Pixel_Value)  return Dynamic_Type
+   is (Dynamic_Type'(Class  => Step, Reset_Value => Reset_To));
 
-   function Linear (T : Camera_Events.Duration) return Dynamic_Type
-   is (Dynamic_Type'(Class => Linear, Time_Constant => T));
+   function Linear (T       : Times.Duration;
+                    Neutral : Images.Pixel_Value)
+                    return Dynamic_Type
+   is (Dynamic_Type'(Class => Linear,
+                     Inverse_Slope => T,
+                     Neutral_Level => Neutral));
 
-   function Exponential (T : Camera_Events.Duration) return Dynamic_Type
-   is (Dynamic_Type'(Class => Exponential, Time_Constant => T));
+   function Exponential (T          : Times.Duration;
+                         Zero_Level : Images.Pixel_Value)
+                         return Dynamic_Type
+   is (Dynamic_Type'(Class => Exponential,
+                     Time_Constant => T,
+                     Zero_Level    => Zero_Level));
 
 end Memory_Dynamic;

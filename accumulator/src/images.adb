@@ -20,8 +20,12 @@ package body Images is
 
    type Byte is mod 2 ** 8;
 
-   function To_Byte (X : Pixel_Value) return Byte
+   function To_Byte (Val : Pixel_Value;
+                     Min : Pixel_Value;
+                     Max : Pixel_Value)
+                     return Byte
    is
+      X : constant Pixel_Value := 255.0 * (Val - Min) / (Max - Min);
    begin
       if X < 0.0 then
          return 0;
@@ -125,7 +129,11 @@ package body Images is
    ----------
 
    procedure Save
-     (Filename : String; Image : Image_Type; Format : Format_Type := Raw_Image_8)
+     (Filename : String;
+      Image    : Image_Type;
+      Format   : Format_Type;
+      Min      : Pixel_Value;
+      Max      : Pixel_Value)
    is
       procedure Save_Raw_Image_8 (Filename : String; Image : Image_Type)
       is
@@ -158,7 +166,7 @@ package body Images is
          for X in Image'Range (1) loop
             for Y in Image'Range (2) loop
                Unsigned_8_IO.Write (File => Output,
-                                    Item => Unsigned_8 (To_Byte (Image (X, Y))));
+                                    Item => Unsigned_8 (To_Byte (Image (X, Y), Min, Max)));
             end loop;
          end loop;
       end Save_Raw_Image_8;
@@ -198,7 +206,7 @@ package body Images is
          begin
             for Row in Image'Range (2) loop
                for Col in Image'Range (1) loop
-                  Byte'Write (S, To_Byte (Image (Col, Row)));
+                  Byte'Write (S, To_Byte (Image (Col, Row), min, Max));
                end loop;
             end loop;
          end;
@@ -213,9 +221,9 @@ package body Images is
                     Png_IO.Create (Width (Image), Height (Image));
 
       begin
-         for X in Image'Range(1) loop
+         for X in Image'Range (1) loop
             for Y in Image'Range (2) loop
-               Buffer (X, Y) := Png_Io.Pixel_Value (To_Byte (Image (X, Y)));
+               Buffer (X, Y) := Png_Io.Pixel_Value (To_Byte (Image (X, Y), Min, Max));
             end loop;
          end loop;
 

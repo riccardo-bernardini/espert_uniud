@@ -1,0 +1,57 @@
+
+# $stderr.puts (cgi.params.inspect)
+# 
+# cgi.print("Panini fritti!!!")
+# cgi.print (cgi.params.inspect)
+# 
+# cgi.print(cgi.params['myfile'].first.read)
+#   
+# cgi.print(cgi.files.inspect)
+
+# class CGIbis < CGI
+#   include CGI::QueryExtension
+# end
+# 
+# 
+#  child_pid=fork
+#
+#  if child_pid
+#    # I'm the parent.  Just exit
+#    Process.detach(child_pid)
+#  else
+#    # I'm the child.  Do stderr redirection
+#    $stdin.close
+#    $stderr.close
+#    $stdout.close
+#    
+#    $stderr=File.open(stderr_file, 'w')
+#    $stdout=$stderr
+#
+#    exec(File.join($my_dir, "../exe/accumulator.exe"), *params)
+#  end
+    
+#  
+#
+#  if status.success?
+#    $stderr.puts('ok')
+#    
+#    create_success_page(cgi, dir, basename_template)
+#
+#  else
+#    $stderr.puts('NO')
+#    create_error_page(cgi, status, stderr)
+#
+#  end
+
+# def create_success_page(cgi, dir, basename_template)
+#   zip_path=create_zip_archive(dir, basename_template)
+# 
+#   $stderr.puts(cgi.inspect)
+#   
+#   cgi.out("type" => "application/zip",
+#           # "disposition" => "attachment; filename=#{File.basename(zip_path)}"
+#          ) {
+#     File.read(zip_path)
+#   }
+# end
+

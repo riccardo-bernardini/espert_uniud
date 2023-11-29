@@ -2,6 +2,11 @@
 <!DOCTYPE html>
 <html>
   <head>
+    <style>
+      input.default { color:#888 }
+      input.manual { color:#000 }
+    </style>
+    
     <script>
       function getFilename(fullPath) {
 	  return fullPath.replace(/^.*[\\\/]/, '').replace(/\.[^.]*$/, '');
@@ -9,7 +14,7 @@
       
       function upload_changed() {
 
-	  if (document.getElementById('default-template').value != '1')
+	  if (document.getElementById('template').className == 'manual')
 	  { return; }
 
 	  event_filename = getFilename(document.getElementById('myfile').value);
@@ -18,7 +23,7 @@
       }
 
       function template_changed() {
-	  document.getElementById('default-template').value = 0;
+	  document.getElementById('template').className = 'manual';
       }
 
       function display_error_message(msg) {
@@ -79,6 +84,34 @@
 	  }
       }
 
+      function update_default_neutral() {
+	  max=parseFloat(document.getElementById('max').value);
+	  min=parseFloat(document.getElementById('min').value);
+	  neutral= 0.5*(max + min);
+	  
+	  document.getElementById('neutral').value =neutral;
+      }
+
+      function use_default_neutral() {
+	  return document.getElementById('neutral').className == "default";
+      }
+
+      function max_changed() {
+	  if (use_default_neutral()) {
+	      update_default_neutral();
+	  }
+      }
+
+      function min_changed() {
+	  if (use_default_neutral()) {
+	      update_default_neutral();
+	  }
+      }
+
+      function neutral_changed() {
+	  document.getElementById('neutral').className="manual";
+      }
+
       function decay_changed() {
 	  decay=document.getElementById('decay').value;
 	  document.getElementById('tau').disabled= (decay == "none" || decay == "step");
@@ -90,13 +123,14 @@
       <table>
 	<tr>
 	  <td><label for="fps">Frame rate</label>
-	  <td><input type="text" id="fps" name="fps" >
-	<!--  <td><input type="text" id="gigi" name="gigi" > -->
+	  <td><input type="text" id="fps" name="fps" required>
 	</tr>
 	<tr>
 	  <td><label for="template">Frame filename template</label>
-	  <td><input type="text" id="template" name="template" value="" onchange="template_changed();">
-	    <input type='hidden' id='default-template' name='default-template' value="1">
+	  <td><input type="text" id="template" name="template"
+		     value=""
+		     onchange="template_changed();"
+		     class="default">
 	</tr>
 	<tr>
 	  <td> <label for="decay"> Decay model </label>
@@ -113,25 +147,33 @@
 	</tr>
 	<tr>
       <td> <label for="max">Max:</label>
-      <td> <input type="text" id="max" name="max" onchange="max_changed()" />
+      <td> <input type="text" id="max" name="max" onchange="max_changed()"
+		  pattern="[+-]?[0-9]+(\.[0-9]+)?" value="1.0"
+		  />
 	</tr>
 	<tr>
       <td> <label for="min">Min:</label>
-      <td> <input type="text" id="min" name="min" onchange="min_changed()" />
+      <td> <input type="text" id="min" name="min" onchange="min_changed()"
+		  value="0.0"
+		  />
 	</tr>
 	<tr>
       <td> <label for="neutral">Neutral:</label>
-      <td> <input type="text" id="neutral" name="neutral" onchange="neutral_changed()" />
+      <td> <input type="text" id="neutral" name="neutral"
+		  onchange="neutral_changed()"
+		  class="default"
+		  value="0.5"
+		  />
 	</tr>
 	<tr>
       <td> <label for="peso">Event weigth:</label>
       <td> <input type="text" id="peso" name="peso" onchange="peso_changed()" />
       </table>
       <input type="checkbox" id="rectify" name="rectify" />
-      <label for="rectify">Rectify:</label>
+      <label for="rectify">Rectify</label>
       <br/>
       <input type="checkbox" id="synch" name="synch" />
-      <label for="synch">Lazy decay:</label>
+      <label for="synch">Lazy decay</label>
       <br/>
       <label for="myfile">Event file (CSV format):</label>
       <input type="file" id="myfile" name="myfile" onchange="upload_changed();" value=""><br>

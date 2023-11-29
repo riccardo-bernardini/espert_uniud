@@ -1,5 +1,9 @@
 #!/usr/bin/bash -eu
 
+if [ `id -u` -eq 0 ]; then
+    echo "Running as root?!? No way!" >&2
+    exit 128
+fi
 
 source /usr/local/apache2/library/dir_names.sh
 

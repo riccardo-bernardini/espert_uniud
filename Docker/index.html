@@ -99,21 +99,40 @@
 	    <input type='hidden' id='default-template' name='default-template' value="1">
 	</tr>
 	<tr>
+	  <td> <label for="decay"> Decay model </label>
 	  <td>
-	    <fieldset>
-	      <legend>Decay model</legend>
 	    <select id="decay" name="decay" onchange="decay_changed();">
 	      <option value="none">None</option>
 	      <option value="lin">Linear</option>
 	      <option value="exp">Exponential</option>
 	      <option value="step">Step</option>
-	    </select><br>
+	    </select>
 	    <label for="tau">Time constant</label>
 	    <input type="text" id="tau" name="tau" disabled>
-	    </fieldset>
 	  </td>
 	</tr>
+	<tr>
+      <td> <label for="max">Max:</label>
+      <td> <input type="text" id="max" name="max" onchange="max_changed()" />
+	</tr>
+	<tr>
+      <td> <label for="min">Min:</label>
+      <td> <input type="text" id="min" name="min" onchange="min_changed()" />
+	</tr>
+	<tr>
+      <td> <label for="neutral">Neutral:</label>
+      <td> <input type="text" id="neutral" name="neutral" onchange="neutral_changed()" />
+	</tr>
+	<tr>
+      <td> <label for="peso">Event weigth:</label>
+      <td> <input type="text" id="peso" name="peso" onchange="peso_changed()" />
       </table>
+      <input type="checkbox" id="rectify" name="rectify" />
+      <label for="rectify">Rectify:</label>
+      <br/>
+      <input type="checkbox" id="synch" name="synch" />
+      <label for="synch">Lazy decay:</label>
+      <br/>
       <label for="myfile">Event file (CSV format):</label>
       <input type="file" id="myfile" name="myfile" onchange="upload_changed();" value=""><br>
       <input type="submit" value="Submit">

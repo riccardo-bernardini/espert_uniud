@@ -3,9 +3,6 @@ with Ada.Containers;
 with Ada.Text_IO; use Ada.Text_IO;
 with Ada.Exceptions; use Ada.Exceptions;
 with Ada.IO_Exceptions;
-with Ada.Strings.Fixed;
-
-with Interfaces.C;
 
 with Config;
 with Camera_Events;
@@ -13,55 +10,52 @@ with Event_Sequences;
 with Event_Streams;
 with Images;
 with Memory_Dynamic;
+with Times;
+with Logging_Utilities; use Logging_Utilities;
 
 with Profiling;
 
 use Ada;
-use Interfaces;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 procedure Main is
    use type Config.Verbosity;
 
-   function Terminal_Width return C.Int
-     with
-       Import => True,
-       Convention => C,
-       External_Name => "terminal_width";
-
-   package Float_Formatting is new Float_IO (Float);
+   Bad_Command_Line   : exception;
+   Full_Help_Asked    : exception;
+   Empty_Event_Stream : exception;
 
    type Program_Sections is (Parse_Stream, Extract, Collect, Fill, Update, Save);
 
    package My_Profiler is
      new Profiling (Program_Sections);
 
-   use type Camera_Events.Timestamp;
+   use type Times.Timestamp;
    use type Ada.Containers.Count_Type;
 
-   function "<=" (A, B : Camera_Events.Timestamp) return Boolean
-   is
-   begin
-      return  not (A > B);
-   end "<=";
-   pragma Unreferenced ("<=");
-
+   --
+   -- Extract from Events the sequence of events with timestamp >= From and < To.
+   -- The events are moved from Events to Segment.  Any event with timestamp smaller
+   -- than From is discarded.
+   --
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
-                              From    : in Camera_Events.Timestamp;
-                              To      : in Camera_Events.Timestamp)
+                              From    : in Times.Timestamp;
+                              To      : in Times.Timestamp)
      with
        Pre => From < To,
        Post =>
          (Events.Is_Empty or else Camera_Events.T (Events.First_Element) >= To)
-         and
-           (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
-           and
-             (Segment.Length + Events.Length = Events.Length'Old);
+         and (Segment.Is_Empty or else Camera_Events.T (Segment.Last_Element) < To)
+         and (Segment.Is_Empty or else Camera_Events.T (Segment.First_Element) >= From)
+         and (if Camera_Events.T (Events.First_Element)'Old >= From
+                then Segment.Length + Events.Length = Events'Old.Length
+                  else Segment.Length + Events.Length < Events'Old.Length);
 
    procedure Extract_Segment (Segment : out Event_Sequences.Event_Sequence;
                               Events  : in out Event_Sequences.Event_Sequence;
-                              From    : in Camera_Events.Timestamp;
-                              To      : in Camera_Events.Timestamp)
+                              From    : in Times.Timestamp;
+                              To      : in Times.Timestamp)
    is
       use Camera_Events;
    begin
@@ -76,24 +70,33 @@ procedure Main is
       end loop;
    end Extract_Segment;
 
-   procedure Update_Pixel (Start  : Camera_Events.Timestamp;
+   procedure Update_Pixel (Start  : Times.Timestamp;
                            Pixel  : in out Images.Pixel_Value;
                            Events : Event_Sequences.Event_Sequence)
    is
-      use Camera_Events;
+      use Times;
       use Images;
+      use Camera_Events;
 
-      Current_Time : Timestamp := Start;
+      Current_Time : Times.Timestamp := Start;
    begin
       --  Put_Line ("IN " & Pixel'Image);
 
       for Ev of Events loop
          --  Put_Line ("++" & Image (T (Ev)) & Image (Current_Time));
-         Pixel := Memory_Dynamic.Evolve (Start   => Pixel,
-                                         Dynamic => Config.Forgetting_Method,
-                                         Delta_T => T (Ev) - Current_Time);
+         Pixel := Memory_Dynamic.Evolve (Initial_Value  => Pixel,
+                                         Dynamic        => Config.Forgetting_Method,
+                                         Delta_T        => T (Ev) - Current_Time);
 
-         Pixel := Pixel + Pixel_Value (Weight (Ev));
+         Pixel := Pixel + Config.Event_Contribution * Pixel_Value (Weight (Ev));
+
+         if Pixel < Config.Pixel_Min then
+            Pixel := Config.Pixel_Min;
+
+         elsif Pixel > Config.Pixel_Max then
+            Pixel := Config.Pixel_Max;
+
+         end if;
 
          Current_Time := T (Ev);
       end loop;
@@ -102,79 +105,43 @@ procedure Main is
 
    end Update_Pixel;
 
-   procedure Put_Line_Maybe (Verbose : Boolean;
-                             Text    : String)
-   is
-   begin
-      if Verbose then
-         Put_Line (Standard_Error, Text);
-      end if;
-   end Put_Line_Maybe;
-
-   procedure Put_Maybe (Verbose : Boolean;
-                        Text    : String)
-   is
-   begin
-      if Verbose then
-         Put (Standard_Error, Text);
-         Flush (Standard_Error);
-      end if;
-   end Put_Maybe;
-
-   procedure Show_Progress_Bar (Start_Time   : Camera_Events.Timestamp;
-                                Stop_Time    : Camera_Events.Timestamp;
-                                Current_Time : Camera_Events.Timestamp)
-   is
-      use Camera_Events;
-      use Ada.Strings.Fixed;
-
-      Full     : constant Camera_Events.Duration := Stop_Time - Start_Time;
-      Done     : constant Camera_Events.Duration := Current_Time - Start_Time;
-      Fraction : constant Float := Done / Full;
-
-      N_Columns : constant Integer := Integer (Terminal_Width)-10;
-
-      Done_Section_Length : constant Integer :=
-                              Integer (Fraction * Float (N_Columns - 1));
-
-      Remaining_Section_Length : constant Integer :=
-                                   N_Columns - Done_Section_Length - 1;
-   begin
-      Put (Standard_Error, ASCII.CR);
-      Put (Standard_Error, Done_Section_Length * "=");
-      Put (Standard_Error, ">");
-
-      if Remaining_Section_Length > 0 then
-         Put (Standard_Error, Remaining_Section_Length * '-');
-      end if;
-
-      Put (Standard_Error, " ");
-      Float_Formatting.Put (File => Standard_Error,
-                            Item => 100.0 * Fraction,
-                            Fore => 3,
-                            Aft  => 1,
-                            Exp  => 0);
-
-      Put (Standard_Error, "%");
-      Flush (Standard_Error);
-   end Show_Progress_Bar;
 
    Events   : Event_Sequences.Event_Sequence;
    Metadata : Event_Sequences.Metadata_Map;
 
    Profiler : My_Profiler.Profiler_Type;
+
+   Report : Config.Parsing_Report;
 begin
-   Config.Parse_Command_Line;
+   Config.Dump_Cli;
+
+   Config.Parse_Command_Line (Report);
+
+   case Report.Status is
+      when Config.Success =>
+         null;
+
+      when Config.Full_Help_Asked =>
+         raise Full_Help_Asked;
+
+      when Config.Bad_Command_Line =>
+         raise Bad_Command_Line with To_String (Report.Message);
+
+   end case;
 
    Put_Maybe (Config.Verbosity_Level = Config.Interactive,
               "Reading event list...");
 
    Profiler.Entering (Parse_Stream);
 
-   Event_Streams.Read_Event_Stream (Filename => Config.Input,
-                                    Events   => Events,
+   Event_Streams.Read_Event_Stream (Filename               => Config.Input,
+                                    Use_Absolute_Timestamp => True,
+                                    Events                 => Events,
                                     Metadata => Metadata);
 
+   if Events.Is_Empty then
+      raise Empty_Event_Stream;
+   end if;
 
    Put_Line_Maybe (Config.Verbosity_Level = Config.Interactive, " Done");
 
@@ -182,30 +149,33 @@ begin
 
    Put_Line_Maybe (Config.Verbose, "Size Y = N. row =" & Metadata.Size_Y'Image);
 
-   if Events.Is_Empty then
-      Put_Line (Standard_Error, "Empty event stream");
-      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
-      return;
+   Config.Fix_T0 (Event_Sequences.T_Min (Events));
+
+   pragma Assert (Config.T0_Fixed);
+
+   if Config.Metadata_Requested then
+      Logging_Utilities.Dump_Metadata (Config.Metadata_Filename);
    end if;
 
    declare
-      use type Camera_Events.Duration;
-      use type Camera_Events.X_Coordinate_Type;
-      use type Camera_Events.Y_Coordinate_Type;
+      use Camera_Events;
+      use Times;
       use type Config.Frame_Index;
 
-      Start_Time : constant Camera_Events.Timestamp :=
-                     Config.Start_At (Event_Sequences.T_Min (Events));
+      Start_Time    : constant Timestamp := Max (Config.Start_At,  Event_Sequences.T_Min (Events));
+      Stopping_Time : constant Timestamp := Min (Config.Stop_At, Event_Sequences.T_Max (Events));
 
-      Stopping_Time : constant Camera_Events.Timestamp :=
-                        Config.Stop_At (Event_Sequences.T_Max (Events));
-
-      Current_Time : Camera_Events.Timestamp := Start_Time;
-      Next_Time    : Camera_Events.Timestamp;
+      Current_Time : Times.Timestamp := Start_Time;
+      Next_Time    : Times.Timestamp;
 
 
       Current_Frame : Images.Image_Type :=
                         Config.Start_Image (Metadata.Size_X, Metadata.Size_Y);
+
+      Reset_Frame   : constant Images.Image_Type :=
+                        Images.Uniform (X_Size => Metadata.Size_X,
+                                        Y_Size => Metadata.Size_Y,
+                                        Value  => Config.Neutral_Value);
 
       Frame_Number : Config.Frame_Index := 0;
 
@@ -213,10 +183,20 @@ begin
 
       Events_At    : Event_Sequences.Point_Event_Map :=
                        Event_Sequences.Create (Metadata.Size_X, Metadata.Size_Y);
+
+      Log_Progress_Target : Log_Progress_File;
    begin
-      pragma Assert (Camera_Events.Is_Finite (Start_Time));
-      pragma Assert (Camera_Events.Is_Finite (Stopping_Time));
+      pragma Assert (Is_Finite (Start_Time));
+      pragma Assert (Is_Finite (Stopping_Time));
       pragma Assert (Start_Time < Stopping_Time);
+
+      if Config.Log_Progress then
+        Open
+          (File => Log_Progress_Target,
+           Name => Config.Log_progress_filename);
+      end if;
+
+      pragma Assert (Config.Log_Progress = Is_Open (Log_Progress_Target));
 
       --  Put_Line (Camera_Events.Image (Start_Time) & " .. " & Camera_Events.Image (Stopping_Time));
 
@@ -224,6 +204,10 @@ begin
 
          if Config.Show_Progress_Bar then
             Show_Progress_Bar (Start_Time, Stopping_Time, Current_Time);
+         end if;
+
+         if Config.Log_Progress then
+            Log_Progress (Log_Progress_Target, Start_Time, Stopping_Time, Current_Time);
          end if;
 
          Next_Time := Current_Time + Config.Sampling_Period;
@@ -244,9 +228,11 @@ begin
 
          Profiler.Entering (Collect);
 
-         Event_Sequences.Collect_By_Point (Events         => Segment,
-                                           Last_Timestamp => Next_Time,
-                                           Result         => Events_At);
+         Event_Sequences.Collect_By_Point
+           (Events         => Segment,
+            Last_Timestamp => Next_Time,
+            Synchronous    => Config.Synchronous_Update,
+            Result         => Events_At);
 
          --  Profiler.Entering (Fill);
          --
@@ -274,7 +260,13 @@ begin
 
          Images.Save (Filename => Config.Frame_Filename (Frame_Number),
                       Image    => Current_Frame,
-                      Format   => Config.Output_Format);
+                      Format   => Config.Output_Format,
+                      Min      => Config.Pixel_Min,
+                      Max      => Config.Pixel_Max);
+
+         if Config.Reset_Each_Frame then
+            Current_Frame := Reset_Frame;
+         end if;
 
          Current_Time := Next_Time;
 
@@ -286,9 +278,13 @@ begin
       end if;
 
       Profiler.Dump;
+
+      if Config.Log_Progress then
+         Close (Log_Progress_Target);
+      end if;
    end;
 exception
-   when E : Config.Bad_Command_Line =>
+   when E : Bad_Command_Line =>
       Put_Line (Standard_Error, Exception_Message (E));
       New_Line (Standard_Error);
 
@@ -307,13 +303,17 @@ exception
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
-   when Config.Full_Help_Asked =>
+   when Full_Help_Asked =>
       Put_Line (Standard_Error, Config.Long_Help_Text);
 
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Success);
 
-   when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
-      Put_Line (Standard_Error, Exception_Message (E));
-
+   when Empty_Event_Stream =>
+      Put_Line (Standard_Error, "Empty event stream");
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+
+   --  when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
+   --     Put_Line (Standard_Error, Exception_Message (E));
+   --
+   --     Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 end Main;

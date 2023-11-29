@@ -1,0 +1,14 @@
+FROM fintatarta/espert_uniud:latest
+
+WORKDIR /tmp
+RUN git clone https://github.com/riccardo-bernardini/espert_uniud.git
+
+WORKDIR espert_uniud
+RUN git checkout compatibility
+
+WORKDIR Docker
+RUN ./install-apache.sh
+
+ENV RUBYLIB=${HTTPD_PREFIX}/library
+
+CMD ["/usr/local/bin/http-and-worker.sh"]

@@ -10,45 +10,76 @@ package body Memory_Dynamic is
    -- Evolve --
    ------------
 
+   ------------
+   -- Evolve --
+   ------------
+
    function Evolve
-     (Start   : Images.Pixel_Value;
-      Dynamic : Dynamic_Type;
-      Delta_T : Camera_Events.Duration)
+     (Initial_Value   : Images.Pixel_Value;
+      Dynamic         : Dynamic_Type;
+      Delta_T         : Times.Duration)
       return Images.Pixel_Value
    is
       use Images;
-      use type Camera_Events.Duration;
+      use type Times.Duration;
       use Ada.Numerics.Elementary_Functions;
 
-      New_Value : Images.Pixel_Value;
    begin
-      --  Put_Line ("delta_t=" & Camera_Events.Image (Delta_T));
+      --  Put_Line ("delta_t=" & Times.Image (Delta_T));
       case Dynamic.Class is
-         when Step =>
-            return Start;
+         when Step | None =>
+            return Initial_Value;
 
          when Linear =>
-            --  Put_Line ("delta=" & Float'Image (Delta_T / Dynamic.Time_Constant));
-            New_Value := Start - Pixel_Value (Delta_T / Dynamic.Time_Constant);
+            declare
+               Variation : constant Pixel_Value :=
+                             Pixel_Value (Delta_T / Dynamic.Inverse_Slope);
 
-            --  Put_Line (Start'Image & New_Value'Image);
-            if New_Value < 0.0 then
-               return 0.0;
+            begin
+               if Initial_Value > Dynamic.Neutral_Level then
+                  return  Pixel_Value'Max (Initial_Value - Variation,
+                                           Dynamic.Neutral_Level);
 
-            else
-               return New_Value;
-            end if;
+               else
+                  return  Pixel_Value'Min (Initial_Value + Variation,
+                                           Dynamic.Neutral_Level);
+
+               end if;
+            end;
 
          when Exponential =>
+            declare
+               Decay : constant Pixel_Value :=
+                         Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
 
-            New_Value := Start * Pixel_Value (Exp (-Delta_T / Dynamic.Time_Constant));
-
-            --  Put_Line ("mult=" & Float'Image (Exp (-Delta_T / Dynamic.Time_Constant)));
-
-            --  Put_Line (Start'Image & New_Value'Image);
-
-            return New_Value;
+               Zero  : constant Pixel_Value := Dynamic.Zero_Level;
+            begin
+               return  Zero + (Initial_Value - Zero)  * Decay;
+            end;
       end case;
    end Evolve;
+
+   -----------
+   -- Image --
+   -----------
+
+   function Image (X : Dynamic_Type) return String
+   is
+   begin
+      case X.Class is
+         when None =>
+            return "none";
+
+         when Step =>
+            return "Reset at " & X.Reset_Value'Image;
+
+         when Linear =>
+            return "Linear, tau=" & Times.Image (X.Inverse_Slope, True);
+
+         when Exponential =>
+            return "Exponential, tau=" & Times.Image (X.Time_Constant, True);
+
+      end case;
+   end Image;
 
 end Memory_Dynamic;

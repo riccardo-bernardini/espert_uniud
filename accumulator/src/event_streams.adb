@@ -17,6 +17,8 @@ with Camera_Events;
 use Ada;
 use Ada.Strings;
 
+with Times;
+
 package body Event_Streams is
    type Counter is mod 2 ** 64;
 
@@ -72,9 +74,10 @@ package body Event_Streams is
    ------------------------
 
    procedure Read_CSV_Event_Stream
-     (Input    : in     Ada.Text_IO.File_Type;
-      Events   :    out Event_Sequences.Event_Sequence;
-      Metadata :    out Event_Sequences.Metadata_Map)
+     (Input                  : in     Ada.Text_IO.File_Type;
+      Use_Absolute_Timestamp : in     Boolean;
+      Events                 :    out Event_Sequences.Event_Sequence;
+      Metadata               :    out Event_Sequences.Metadata_Map)
    is
       use Ada.Text_Io;
 
@@ -123,7 +126,7 @@ package body Event_Streams is
             Weight := -1;
          end if;
 
-         return New_Event (T      => Value (Fields (1)),
+         return New_Event (T      => Times.Value (Fields (1)),
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
                            Weight => Weight);
@@ -273,8 +276,8 @@ package body Event_Streams is
       end Read_Metadata;
 
       Header_Seen        : Boolean := False;
-      First_Timestamp    : Camera_Events.Timestamp := Camera_Events.Minus_Infinity;
-      Previous_Timestamp : Camera_Events.Timestamp;
+      Previous_Timestamp : times.Timestamp := times.Minus_Infinity;
+      Timestamp_Offset   : times.Duration;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -301,12 +304,17 @@ package body Event_Streams is
 
                   declare
                      use Camera_Events;
+                     use Times;
 
                      Event : constant Event_Type :=
                                Read_Data_Line (Line, Polarity_Format (Metadata));
                   begin
                      if Events.Is_Empty then
-                        First_Timestamp := T (Event);
+                        Timestamp_Offset := (if Use_Absolute_Timestamp then
+                                                Times.To_Duration (0.0)
+                                             else
+                                                Times.To_Duration (T (Event)));
+
                      else
                         if Previous_Timestamp > T (Event) then
                            raise Bad_Event_Stream
@@ -316,9 +324,7 @@ package body Event_Streams is
 
                      Previous_Timestamp := T (Event);
 
-                     pragma Assert (Is_Finite (First_Timestamp));
-
-                     Events.Append (Translate (Event, To_Duration (First_Timestamp)));
+                     Events.Append (Translate (Event, Timestamp_Offset));
                   end;
             end case;
          end;
@@ -387,17 +393,19 @@ package body Event_Streams is
    -----------------------
 
    procedure Read_Event_Stream
-     (Filename    : in     String;
-      Events      :    out Event_Sequences.Event_Sequence;
-      Metadata    :    out Event_Sequences.Metadata_Map)
+     (Filename               : in     String;
+      Use_Absolute_Timestamp : in     Boolean;
+      Events                 :    out Event_Sequences.Event_Sequence;
+      Metadata               :    out Event_Sequences.Metadata_Map)
    is
       Extension : constant String := Get_Extension (Filename);
 
    begin
       if Filename = "-" then
-         Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
-                                Events   => Events,
-                                Metadata => Metadata);
+         Read_CSV_Event_Stream (Input                  => Ada.Text_IO.Standard_Input,
+                                Use_Absolute_Timestamp => Use_Absolute_Timestamp,
+                                Events                 => Events,
+                                Metadata               => Metadata);
 
       elsif Extension = ".csv" or Extension = "" then
          declare
@@ -409,9 +417,10 @@ package body Event_Streams is
                   Mode     => In_File,
                   Name     => Filename);
 
-            Read_CSV_Event_Stream (Input    => File,
-                                   Events   => Events,
-                                   Metadata => Metadata);
+            Read_CSV_Event_Stream (Input                  => File,
+                                   Use_Absolute_Timestamp => Use_Absolute_Timestamp,
+                                   Events                 => Events,
+                                   Metadata               => Metadata);
 
             Close (File);
          end;
@@ -475,10 +484,10 @@ package body Event_Streams is
    end Save_Binary_Event_Stream;
 
    ---------------------------
-   -- Save_CVS_Event_Stream --
+   -- Save_CSV_Event_Stream --
    ---------------------------
 
-   procedure Save_CVS_Event_Stream
+   procedure Save_CSV_Event_Stream
      (Output   : Ada.Text_Io.File_Type;
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map)
@@ -509,7 +518,7 @@ package body Event_Streams is
       Put_Line (Output, "timestamp,x,y,polarity");
 
       for Event of Events loop
-         Put_Line (Output, Image (T (Event))
+         Put_Line (Output, Times.Image (T (Event))
                    & ","
                    & X (Event)'Image
                    & ","
@@ -518,20 +527,20 @@ package body Event_Streams is
                    & (if Weight (Event) > 0 then "1" else "0"));
       end loop;
 
-   end Save_CVS_Event_Stream;
+   end Save_CSV_Event_Stream;
 
    ---------------------------
-   -- Save_CVS_Event_Stream --
+   -- Save_CSV_Event_Stream --
    ---------------------------
 
-   procedure Save_CVS_Event_Stream
+   procedure Save_CSV_Event_Stream
      (Filename : String;
       Events   : Event_Sequences.Event_Sequence;
       Metadata : Event_Sequences.Metadata_Map)
    is
    begin
       if Filename = "-" then
-         Save_CVS_Event_Stream (Output   => Ada.Text_IO.Standard_Output,
+         Save_CSV_Event_Stream (Output   => Ada.Text_IO.Standard_Output,
                                 Events   => Events,
                                 Metadata => Metadata);
 
@@ -545,14 +554,14 @@ package body Event_Streams is
                     Mode => Out_File,
                     Name => Filename);
 
-            Save_CVS_Event_Stream (Output   => Output,
+            Save_CSV_Event_Stream (Output   => Output,
                                    Events   => Events,
                                    Metadata => Metadata);
 
             Close (Output);
          end;
       end if;
-   end Save_CVS_Event_Stream;
+   end Save_CSV_Event_Stream;
 
    -----------------------
    -- Save_Event_Stream --
@@ -566,7 +575,7 @@ package body Event_Streams is
       Extension : constant String := Get_Extension (Filename);
    begin
       if Extension = ".csv" or Filename = "-" then
-         Save_CVS_Event_Stream (Filename => Filename,
+         Save_CSV_Event_Stream (Filename => Filename,
                                 Events   => Events,
                                 Metadata => Metadata);
 

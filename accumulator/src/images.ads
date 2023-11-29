@@ -32,5 +32,7 @@ package Images is
 
    procedure Save (Filename : String;
                    Image    : Image_Type;
-                   Format   : Format_Type := Raw_Image_8);
+                   Format   : Format_Type;
+                   Min      : Pixel_Value;
+                   Max      : Pixel_Value);
 end Images;

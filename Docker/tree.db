@@ -1,0 +1,8 @@
+html   htdocs
+cgi    cgi-bin
+lib    library
+bin    library
+job    htdocs/jobs
+log    htdocs/logs
+conf   conf
+socket library/sockets

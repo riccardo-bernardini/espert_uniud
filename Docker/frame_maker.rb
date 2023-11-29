@@ -1,13 +1,16 @@
 #!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
+MAX_INPUT_SIZE=1024 * 1024 * 1024 * 1024
+
+ENV['HTTPD_PREFIX']='/usr/local/apache2'
+
+
 require 'cgi'
 require 'stringio'
 require 'tempfile'
 require 'tmpdir'
 require 'fileutils'
 require 'logger'
-
-ENV['HTTPD_PREFIX']='/usr/local/apache2'
 
 require 'micro_macro_proc'
 require 'definitions'
@@ -129,7 +132,7 @@ class Bad_Parameters < RuntimeError
 end
 
 $logger.info("Starting")
-cgi=CGI.new("html4")
+cgi=CGI.new(:tag_maker => "html4", :max_multipart_length => MAX_INPUT_SIZE)
 
 begin
   $logger.info("Parameter checking")

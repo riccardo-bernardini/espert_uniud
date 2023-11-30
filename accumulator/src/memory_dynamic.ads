@@ -49,9 +49,9 @@ private
                Inverse_Slope : Times.Duration;
                Neutral_Level : Images.Pixel_Value;
 
-            when Linear =>
-               Inverse_Slope : Camera_Events.Duration;
-               Neutral_Level : Images.Pixel_Value;
+            --  when Linear =>
+            --     Inverse_Slope : Camera_Events.Duration;
+            --     Neutral_Level : Images.Pixel_Value;
 
          end case;
       end record;

@@ -312,8 +312,8 @@ exception
       Put_Line (Standard_Error, "Empty event stream");
       Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 
-   --  when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
-   --     Put_Line (Standard_Error, Exception_Message (E));
-   --
-   --     Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
+   when E :  ADA.IO_EXCEPTIONS.NAME_ERROR =>
+      Put_Line (Standard_Error, Exception_Message (E));
+
+      Ada.Command_Line.Set_Exit_Status (Ada.Command_Line.Failure);
 end Main;

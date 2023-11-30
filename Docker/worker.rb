@@ -35,7 +35,7 @@ def create_zip_archive(pattern, zipfile_name)
 end
 
 def extract(parameters, label)
-  idx = parameters.find_index {|x| x.start_with?("#label}:") }
+  idx = parameters.find_index {|x| x.start_with?("#{label}:") }
 
   raise "This shouldn't happen" if idx.nil?
   

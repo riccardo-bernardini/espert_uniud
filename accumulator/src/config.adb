@@ -108,7 +108,7 @@ package body Config with SPARK_Mode is
                         Min                  => +"min",
                         Max                  => +"max",
                         Neutral              => +"neutral",
-                        Event_Weigth         => +"weigth",
+                        Event_Weigth         => +"weight",
                         Rectify              => +"rectify",
                         Lazy_Decay           => +"lazy"
                        );

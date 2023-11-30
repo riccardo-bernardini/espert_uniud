@@ -235,7 +235,7 @@ begin
     params << "--min=#{parameters.min}"
     params << "--max=#{parameters.max}"
     params << "--neutral=#{parameters.neutral}"
-    params << "--weigth=#{parameters.weigth}"
+    params << "--weight=#{parameters.weight}"
     params << "--rectify" if parameters.rectify
     params << "--lazy" if parameters.lazy
     params << "--output=#{full_template}"

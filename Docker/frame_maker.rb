@@ -63,12 +63,10 @@ def make_decay(decay, tau)
     return decay
 
   when "lin"
-    raise Bad_Parameters, "Bad tau specs" unless is_valid_time?(tau)
-    return "linear:#{despace(tau)}"
+    return "linear:#{to_time(tau)}"
 
   when "exp"
-    raise Bad_Parameters, "Bad tau specs" unless is_valid_time?(tau)
-    return "exp:#{despace(tau)}"
+    return "exp:#{to_time(tau)}"
 
   else
     raise Bad_Parameters, "Bad decay specs"
@@ -128,24 +126,86 @@ def expanded_template(template, macros)
   return expansion.join('')
 end
 
+
 class Bad_Parameters < RuntimeError
 end
 
+Parameters = Struct.new(:frame_rate,
+                        :decay,
+                        :template,
+                        :max,
+                        :min,
+                        :neutral,
+                        :rectify,
+                        :lazy,
+                        :weight)
+
+def to_time(s)
+  raise Bad_Parameters if s.nil?
+
+  result = despace(s)
+
+  raise Bad_Parameters, "Bad time spec" unless is_valid_time?(s)
+
+  return result
+end
+
+def to_template(s)
+  raise Bad_Parameters if s.nil?
+  
+  result = File.basename(s)
+  raise Bad_Parameters, "Bad template" unless is_valid_template?(result)
+
+  return result
+end
+
+def to_float(s)
+  raise Bad_Parameters if s.nil?
+
+  raise Bad_Parameters unless s =~ /^[-+]?[0-9]+(\.[0-9]+([eE][-+]?[0-9]+)?)?$/
+  
+  return s.to_f
+end
+
+def to_boolean(s)
+  return s.nil? ? false : true
+end
+
+def extract_parameters(cgi)
+  result = Parameters.new
+
+  result.frame_rate = to_time(cgi.params['fps'][0])
+
+  result.decay = make_decay(cgi.params['decay'][0], cgi.params['tau'][0])
+
+  result.template = to_template(cgi.params['template'][0])
+
+  result.max = to_float(cgi.params['max'][0])
+  result.min = to_float(cgi.params['min'][0])
+  result.neutral = to_float(cgi.params['neutral'][0])
+  result.weight = to_float(cgi.params['peso'][0])
+
+  result.lazy = to_boolean(cgi.params['lazy'][0])
+  result.rectify = to_boolean(cgi.params['rectify'][0])
+
+  result.each_pair do
+    |member,value|
+
+    raise "Member #{member} empty. It should'nt be" if value.nil?
+  end
+
+  return result
+end
+
 $logger.info("Starting")
-cgi=CGI.new(:tag_maker => "html4", :max_multipart_length => MAX_INPUT_SIZE)
+cgi=CGI.new(:tag_maker => "html4",
+            :max_multipart_length => MAX_INPUT_SIZE)
 
 begin
-  $logger.info("Parameter checking")
+  $logger.info("Parameter parsing")
+
+  parameters = extract_parameters(cgi)
   
-  frame_rate = despace(cgi.params['fps'][0])
-  raise Bad_Parameters, "Invalid fps" unless is_valid_time?(frame_rate)
-
-  decay    = make_decay(cgi.params['decay'][0],
-                        despace(cgi.params['tau'][0]))
-
-  template = File.basename(cgi.params['template'][0])
-  raise Bad_Parameters, "Bad template" unless is_valid_template?(template)
-
   $logger.info("Open working dir")
   
   with_working_dir do |working_dir|
@@ -160,7 +220,7 @@ begin
 
     save_to(cgi.params['myfile'][0], event_file)
 
-    full_template = File.join(image_dir, template)
+    full_template = File.join(image_dir, parameters.template)
     image_glob=template_to_glob(full_template)
 
 
@@ -170,8 +230,14 @@ begin
     params << "status:#{progress_file}"
     params << "images:#{image_glob}"
     params << "zip:#{zip_file}"
-    params << "--sampling=#{frame_rate}"
-    params << "--decay=#{decay}"
+    params << "--sampling=#{parameters.frame_rate}"
+    params << "--decay=#{parameters.decay}"
+    params << "--min=#{parameters.min}"
+    params << "--max=#{parameters.max}"
+    params << "--neutral=#{parameters.neutral}"
+    params << "--weigth=#{parameters.weigth}"
+    params << "--rectify" if parameters.rectify
+    params << "--lazy" if parameters.lazy
     params << "--output=#{full_template}"
     params << "--input=#{event_file}"
     params << "--progress=#{progress_file}"

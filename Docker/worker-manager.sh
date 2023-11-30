@@ -1,4 +1,4 @@
-#!/usr/bin/bash -eu
+#!/usr/bin/bash -u
 
 if [ `id -u` -eq 0 ]; then
     echo "Running as root?!? No way!" >&2

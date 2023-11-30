@@ -361,6 +361,7 @@ package body Generic_Command_Line_Parser is
             Accumulator := Accumulator & " " & Argument (I);
          end loop;
 
+
          return To_String (Accumulator);
       end Command_Line_Restored;
    begin

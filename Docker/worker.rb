@@ -43,7 +43,9 @@ def extract(parameters, label)
 
   raise "This shouldn't happen" unless label==head
 
-  parameters.delete(idx)
+  parameters.delete_at(idx)
+
+  # $logger.info(parameters.inspect)
   
   return body
 end
@@ -72,6 +74,8 @@ loop do
   image_glob_pattern = extract(params, "images")
   zip_filename       = extract(params, "zip")
 
+  $logger.info(params.inspect)
+  
   raise "This should not happen" if has_non_options?(params)
 
   $logger.info("Calling accumulator...") 

@@ -34,12 +34,22 @@ def create_zip_archive(pattern, zipfile_name)
   return zipfile_name
 end
 
-def check(value, label)
-  head, body = value.split(':', 2)
+def extract(parameters, label)
+  idx = parameters.find_index {|x| x.start_with?("#label}:") }
 
-  raise "This shouldn't happen" unless head == label
+  raise "This shouldn't happen" if idx.nil?
+  
+  head, body = parameters[idx].split(':', 2)
 
+  raise "This shouldn't happen" unless label==head
+
+  parameters.delete(idx)
+  
   return body
+end
+
+def has_non_options?(parameters)
+  return ! parameters.all? {|x| x.start_with?("--") }
 end
 
 $verbose=true
@@ -56,11 +66,13 @@ loop do
 
   $logger.info("Done") 
 
-  stderr_file        = check(params.shift, "stderr")
-  stdout_file        = check(params.shift, "stdout")
-  status_file        = check(params.shift, "status")
-  image_glob_pattern = check(params.shift, "images")
-  zip_filename       = check(params.shift, "zip")
+  stderr_file        = extract(params, "stderr")
+  stdout_file        = extract(params, "stdout")
+  status_file        = extract(params, "status")
+  image_glob_pattern = extract(params, "images")
+  zip_filename       = extract(params, "zip")
+
+  raise "This should not happen" if has_non_options?(params)
 
   $logger.info("Calling accumulator...") 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);

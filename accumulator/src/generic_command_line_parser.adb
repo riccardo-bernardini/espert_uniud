@@ -293,6 +293,8 @@ package body Generic_Command_Line_Parser is
                              When_Repeated           => When_Repeated,
                              Concatenation_Separator => Concatenation_Separator);
 
+                     Status := Skipping_Spaces;
+
                   elsif Current_Char = Option_Value_Separator then
                      Status := Begin_Of_Value;
 

@@ -192,6 +192,7 @@ def extract_parameters(cgi)
     |member,value|
 
     raise "Member #{member} empty. It should'nt be" if value.nil?
+    $logger.info("#{member}: #{value.tainted?}")
   end
 
   return result

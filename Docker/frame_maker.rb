@@ -236,8 +236,8 @@ begin
     params << "--max=#{parameters.max}"
     params << "--neutral=#{parameters.neutral}"
     params << "--weight=#{parameters.weight}"
-    params << "--rectify=y" if parameters.rectify
-    params << "--lazy=y" if parameters.lazy
+    params << "--rectify" if parameters.rectify
+    params << "--lazy"    if parameters.lazy
     params << "--output=#{full_template}"
     params << "--input=#{event_file}"
     params << "--progress=#{progress_file}"

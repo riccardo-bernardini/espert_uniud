@@ -141,7 +141,7 @@ Parameters = Struct.new(:frame_rate,
                         :weight)
 
 def to_time(s)
-  raise Bad_Parameters if s.nil?
+  raise Bad_Parameters, "Missing time" if s.nil?
 
   result = despace(s)
 
@@ -151,7 +151,7 @@ def to_time(s)
 end
 
 def to_template(s)
-  raise Bad_Parameters if s.nil?
+  raise Bad_Parameters, "Missing template" if s.nil?
   
   result = File.basename(s)
   raise Bad_Parameters, "Bad template" unless is_valid_template?(result)
@@ -160,9 +160,9 @@ def to_template(s)
 end
 
 def to_float(s)
-  raise Bad_Parameters if s.nil?
+  raise Bad_Parameters, "Missing float" if s.nil?
 
-  raise Bad_Parameters unless s =~ /^[-+]?[0-9]+(\.[0-9]+([eE][-+]?[0-9]+)?)?$/
+  raise Bad_Parameters, "Invalid float" unless s =~ /^[-+]?[0-9]+(\.[0-9]+([eE][-+]?[0-9]+)?)?$/
   
   return s.to_f
 end

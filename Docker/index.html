@@ -22,8 +22,23 @@
 	  document.getElementById('template').value = event_filename + '-%d.png';
       }
 
+      function has_valid_template(id) {
+	  t = document.getElementById(id).value;
+
+	  valid_char = "[-_a-zA-Z0-9:+@.]";
+	  pattern = new RegExp(`^${valid_char}*%d${valid_char}*$`)
+
+	  return pattern.test(t)
+      }
+
       function template_changed() {
 	  document.getElementById('template').className = 'manual';
+
+	  if (has_valid_template('template')) {
+	      unmark('template');
+	  } else {
+	      mark('template');
+	  }
       }
 
       function display_error_message(msg) {
@@ -33,6 +48,14 @@
 
       function clean_error_message() {
 	  document.getElementById('message-area').innerHTML = '';
+      }
+
+      function has_valid_float(id) {
+	  t = document.getElementById(id).value;
+
+	  pattern=/^ *[-+]?[0-9]+(\.[0-9]*([eE][-+][0-9]+)?)?? *$/;
+	  
+	  return pattern.test(t)
       }
 
       function has_valid_time(id) {
@@ -70,10 +93,22 @@
 	      error_msg = error_msg.concat("<li>Invalid FPS specs");
 	  }
 
+	  if (! has_valid_template('template')) {
+	      mark('template');
+	      error_msg = error_msg.concat("<li>Invalid template format");
+	  }
+
 	  file=document.getElementById('myfile').value;
 	  if (file == "") {
 	      mark('myfile');
 	      error_msg = error_msg.concat("<li>Missing event file");
+	  }
+
+	  for (float_field of ["min", "max", "neutral", "peso"]) {
+	      if (! has_valid_float(float_field)) {
+		  error_msg = error_msg.concat("<li>Bad float in " + float_field);
+		  mark(float_field);
+	      }
 	  }
 
 	  if (error_msg == "") {
@@ -84,12 +119,28 @@
 	  }
       }
 
+      function fps_changed() {
+	  if (has_valid_time('fps')) {
+	      unmark('fps');
+	  } else {
+ 	      mark('fps');
+	  }
+      }
+      
       function update_default_neutral() {
 	  max=parseFloat(document.getElementById('max').value);
 	  min=parseFloat(document.getElementById('min').value);
 	  neutral= 0.5*(max + min);
 	  
 	  document.getElementById('neutral').value =neutral;
+      }
+
+      function check_float_field(id) {
+	  if (has_valid_float(id)) {
+	      unmark(id);
+	  } else {
+	      mark(id);
+	  }
       }
 
       function use_default_neutral() {
@@ -100,20 +151,28 @@
 	  if (use_default_neutral()) {
 	      update_default_neutral();
 	  }
+
+	  check_float_field('max');
       }
 
       function min_changed() {
 	  if (use_default_neutral()) {
 	      update_default_neutral();
 	  }
+
+	  check_float_field('min');
       }
 
       function peso_changed() {
 	  document.getElementById('peso').className="manual";
+
+	  check_float_field('peso');
       }
 
       function neutral_changed() {
 	  document.getElementById('neutral').className="manual";
+
+	  check_float_field('neutral');
       }
 
       function decay_changed() {
@@ -127,7 +186,9 @@
       <table>
 	<tr>
 	  <td><label for="fps">Frame rate</label>
-	  <td><input type="text" id="fps" name="fps" required>
+	  <td><input type="text" id="fps" name="fps"
+		     onchange="fps_changed();"
+		     required>
 	</tr>
 	<tr>
 	  <td><label for="template">Frame filename template</label>

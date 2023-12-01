@@ -108,6 +108,10 @@
 	  }
       }
 
+      function peso_changed() {
+	  document.getElementById('peso').className="manual";
+      }
+
       function neutral_changed() {
 	  document.getElementById('neutral').className="manual";
       }
@@ -167,7 +171,12 @@
 	</tr>
 	<tr>
       <td> <label for="peso">Event weigth:</label>
-      <td> <input type="text" id="peso" name="peso" onchange="peso_changed()" />
+      <td> <input type="text"
+		  id="peso"
+		  name="peso"
+		  class="default"
+		  value="1.0"
+		  onchange="peso_changed()" />
       </table>
       <input type="checkbox" id="rectify" name="rectify" />
       <label for="rectify">Rectify</label>

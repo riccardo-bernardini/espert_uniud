@@ -7,6 +7,13 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 package Config with SPARK_Mode is
    type Frame_Index is range 0 .. Integer'Last;
 
+   type Negative_Event_Action is
+     (
+      Keep,
+      Rectify,
+      Clip
+     );
+
    type Verbosity is
      (
       Quiet,        -- no verbose at all
@@ -104,9 +111,17 @@ package Config with SPARK_Mode is
        Pre => Package_Ready;
 
 
-   function Rectify_Events return Boolean
+   function On_Negative_Event return Negative_Event_Action
      with
        Pre => Package_Ready;
+
+   function Negative_Weight return Integer
+     with
+       Pre => Package_Ready;
+
+   --  function Rectify_Events return Boolean
+   --    with
+   --      Pre => Package_Ready;
 
 
    function Verbosity_Level return Verbosity

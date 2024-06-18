@@ -29,6 +29,9 @@ package Camera_Events is
        Pre => T (Event) >= Zero + Delta_T,
        Post => T (Translate'Result) = T (Event)-Delta_T;
 
+   procedure Multiply_Weight (Event : in out Event_Type;
+                              By    : Integer);
+
    function T (Event : Event_Type) return Timestamp;
    function X (Event : Event_Type) return X_Coordinate_Type;
    function Y (Event : Event_Type) return Y_Coordinate_Type;

@@ -26,6 +26,13 @@ package body Camera_Events is
        & Event.Weight'Image
        & "]");
 
+   procedure Multiply_Weight (Event : in out Event_Type;
+                              By    : Integer)
+   is
+   begin
+      Event.Weight := Event.Weight * Weight_Type (By);
+   end Multiply_Weight;
+
 
 
 end Camera_Events;

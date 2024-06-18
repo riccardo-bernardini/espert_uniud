@@ -26,7 +26,7 @@ private package Config.Data with SPARK_Mode is
       Stop_Time,
       Event_Weigth,
       -- Boolean fields
-      Rectify,
+      Negative_Event_Handling,
       Lazy_Decay
      );
 
@@ -48,7 +48,7 @@ private package Config.Data with SPARK_Mode is
 
    subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
 
-   subtype Boolean_Field is Configuration_Field range Rectify .. Lazy_Decay;
+   subtype Boolean_Field is Configuration_Field range Lazy_Decay .. Lazy_Decay;
 
    subtype Duration_Field is Configuration_Field range Sampling_Period .. Sampling_Period;
 
@@ -87,6 +87,15 @@ private package Config.Data with SPARK_Mode is
    function Output_Filename_Template return Syntax.Radix_Spec
      with
        Pre => Is_Set (Output_Filename_Template);
+
+   procedure Set_Negative_Event_Action (Action : Negative_Event_Action)
+     with
+       Pre => not Is_Set (Negative_Event_Handling),
+       Post => Is_Set (Negative_Event_Handling) and then Get_Negative_Event_Action = Action;
+
+   function Get_Negative_Event_Action return Negative_Event_Action
+     with
+       Pre => not Is_Set (Negative_Event_Handling);
 
    procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
      with

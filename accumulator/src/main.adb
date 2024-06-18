@@ -137,7 +137,8 @@ begin
    Event_Streams.Read_Event_Stream (Filename               => Config.Input,
                                     Use_Absolute_Timestamp => True,
                                     Events                 => Events,
-                                    Metadata => Metadata);
+                                    Metadata               => Metadata,
+                                    Negative_Event_Weight  => Config.Negative_Weight);
 
    if Events.Is_Empty then
       raise Empty_Event_Stream;

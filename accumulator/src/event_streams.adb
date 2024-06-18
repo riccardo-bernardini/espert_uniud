@@ -77,7 +77,8 @@ package body Event_Streams is
      (Input                  : in     Ada.Text_IO.File_Type;
       Use_Absolute_Timestamp : in     Boolean;
       Events                 :    out Event_Sequences.Event_Sequence;
-      Metadata               :    out Event_Sequences.Metadata_Map)
+      Metadata               :    out Event_Sequences.Metadata_Map;
+      Negative_Event_Weight  : in     Sign)
    is
       use Ada.Text_Io;
 
@@ -124,6 +125,10 @@ package body Event_Streams is
 
          if Polarity_Format = Bool and Weight = 0 then
             Weight := -1;
+         end if;
+
+         if Weight < 0 then
+            Weight := Weight * Weight_Type (Negative_Event_Weight);
          end if;
 
          return New_Event (T      => Times.Value (Fields (1)),
@@ -346,7 +351,8 @@ package body Event_Streams is
    procedure Read_Binary_Event_Stream
      (Filename : in     String;
       Events   :    out Event_Sequences.Event_Sequence;
-      Metadata :    out Event_Sequences.Metadata_Map)
+      Metadata :    out Event_Sequences.Metadata_Map;
+      Negative_Event_Weight : in Sign)
    is
       use Ada.Streams.Stream_IO;
       use Camera_Events;
@@ -368,7 +374,16 @@ package body Event_Streams is
          Metadata.Wipe_Out;
 
          for I in 1 .. N_Events loop
-            Events.Append (Event_Type'Input (Input_Stream));
+            declare
+               Ev : Event_Type := Event_Type'Input (Input_Stream);
+            begin
+               if Weight (Ev) < 0 then
+                  Multiply_Weight (Event => ev,
+                                   By    => Negative_Event_Weight);
+               end if;
+
+               Events.Append (Ev);
+            end;
          end loop;
 
          for I in 1 .. N_Metadata loop
@@ -396,7 +411,8 @@ package body Event_Streams is
      (Filename               : in     String;
       Use_Absolute_Timestamp : in     Boolean;
       Events                 :    out Event_Sequences.Event_Sequence;
-      Metadata               :    out Event_Sequences.Metadata_Map)
+      Metadata               :    out Event_Sequences.Metadata_Map;
+      Negative_Event_Weight  : in     Sign)
    is
       Extension : constant String := Get_Extension (Filename);
 
@@ -405,7 +421,8 @@ package body Event_Streams is
          Read_CSV_Event_Stream (Input                  => Ada.Text_IO.Standard_Input,
                                 Use_Absolute_Timestamp => Use_Absolute_Timestamp,
                                 Events                 => Events,
-                                Metadata               => Metadata);
+                                Metadata               => Metadata,
+                                Negative_Event_Weight  => Negative_Event_Weight);
 
       elsif Extension = ".csv" or Extension = "" then
          declare
@@ -420,7 +437,8 @@ package body Event_Streams is
             Read_CSV_Event_Stream (Input                  => File,
                                    Use_Absolute_Timestamp => Use_Absolute_Timestamp,
                                    Events                 => Events,
-                                   Metadata               => Metadata);
+                                   Metadata               => Metadata,
+                                   Negative_Event_Weight  => Negative_Event_Weight);
 
             Close (File);
          end;
@@ -428,7 +446,8 @@ package body Event_Streams is
       elsif Extension = ".evt" then
          Read_Binary_Event_Stream (Filename    => Filename,
                                    Events      => Events,
-                                   Metadata    => Metadata);
+                                   Metadata               => Metadata,
+                                   Negative_Event_Weight  => Negative_Event_Weight);
 
       else
          raise Bad_Event_Stream

@@ -34,6 +34,7 @@ package body Config.Data with SPARK_Mode is
          Timestamp_Fields        : Timestamp_Field_Array;
          Duration_Fields         : Duration_Field_Array;
          Boolean_Fields          : Boolean_Field_Array;
+         On_Negative_Event       : Negative_Event_Action;
       end record;
 
    Config_Data : Config_Data_Record;
@@ -47,6 +48,16 @@ package body Config.Data with SPARK_Mode is
    begin
       Set_Fields (Field) := True;
    end Is_Set;
+
+   procedure Set_Negative_Event_Action (Action : Negative_Event_Action)
+   is
+   begin
+      Config_Data.On_Negative_Event := Action;
+      Is_Set (Negative_Event_Handling);
+   end Set_Negative_Event_Action;
+
+   function Get_Negative_Event_Action return Negative_Event_Action
+   is (Config_Data.On_Negative_Event);
 
    procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
    is

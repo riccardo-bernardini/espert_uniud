@@ -85,7 +85,7 @@ package body Config with SPARK_Mode is
          Max,
          Neutral,
          Event_Weigth,
-         Rectify,
+         On_Negative,
          Lazy_Decay
         );
 
@@ -109,7 +109,7 @@ package body Config with SPARK_Mode is
                         Max                  => +"max",
                         Neutral              => +"neutral",
                         Event_Weigth         => +"weight",
-                        Rectify              => +"rectify",
+                        On_Negative          => +"on-negative|neg",
                         Lazy_Decay           => +"lazy"
                        );
 
@@ -130,7 +130,7 @@ package body Config with SPARK_Mode is
                     Max                  => (CL_Parser.Use_Default, +"1.0"),
                     Neutral              => CL_Parser.Ignore_If_Missing,
                     Event_Weigth         => (CL_Parser.Use_Default, +"0.25"),
-                    Rectify              => CL_Parser.Ignore_If_Missing,
+                    On_Negative          => CL_Parser.Ignore_If_Missing,
                     Lazy_Decay           => CL_Parser.Ignore_If_Missing
                    );
 
@@ -256,6 +256,40 @@ package body Config with SPARK_Mode is
          Msg := Null_Unbounded_String;
       end Set_Sampling_Spec;
 
+      procedure Set_Negative_Event_Action (Err : out Unbounded_String)
+      is
+      begin
+         if Parsed_Options (On_Negative).Missing then
+            Data.Set_Negative_Event_Action (Keep);
+            Err := Null_Unbounded_String;
+
+            return;
+         end if;
+
+
+         declare
+            Action : constant String := To_String (Parsed_Options (On_Negative).Value);
+         begin
+            if Action = "keep" or Action = "k" then
+               Data.Set_Negative_Event_Action (Keep);
+               Err := Null_Unbounded_String;
+
+            elsif Action = "rectify" or Action = "rect" or Action = "r"  then
+               Data.Set_Negative_Event_Action (Rectify);
+               Err := Null_Unbounded_String;
+
+            elsif Action = "clip" or Action = "c" or Action = "0"
+              or Action = "ignore"
+            then
+               Data.Set_Negative_Event_Action (Clip);
+               Err := Null_Unbounded_String;
+
+            else
+               Err := To_Unbounded_String ("Unknown negative event action '" & Action & "'");
+            end if;
+         end;
+      end Set_Negative_Event_Action;
+
       procedure Set_Start_And_Stop_Times is
 
          Start : Times.Timestamp := Times.Minus_Infinity;
@@ -282,7 +316,8 @@ package body Config with SPARK_Mode is
                Event_Streams.Read_Event_Stream (Filename               => Filename,
                                                 Use_Absolute_Timestamp => True,
                                                 Events                 => Events,
-                                                Metadata               => Metadata);
+                                                Metadata               => Metadata,
+                                                Negative_Event_Weight  => 1);
 
                Start := Times.Max (Start, Event_Sequences.T_Min (Events));
                Stop := Times.Min (Stop, Event_Sequences.T_Max (Events));
@@ -410,7 +445,12 @@ package body Config with SPARK_Mode is
 
       Set (Lazy_Decay, not Parsed_Options (Lazy_Decay).Missing);
 
-      Set (Rectify, not Parsed_Options (Rectify).Missing);
+      Set_Negative_Event_Action (Error);
+
+      if Error /= Null_Unbounded_String then
+         Report := Make_Report (Error);
+         return;
+      end if;
 
       pragma Assert (Is_All_Set);
 
@@ -601,8 +641,21 @@ package body Config with SPARK_Mode is
    function Neutral_Value return Images.Pixel_Value
    is (Get (Neutral));
 
-   function Rectify_Events return Boolean
-   is (Get (Rectify));
+   function On_Negative_Event return Negative_Event_Action
+   is (Get_Negative_Event_Action);
+
+   function Negative_Weight return Integer
+   is
+     (case On_Negative_Event is
+         when Keep => 1,
+         when Rectify => -1,
+         when Clip => 0
+     );
+
+
+
+   --  function Rectify_Events return Boolean
+   --  is (Get (Rectify));
 
    function Metadata_Requested return Boolean
    is (Get (Metadata_Filename) /= "");

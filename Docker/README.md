@@ -12,6 +12,7 @@ Roughly, like this
 3. The script frame_maker.rb sends back an HTML file obtained by template expanding **working-for-you.thtml**
 4. frame_maker.rb starts the reconstruction process by passing the parsed data to **worker.rb**
 5. **worker.rb** is a background process that works as follos
+
    a. Listen on an internal socket, waiting for a connection from `frame_maker`
    b. Read the parameters from the socket
    c. Run `accumulator` using the parameters received via the socket

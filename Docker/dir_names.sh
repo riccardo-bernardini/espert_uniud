@@ -1,5 +1,19 @@
+#
+# Read the file tree.db that contains pairs <label> <path> and
+# for every line create an environment variable called <label>_dir
+# that contains $root/<path>.
+#
+# Why this involuted approach instead of a simple script with
+# the assignments?  Because the same directories are required
+# also by ruby scripts which can read tree.db directly
+#
 root=$HTTPD_PREFIX
 
+#
+# Quite an hack: read tree.db and create a sequence of assignments
+# from its content.  The sequence of assignments is then given
+# to eval
+#
 eval `(while read dir path ; do 
          echo ${dir}_dir=\$root/$path\; 
        done) < tree.db`

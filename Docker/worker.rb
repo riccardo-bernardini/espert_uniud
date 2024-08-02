@@ -1,5 +1,31 @@
 #!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
+#
+# This script Ruby acts as a bridge between frame_maker (called
+# as CGI when the user submit the data via index.html) and
+# `accumulator`, the actual program that converts events into
+# frames.
+#
+# This program is launched by worker-manager.sh (which relaunches it
+# if worker.rb crashes) and enter an infinite loop where it waits for
+# a connection by frame_maker via an internal socket.
+#
+# When the connection happens, it reads from the socket the
+# parameters passed by frame_maker and then it calls accumulator.
+# When accumulator ends its job, it collects the generated frames
+# into a zip file whose name was provided by frame_maker.
+#
+# After creating the zip file, the loop restarts and this scripts
+# waits again for a new connection.
+#
+# When the zip file is ready JavaScript code in the HTML page sent
+# back to the user by frame_maker will enable the download button.
+#
+
+#
+# This script is run by a script with root identity.  For
+# security, it is better to change user ID to www-data
+#
 Username = 'www-data'
 User_UID = Process::UID.from_name(Username)
 
@@ -35,23 +61,44 @@ def create_zip_archive(pattern, zipfile_name)
 end
 
 def extract(parameters, label)
+  #
+  # The parameters passed by frame_maker can be split into two
+  # classes
+  #
+  # 1. Parameters interpreted by accumulator. They have the format
+  #    of an option (e.g., --sampling=1ms) and they are give as
+  #    they are to accumulator
+  #
+  # 2. Private parameters, that is, Parameters interpreted by this 
+  #    script.  They have the format label:value.
+  #
+  # This function looks into parameters (which holds the lines wrote
+  # by frame_maker) and searches for a private parameter with the
+  # given label and returns the corresponding value.  The found
+  # entry is removed from parameters.  It is an error if label is
+  # not found.
+  #
   idx = parameters.find_index {|x| x.start_with?("#{label}:") }
 
   raise "This shouldn't happen" if idx.nil?
   
-  head, body = parameters[idx].split(':', 2)
+  key, value = parameters[idx].split(':', 2)
 
-  raise "This shouldn't happen" unless label==head
+  raise "This shouldn't happen" unless label==key
 
   parameters.delete_at(idx)
 
   # $logger.info(parameters.inspect)
   
-  return body
+  return value
 end
 
-def has_non_option_parameters?(parameters)
-  return ! parameters.all? {|x| x.start_with?("--") }
+def is_external_parameter?(x)
+  x.start_with?("--")
+end
+
+def has_only_external_parameters?(parameters)
+  return parameters.all? {|x| is_external_parameter?(x)}
 end
 
 $verbose=true
@@ -75,8 +122,14 @@ loop do
   zip_filename       = extract(params, "zip")
 
   $logger.info(params.inspect)
-  
-  raise "This should not happen" if has_non_option_parameters?(params)
+
+  #
+  # Here I should have removed all the private parameters and
+  # params should contain only external parameters
+  #
+  if ! has_only_external_parameters?(params)
+    raise "Unexpected private parameters in #{params} (this should not happen)"
+  end
 
   $logger.info("Calling accumulator...") 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);

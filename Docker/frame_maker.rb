@@ -1,5 +1,11 @@
 #!/usr/bin/env -S ruby -I /usr/local/apache2/library
 
+#
+# This script is called via CGI when the user submit the form in
+# index.html.  Its duty is to parse the parameters received
+# via CGI and to pass them to worker.rb via an internal socket
+#
+
 MAX_INPUT_SIZE=1024 * 1024 * 1024 * 1024
 
 ENV['HTTPD_PREFIX']='/usr/local/apache2'
@@ -38,17 +44,28 @@ def is_valid_time?(t)
          t =~ /^[0-9]+(\.[0-9]+([eE][-+]?[0-9]+)?)?(s|ms|us|ns|fps)?$/ 
 end
 
+
 def is_valid_template?(s)
-  invalid_chars = /[^-_.,:@%a-zA-Z0-9]/
-  return false if s =~ invalid_chars
+  valid_chars = "-_.,:@a-zA-Z0-9"
+  valid_template_regexp = Regexp.new("^[#{valid_chars}]*%d[#{valid_chars}]*$")
 
-  pos = s.index('%d')
-  return false if pos.nil?
+  return s =~ valid_template_regexp
+  
+  # invalid_chars = /[^-_.,:@%a-zA-Z0-9]/
+  # return false if s =~ invalid_chars
+  # 
+  # #
+  # # We expect one and only one '%d' in s
+  # #
+  # return s.split('%d').size == 2
 
-  pos = s.index('%d', pos+2)
-  return false unless pos.nil?
-
-  return true
+  # pos = s.index('%d')
+  # return false if pos.nil?
+  # 
+  # pos = s.index('%d', pos+2)
+  # return false unless pos.nil?
+  # 
+  # return true
 end
 
 def template_to_glob(s)

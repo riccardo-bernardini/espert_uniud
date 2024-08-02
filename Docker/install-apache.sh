@@ -1,5 +1,12 @@
 #!/bin/bash -eu
 
+#
+# This script is called during the creation of the Docker image
+# and does mostly of the installation work: it creates the
+# required directories, it copies executables and library files in
+# the right directories, it compiles the Ada program, ...
+#
+
 my_dir=`dirname $0`
 cd $my_dir
 

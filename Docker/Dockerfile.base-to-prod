@@ -1,11 +1,24 @@
 FROM fintatarta/espert_uniud:latest
 
+#
+#  This Docker file takes an image with a basic installation and
+#  install all the remaining software (script ruby, accumulator)
+#
+
+#
+# Download all the required stuff in /tmp.  The funny thing is that
+# the git repository cloned contains a copy of this file... It so
+# meta... 
+#
 WORKDIR /tmp
 RUN git clone https://github.com/riccardo-bernardini/espert_uniud.git
 
 WORKDIR espert_uniud
 RUN git checkout master
 
+#
+# Now run the script install-apache.sh which does all the work
+#
 WORKDIR Docker
 RUN ./install-apache.sh
 

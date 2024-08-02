@@ -1,5 +1,11 @@
 #!/bin/bash
 
+#
+# This script is the entry point of the production Docker file
+# Its duty is to start the worker-manager (which in turn will launch
+# worker.rb) and then the HTTP server
+#
+
 set -e
 
 source $HTTPD_PREFIX/library/dir_names.sh

@@ -1,5 +1,10 @@
 
 <!DOCTYPE html>
+<!--
+This is the form that allows the user to set the reconstruction
+parameters and upload the event file. When submitted the Ruby
+script frame-maker.rb is activated via CGI
+--> 
 <html>
   <head>
     <style>
@@ -13,7 +18,11 @@
       }
       
       function upload_changed() {
-
+	  // Called when the name of the upload file is changed
+	  // Update the template entry to reflect the change in
+	  // the upload filename, unless the template was set
+	  // manually by the user
+	  
 	  if (document.getElementById('template').className == 'manual')
 	  { return; }
 
@@ -23,6 +32,13 @@
       }
 
       function has_valid_template(id) {
+	  // A template has the form <head>%d<tail> where
+	  // <head> and <tail> are strings (possibly empty)
+	  // of
+	  //
+	  // - alphanumeric characters
+	  // - special characters : - + _ @ .
+	  //
 	  t = document.getElementById(id).value;
 
 	  valid_char = "[-_a-zA-Z0-9:+@.]";

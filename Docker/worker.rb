@@ -50,7 +50,7 @@ def extract(parameters, label)
   return body
 end
 
-def has_non_options?(parameters)
+def has_non_option_parameters?(parameters)
   return ! parameters.all? {|x| x.start_with?("--") }
 end
 
@@ -76,7 +76,7 @@ loop do
 
   $logger.info(params.inspect)
   
-  raise "This should not happen" if has_non_options?(params)
+  raise "This should not happen" if has_non_option_parameters?(params)
 
   $logger.info("Calling accumulator...") 
   stdout, stderr, status=Open3.capture3(Accumulator_Path, *params);

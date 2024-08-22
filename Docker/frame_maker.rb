@@ -93,7 +93,11 @@ Parameters = Struct.new(:frame_rate,
                         :events)
 class Blessed
   #
-  #  Funny class, uh? 
+  #  Funny class, uh? Any value received via CGI is checked to see if
+  #  it is a valid vale and then converted and the result used to create
+  #  a value of class Blessed.  This acts like a "seal" that the value
+  #  received from the outside has been processed and it should be
+  #  safe now.
   #
   def initialize(value)
     @value=value
@@ -178,6 +182,11 @@ module Conversions
 end
 
 module External_Interface
+  #
+  #  In order to prevent data injection attacks, this module
+  #  is the only part that is allowed to manipulate CGI data.
+  #  In this way it is easier to control the impact of external data
+  #
   def External_Interface.create_error_page(cgi, message)
     cgi.out do
       cgi.html do
@@ -214,6 +223,12 @@ module External_Interface
     buffer.events = Blessed.new(cgi.params['myfile'][0].read)
     
     result = Parameters.new
+
+    #
+    # OK, now every parameter was read. Let's do a sanity check
+    # - Every parameter was read
+    # - Every value is Blessed
+    # 
     buffer.each_pair do
       |member,blessed_value|
 
@@ -228,6 +243,17 @@ module External_Interface
   end
 
   def External_Interface.with_received_data
+    #
+    #  This function read the data received via the CGI, sanitize
+    #  and convert them and pass them to the block given to this function.
+    #  We expect that the block will return (as the result of its last
+    #  expression) an Hash table with some macros used to expand the
+    #  output template.
+    #
+    #  This approach is not the most intuitive one, but in this way
+    #  the CGI data do not exit from the External_Interface module,
+    #  making it easier to avoid data injection attacks,
+    #
     cgi=CGI.new(:tag_maker => "html4",
                 :max_multipart_length => MAX_INPUT_SIZE)
 
@@ -280,7 +306,7 @@ External_Interface.with_received_data do |parameters|
     save_events(parameters.events, event_file)
 
     full_template = File.join(image_dir, parameters.template)
-    image_glob=template_to_glob(full_template)
+    image_glob=Conversions.template_to_glob(full_template)
 
 
     params = []

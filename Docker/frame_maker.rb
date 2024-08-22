@@ -156,6 +156,16 @@ Parameters = Struct.new(:frame_rate,
                         :rectify,
                         :lazy,
                         :weight)
+class Safe_Type
+  #
+  #  Funny class, uh? 
+  #
+  def initialize(value)
+    @value=value
+  end
+
+  attr_reader :value
+end
 
 def to_time(s)
   raise Bad_Parameters, "Missing time" if s.nil?

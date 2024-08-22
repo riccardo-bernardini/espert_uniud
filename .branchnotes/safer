@@ -1,0 +1,13 @@
+{
+  "reason": "Making the system safer, isolating the core from the external",
+  "history": [
+    {
+      "time": "2024-08-22 17:23:40 +0200",
+      "description": "Created the draft version of frame_maker.  Now I need to test it.\n"
+    },
+    {
+      "time": "2024-08-22 16:38:06 +0200",
+      "description": "Created"
+    }
+  ]
+}

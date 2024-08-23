@@ -336,6 +336,10 @@ External_Interface.with_received_data do |parameters|
     full_template = File.join(image_dir, parameters.template)
     image_glob=Conversions.template_to_glob(full_template)
 
+    raise "Bad" unless image_glob.is_a? Blessed
+
+    image_glob=image_glob.value
+
 
     params = []
     params << "stderr:#{stderr_file}"

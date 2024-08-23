@@ -45,6 +45,10 @@ Accumulator_Path = Tree.join(:bin, "accumulator");
 def create_zip_archive(pattern, zipfile_name)
   input_filenames = Dir.glob(pattern);
 
+  $logger.info("zip pattern=#{pattern};")
+
+  $logger.info("filenames=#{input_filenames.inspect};")
+  
   return nil if input_filenames.empty?
 
 

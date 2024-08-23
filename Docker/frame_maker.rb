@@ -51,15 +51,37 @@ def to_link(path)
   end
 end
 
-def get_timestamp
+def get_randomized_timestamp
+  #
+  #  In order to make the working dir unique, we use the current time
+  #  as filename.  In order to make it impossible to predict (you
+  #  never know... I do not have in mind a specific attack, but
+  #  you know... better safe than sorry) we append to the current
+  #  time a random hex string
+  #
+  entropy=64;
+  
+  random_string=
+    File.open('/dev/random') { |source| source.read(entropy/8)  }
+
+  random_tag = random_string.
+                 unpack('C*').          # String to array of bytes
+                 map{|b| b.to_s(16)}.   # Convert to hex
+                 join
   t=Time.now;
 
-  return t.strftime('%Y-%m-%d/%H:%M:%S%L')
+  return "#{t.strftime('%Y-%m-%d/%H:%M:%S%L')}:#{random_tag}"
   #return t.tv_sec.to_s + t.tv_usec.to_s
 end
 
 def with_working_dir
-  status_dir = Tree.join(:job, get_timestamp)
+  #
+  #  Create the "working directory," that is, the directory that will
+  #  contain all the working files: events, status, logging, etc.
+  #
+  #  After creating it, yield the passed block
+  #
+  status_dir = Tree.join(:job, get_randomized_timestamp)
 
   FileUtils.mkpath(status_dir)
   
@@ -222,13 +244,19 @@ module External_Interface
 
     buffer.events = Blessed.new(cgi.params['myfile'][0].read)
     
-    result = Parameters.new
 
     #
-    # OK, now every parameter was read. Let's do a sanity check
-    # - Every parameter was read
-    # - Every value is Blessed
-    # 
+    #  OK, now every parameter was read. Let's do a sanity check
+    #
+    #  - Every field in Parameter struct has been writen
+    #  - Every field is Blessed
+    #
+    #  At the same time we copy to result the values in buffer 
+    #  stripped of the Blessed skin
+    #
+
+    result = Parameters.new
+
     buffer.each_pair do
       |member,blessed_value|
 

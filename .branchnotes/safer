@@ -2,6 +2,10 @@
   "reason": "Making the system safer, isolating the core from the external",
   "history": [
     {
+      "time": "2024-08-23 15:51:10 +0200",
+      "description": "Now it seems really working"
+    },
+    {
       "time": "2024-08-23 14:40:53 +0200",
       "description": "It seems to work.  I created the new image and run it and it seems OK\n"
     },

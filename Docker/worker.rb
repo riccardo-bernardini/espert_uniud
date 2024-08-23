@@ -48,7 +48,7 @@ def create_zip_archive(pattern, zipfile_name)
   $logger.info("zip pattern=#{pattern};")
 
   $logger.info("filenames=#{input_filenames.inspect};")
-  
+
   return nil if input_filenames.empty?
 
 

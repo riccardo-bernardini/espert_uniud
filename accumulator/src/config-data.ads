@@ -95,7 +95,7 @@ private package Config.Data with SPARK_Mode is
 
    function Get_Negative_Event_Action return Negative_Event_Action
      with
-       Pre => not Is_Set (Negative_Event_Handling);
+       Pre => Is_Set (Negative_Event_Handling);
 
    procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
      with

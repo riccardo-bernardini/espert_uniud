@@ -2,6 +2,10 @@
   "reason": "Making the system safer, isolating the core from the external",
   "history": [
     {
+      "time": "2024-08-26 22:44:58 +0200",
+      "description": "Now it runs without syntax errors and stuff.  I need to check that it runs correctly"
+    },
+    {
       "time": "2024-08-26 19:50:55 +0200",
       "description": "Creata bozza di libreria Ruby.  Da provare se funziona"
     },

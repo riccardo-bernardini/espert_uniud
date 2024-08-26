@@ -128,8 +128,9 @@ module DV
     end # class Event_Line
 
 
-    def DV::IO_CSV::load(input)
-
+    def DV::IO_CSV::read(input)
+      raise StandardError unless input.is_a?(IO)
+      
       event_file = DV.Event_Sequence.new
       metadata = DV::IO_CSV::Metadata.new
       errors = Array.new
@@ -165,29 +166,47 @@ module DV
       end
 
       return [event_file, errors, metadata]
-    end # def load
+    end # def read
 
-    def DV::IO_CSV::save(output, events, metadata=DV::IO_CSV::Metadata.new)
+
+    def DV::IO_CSV::load(filename)
+      raise StandardError unless filename.is_a?(String)
+
+      File.open(filename) do |input|
+        events, errors, metadata = DV::IO_CSV::read(input)
+      end
+
+      return [events, errors, metadata]
+    end
+    
+    def DV::IO_CSV::write(output, events, metadata=DV::IO_CSV::Metadata.new)
       raise StandardError unless
-        (output.is_a?(String) || output.is_a?(IO)) &&
+        output.is_a?(IO) &&
         events.is_a?(DV::Event_Sequence) &&
         metadata.is_a?(DV::IO_CSV::Metadata)
 
-      if output.is_a?(String)
-        File.open(output, 'w') do |stream|
-          DV::IO_CSV::save(stream, events, metadata)
-        end
+      # meta_line = '# ' + @metadata.map {|key, value| "#{key}: #{value}"}.join(' ')
+      # stream.puts(meta_line)
 
-      else
-        # meta_line = '# ' + @metadata.map {|key, value| "#{key}: #{value}"}.join(' ')
-        # stream.puts(meta_line)
+      stream.puts(metadata.header) if metadata.header
 
-        stream.puts(metadata.header) if metadata.header
+      events.each do |ev|
+        stream.puts("#{ev.timestamp},#{ev.x},#{ev.y},#{ev.polarity}")
+      end # each
+    end # def write
 
-        events.each do |ev|
-          stream.puts("#{ev.timestamp},#{ev.x},#{ev.y},#{ev.polarity}")
-        end # each
-      end # if
+    def DV::IO_CSV::save(filename, events, metadata=DV::IO_CSV::Metadata.new)
+      raise StandardError unless
+        filename.is_a?(String) &&
+        events.is_a?(DV::Event_Sequence) &&
+        metadata.is_a?(DV::IO_CSV::Metadata)
+
+      raise StandardError unless 
+
+      File.open(filename, 'w') do |output|
+        DV::IO_CSV::write(output, events, metadata)
+      end
     end # def save
+
   end # module IO_CSV
 end # module DV

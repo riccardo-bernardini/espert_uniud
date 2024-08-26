@@ -2,6 +2,10 @@
   "reason": "Making the system safer, isolating the core from the external",
   "history": [
     {
+      "time": "2024-08-26 14:42:34 +0200",
+      "description": "Now I need to create a CSV/AEDAT2 converter in order to do some testing.  The idea is to create some CSV file,\nconvert them to AEDAT and to use the DV software to do some reference reconstruction\n"
+    },
+    {
       "time": "2024-08-23 15:51:10 +0200",
       "description": "Now it seems really working"
     },

@@ -4,7 +4,13 @@ module DV
   # This module contains resources to work with the files of
   # DV cameras.
   #
-  class DV.Timestamp
+  class DV.Wrapper
+    def to_s
+      @value.to_s
+    end
+  end
+  
+  class DV.Timestamp < DV.Wrapper
     #
     #  Timestamp of a DV event. Just a wrapper around an integer
     #  to do a kind of type check.
@@ -18,7 +24,7 @@ module DV
     attr_reader :value
   end
 
-  class DV.Coordinate
+  class DV.Coordinate < DV.Wrapper
     #
     #  Coordinate of a DV event. Just a wrapper around an integer
     #  to do a kind of type check.
@@ -59,6 +65,19 @@ module DV
 
     end
 
+    def to_s
+      case @polarity_type
+      when :boolean
+        @polarity == 1 ? 1 : 0
+
+      when :float
+        @polarity
+
+      else
+        raise StandardError.new("I should not be here")
+      end
+    end # def to_s
+    
     attr_reader :value
     attr_reader :polarity_type
   end
@@ -103,98 +122,11 @@ module DV
   end
 
 
-  class DV.Event_Line
-    def initialize(line, polarity_type)
-      @content = line
-
-      case line
-      when /^ *#(.*)$/
-        @linetype = :comment
-        @metadata = parse_metadata($1)
-
-      when /^[a-zA-Z, ]+$/
-        @linetype = :header
-
-      when /^[0-9]+ *, *[0-9]+ *, *[0-9]+ *, *[-0-9]+ *$/
-        @linetype = :event
-
-        fields = line.split(',')
-
-        if fields.size != 4
-          @linetype = :bad
-          return
-        end
-
-        fields.each do |value|
-          unless value =~ /^ *[0-9]+ *$/
-            @linetype = :bad
-            break
-          end
-        end
-
-        if @linetype == :event
-          @event = DV.Event.new(DV.Timestamp.new(fields[0].to_i),
-                                DV.Coordinate.new(fields[1].to_i),
-                                DV.Coordinate.new(fields[2].to_i),
-                                DV.Polarity_Type(fields[3].to_i, polarity_type))
-
-        elsif @linetype == :bad
-        # Nothing to do
-        else
-          raise StandardError.new("I shouldn't be here")
-        end
-      else
-        @linetype = :bad
-
-      end
-    end
-
-    def to_s
-      case @linetype
-      when :comment
-        return @content
-
-      when :header
-        return @content
-
-      when :bad
-        return "Badly formed line '#{@content}'"
-
-      when :event
-        return @event.to_s
-
-      else
-        raise "??? #{@linetype}"
-      end
-    end
-    
-    attr_reader :event, :linetype, :content, :metadata
-
-    private
-
-    def parse_metadata(line)
-      metadata = Hash.new
-
-      while line =~ /^ *([a-zA-Z]+) *: *([^ ]+)/
-        key = $1
-        value = $2
-        line = $'
-
-        metadata[key]=value
-      end
-
-      return metadata
-    end
-
-  end
-
-
-  class DV.Event_File
+  class DV.Event_Sequence
     def initialize(parent_data = nil)
       @events = Array.new
       @header  = nil
-      @metadata = {'polarity' => 'boolean'}
-      @errors = []
+      @metadata = 
       
       unless parent_data.nil?
         @metadata.update (parent_data.metadata)
@@ -202,24 +134,7 @@ module DV
       end
     end
 
-    def write_to(stream)
-      meta_line = '# ' + @metadata.map {|key, value| "#{key}: #{value}"}.join(' ')
-      stream.puts(meta_line)
 
-      stream.puts(@header) if @header
-
-      @events.each do |event|
-        stream.puts(event.to_s)
-      end
-    end
-
-    def error_error(err)
-      @errors << err
-    end
-
-    def clear_errors
-      @errors = Array.new
-    end
 
     def <<(x)
       raise StandardError unless x.is_a? DV.Event
@@ -234,45 +149,6 @@ module DV
     attr_reader :events, :metadata, :header, :errors
   end
 
-  def DV.load_event_file(input)
-    def DV.parse_line(input, polarity_type)
-      line = input.gets
-      
-      return nil if line.nil?
-    
-      return DV.Event_Line.new(line.chomp, polarity_type)
-    end
-
-    event_file = DV.Event_File.new
-    header_seen = false
-
-    while line = parse_line(input, event_file.metadata['polarity'])
-
-      raise StandardError unless line.is_a?(DV.Event_Line)
-      
-      case line.linetype
-      when :comment
-        event_file.metadata.update(line.metadata)
-
-      when :header
-        if ! header_seen
-          event_file.header = line
-          header_seen = true
-
-        else
-          event_file.errors << "Duplicated header #{line.content}"
-          
-        end
-      when :bad
-        event_file.errors << "Badly formed line  '#{line.content}'"
-        
-      when :event
-        event_file << line.event
-      end
-    end
-
-    return event_file
-  end
 
 
   def DV.collect_by_timestamp(event_data)
@@ -316,5 +192,8 @@ module DV
     end
 
     return result
+  end
+
+
   end
 end

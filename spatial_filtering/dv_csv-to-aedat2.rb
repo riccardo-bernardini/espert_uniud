@@ -1,16 +1,19 @@
 #!/usr/bin/env ruby
 
+My_dir=File.dirname(File.expand_path($0))
+$LOAD_PATH.unshift(My_dir)
+
 require "dv_aedat"
 require "dv_csv"
 
 class SmartFile < File
   def SmartFile.open(filename, mode='r')
     raise RuntimeError unless
-      filenams.is_a?(String) &&
+      filename.is_a?(String) &&
       (mode.to_sym == :r || mode.to_sym == :w)
     
     stream = if filename != "-"
-               File.open(filename, mode)
+               File.open(filename, mode.to_s)
              else
                mode.to_sym == :r ? $stdin : $stdout
              end

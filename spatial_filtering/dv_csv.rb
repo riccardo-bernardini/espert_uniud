@@ -1,8 +1,8 @@
 require "dv_events"
 
 module DV
-  module DV::IO_CSV
-    class DV::IO_CSV::Metadata
+  module IO_CSV
+    class Metadata
       Metadata_Conversions = {'polarity' => :to_sym }
 
       def initialize
@@ -42,7 +42,7 @@ module DV
       end
     end
     
-    class DV::IO_CSV::Event_Line
+    class Event_Line
       def initialize(line, polarity_type)
         @content = line
 
@@ -72,10 +72,10 @@ module DV
           end
 
           if @linetype == :event
-            @event = DV.Event.new(DV.Timestamp.new(fields[0].to_i),
-                                  DV.Coordinate.new(fields[1].to_i),
-                                  DV.Coordinate.new(fields[2].to_i),
-                                  DV.Polarity_Type(fields[3].to_i, polarity_type))
+            @event = Event.new(Timestamp.new(fields[0].to_i),
+                               Coordinate.new(fields[1].to_i),
+                               Coordinate.new(fields[2].to_i),
+                               Polarity.new(fields[3].to_i, polarity_type))
             
           elsif @linetype == :bad
           # Nothing to do
@@ -113,7 +113,7 @@ module DV
 
       
       def parse_metadata(line)
-        metadata = DV:IO_CSV::Metadata.new
+        metadata = Metadata.new
 
         while line =~ /^ *([a-zA-Z]+) *: *([^ ]+)/
           key = $1.downcase
@@ -128,16 +128,15 @@ module DV
     end # class Event_Line
 
 
-    def DV::IO_CSV::read(input)
+    def self.read(input)
       raise StandardError unless input.is_a?(IO)
       
-      event_file = DV.Event_Sequence.new
-      metadata = DV::IO_CSV::Metadata.new
+      event_file = Event_Sequence.new
+      metadata = Metadata.new
       errors = Array.new
       
       while line = input.gets
-        line = DV::IO_CSV::Event_Line.new(line.chomp,
-                                          metadata.polarity)
+        line = Event_Line.new(line.chomp, metadata.polarity)
         
         raise StandardError unless line.is_a?(DV::IO_CSV::Event_Line)
         
@@ -169,7 +168,7 @@ module DV
     end # def read
 
 
-    def DV::IO_CSV::load(filename)
+    def self.load(filename)
       raise StandardError unless filename.is_a?(String)
 
       File.open(filename) do |input|
@@ -179,7 +178,7 @@ module DV
       return [events, errors, metadata]
     end
     
-    def DV::IO_CSV::write(output, events, metadata=DV::IO_CSV::Metadata.new)
+    def self.write(output, events, metadata=DV::IO_CSV::Metadata.new)
       raise StandardError unless
         output.is_a?(IO) &&
         events.is_a?(DV::Event_Sequence) &&
@@ -195,7 +194,7 @@ module DV
       end # each
     end # def write
 
-    def DV::IO_CSV::save(filename, events, metadata=DV::IO_CSV::Metadata.new)
+    def self.save(filename, events, metadata=DV::IO_CSV::Metadata.new)
       raise StandardError unless
         filename.is_a?(String) &&
         events.is_a?(DV::Event_Sequence) &&

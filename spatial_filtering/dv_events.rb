@@ -4,13 +4,13 @@ module DV
   # This module contains resources to work with the files of
   # DV cameras.
   #
-  class DV.Wrapper
+  class Wrapper
     def to_s
       @value.to_s
     end
   end
   
-  class DV.Timestamp < DV.Wrapper
+  class Timestamp < Wrapper
     #
     #  Timestamp of a DV event. Just a wrapper around an integer
     #  to do a kind of type check.
@@ -24,7 +24,7 @@ module DV
     attr_reader :value
   end
 
-  class DV.Coordinate < DV.Wrapper
+  class Coordinate < Wrapper
     #
     #  Coordinate of a DV event. Just a wrapper around an integer
     #  to do a kind of type check.
@@ -38,7 +38,7 @@ module DV
     attr_reader :value
   end
 
-  class DV.Polarity
+  class Polarity
     #
     #  Polarity of a DV event. Just a wrapper around an integer
     #  to do a kind of type check.
@@ -48,7 +48,7 @@ module DV
 
       raise StandardError unless
         [:boolean, :float].include?(polarity_type) &&
-        polarity.is_a? Integer 
+        polarity.is_a?(Integer)
 
       @polarity_type=polarity_type
 
@@ -82,7 +82,7 @@ module DV
     attr_reader :polarity_type
   end
 
-  class DV.Event
+  class Event
     #
     #  Event of a DV camera.  It is characterized by the time
     #  it happened, where it happened and its sign
@@ -90,10 +90,10 @@ module DV
     def initialize(timestamp, x, y, polarity)
       
       raise StandardError unless
-        timestamp.is_a?(DV.Timestamp) &&
-        x.is_a?(DV.Coordinate) &&
-        y.is_a?(DV.Coordinate) &&
-        polarity.is_a?(DV.Polarity)
+        timestamp.is_a?(DV::Timestamp) &&
+        x.is_a?(DV::Coordinate) &&
+        y.is_a?(DV::Coordinate) &&
+        polarity.is_a?(DV::Polarity)
       
       @timestamp=timestamp
       @x=x
@@ -122,36 +122,25 @@ module DV
   end
 
 
-  class DV.Event_Sequence
-    def initialize(parent_data = nil)
+  class Event_Sequence
+    def initialize
       @events = Array.new
-      @header  = nil
-      @metadata = 
-      
-      unless parent_data.nil?
-        @metadata.update (parent_data.metadata)
-        @header = parent_data.header
-      end
     end
 
-
-
     def <<(x)
-      raise StandardError unless x.is_a? DV.Event
+      raise StandardError unless x.is_a?(DV::Event)
       
       @events << x
     end
 
-    def header=(s)
-      @header=s
+    def each
+      @events.each {|ev| yield(ev)}
     end
-
-    attr_reader :events, :metadata, :header, :errors
   end
 
 
 
-  def DV.collect_by_timestamp(event_data)
+  def self.collect_by_timestamp(event_data)
     collection = [];
     
     current_timestamp = 0
@@ -178,7 +167,7 @@ module DV
   end
 
 
-  def DV.collect_by_weight(event_data)
+  def self.collect_by_weight(event_data)
     result = Hash.new
 
     t0 = event_data.events[0].timestamp
@@ -195,5 +184,5 @@ module DV
   end
 
 
-  end
-end
+end # module DV
+

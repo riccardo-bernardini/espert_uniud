@@ -1,13 +1,13 @@
 #require "dv_events"
 
 module DV
-  module DV::IO_AEDAT_2
+  module IO_AEDAT_2
 
-    DV::IO_AEDAT_2::Header = "#!AER-DAT2.0\r\n"
-    DV::IO_AEDAT_2::On = 2
-    DV::IO_AEDAT_2::Off = 0
+    Header = "#!AER-DAT2.0\r\n"
+    On = 2
+    Off = 0
     
-    def DV::IO_AEDAT_2::type_bit(format)
+    def self.type_bit(format)
       case format
       when :dvs
         0
@@ -20,31 +20,31 @@ module DV
       end
     end
 
-    def DV::IO_AEDAT_2::coordinates(ev)
+    def self.coordinates(ev)
       raise StandardError unless ev.is_a?(DV::Event)
 
-      accum = DV::IO_AEDAT_2::type_bit(:dvs)
-      accum = (accum << 9) + ev.y
-      accum = (accum << 10) + ev.x
-      accum = (accum << 2) + (ev.polarity == 1 ? DV::IO_AEDAT_2::On : DV::IO_AEDAT_2::Off)
+      accum = type_bit(:dvs)
+      accum = (accum << 9) + ev.y.value
+      accum = (accum << 10) + ev.x.value
+      accum = (accum << 2) + (ev.polarity == 1 ? On : Off)
       accum = accum << 10
 
       return accum
     end
     
-    def DV::IO_AEDAT_2::write(output, events)
+    def self.write(output, events)
       raise StandardError unless
         output.is_a?(IO) &&
-        events.is_a?(DV::Event_Sequence)
+        events.is_a?(Event_Sequence)
 
-      output.print(DV::IO_AEDAT_2::Header)
+      output.print(Header)
 
       events.each do |ev|
-        output.write(DV::IO_AEDAT_2::coordinates(ev).pack("L"))
-        output.write(ev.timestamp.pack("L"))
+        packet = (coordinates(ev) << 32) + ev.timestamp.value
+        output.write([packet].pack("Q"))
       end
 
-    end # def save
+    end # def write
 
   end # IO_AEDAT
 end # DV

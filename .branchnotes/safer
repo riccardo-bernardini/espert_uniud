@@ -2,6 +2,10 @@
   "reason": "Making the system safer, isolating the core from the external",
   "history": [
     {
+      "time": "2024-08-27 18:03:02 +0200",
+      "description": "The generated AEDAT file is corctly read.  I guess it is time for merging back"
+    },
+    {
       "time": "2024-08-26 22:44:58 +0200",
       "description": "Now it runs without syntax errors and stuff.  I need to check that it runs correctly"
     },

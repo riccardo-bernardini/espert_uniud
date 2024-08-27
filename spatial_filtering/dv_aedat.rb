@@ -26,9 +26,11 @@ module DV
       accum = type_bit(:dvs)
       accum = (accum << 9) + ev.y.value
       accum = (accum << 10) + ev.x.value
-      accum = (accum << 2) + (ev.polarity == 1 ? On : Off)
+      accum = (accum << 2) + (ev.polarity.value == 1 ? On : Off)
       accum = accum << 10
 
+      p ev.polarity.value
+      
       return accum
     end
     

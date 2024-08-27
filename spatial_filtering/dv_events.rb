@@ -52,34 +52,26 @@ module DV
 
       @polarity_type=polarity_type
 
-      @polarity = case @polarity_type
-                  when :boolean
-                    polarity == 1 ? 1 : -1
+      @value = case @polarity_type
+               when :boolean
+                 polarity == 1 ? 1 : -1
+                 
+               when :float
+                 polarity
 
-                  when :float
-                    polarity
-
-                  else
-                    raise StandardError.new("I should not be here")
-                  end
+               else
+                 raise StandardError.new("I should not be here")
+               end
 
     end
 
+
     def to_s
-      case @polarity_type
-      when :boolean
-        @polarity == 1 ? 1 : 0
-
-      when :float
-        @polarity
-
-      else
-        raise StandardError.new("I should not be here")
-      end
+      self.value.to_s
     end # def to_s
     
-    attr_reader :value
     attr_reader :polarity_type
+    attr_reader :value
   end
 
   class Event

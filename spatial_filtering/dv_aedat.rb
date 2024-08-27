@@ -38,10 +38,13 @@ module DV
         events.is_a?(Event_Sequence)
 
       output.print(Header)
+      output.print("# AEChip: eu.seebetter.ini.chips.davis.Davis640\r\n")
 
       events.each do |ev|
-        packet = (coordinates(ev) << 32) + ev.timestamp.value
-        output.write([packet].pack("Q"))
+        output.write([coordinates(ev)].pack("N"))
+        output.write([ev.timestamp.value].pack("N"))
+
+        puts "#{ev.timestamp.value}/#{[ev.timestamp.value].pack("N")}/"
       end
 
     end # def write

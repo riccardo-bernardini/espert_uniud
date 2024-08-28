@@ -35,6 +35,19 @@ module DV
       @value=x;
     end
 
+    def flip(size)
+      old=@value
+      @value = size - @value
+
+      if @value < 0
+        p @value
+        p old
+        p size
+        raise "bum"
+      end
+        
+    end
+
     attr_reader :value
   end
 

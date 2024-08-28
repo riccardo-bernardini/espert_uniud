@@ -29,8 +29,6 @@ module DV
       accum = (accum << 2) + (ev.polarity.value == 1 ? On : Off)
       accum = accum << 10
 
-      p ev.polarity.value
-      
       return accum
     end
     
@@ -46,7 +44,7 @@ module DV
         output.write([coordinates(ev)].pack("N"))
         output.write([ev.timestamp.value].pack("N"))
 
-        puts "#{ev.timestamp.value}/#{[ev.timestamp.value].pack("N")}/"
+        # puts "#{ev.timestamp.value}/#{[ev.timestamp.value].pack("N")}/"
       end
 
     end # def write

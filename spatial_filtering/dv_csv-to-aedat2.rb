@@ -136,10 +136,9 @@ SmartFile.open(Config.filename_in, :r) do |input|
       require 'io/console'
       answer = STDIN.getch
 
-      p answer
-      
+      $stderr.puts
+
       unless answer.downcase == "y"
-        $stderr.puts
         Config.print_help
         exit 0
       end

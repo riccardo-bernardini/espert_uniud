@@ -106,7 +106,7 @@ class SmartFile < File
       filename.is_a?(String) &&
       (mode.to_sym == :r || mode.to_sym == :w)
     
-    stream = if filename != "-"
+    stream = if filename != Standard_Stream_Name
                File.open(filename, mode.to_s)
              else
                mode.to_sym == :r ? $stdin : $stdout
@@ -130,18 +130,22 @@ SmartFile.open(Config.filename_in, :r) do |input|
   SmartFile.open(Config.filename_out, :w) do |output|
 
     if input.tty?
-      $stderr.puts "Reading events from terminal"
-      $stderr.puts "If you did not want to do this, press Ctl-D to stop"
-      $stderr.puts "and print a help"
-      $stderr.puts
+      $stderr.puts "Reading events from terminal."
+      $stderr.print("This is quite unusual. Do you really want it? [y/N] ")
+
+      require 'io/console'
+      answer = STDIN.getch
+
+      p answer
+      
+      unless answer.downcase == "y"
+        $stderr.puts
+        Config.print_help
+        exit 0
+      end
     end
     
     events, errors, metadata = DV::IO_CSV::read(input)
-
-    if events.empty? && input.tty?
-      Config.print_help
-      exit 0
-    end
 
     if Config.flip_x || Config.flip_y
       x_size = (metadata['sizeX'] || '640').to_i

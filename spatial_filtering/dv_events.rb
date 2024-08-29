@@ -141,6 +141,10 @@ module DV
     def each
       @events.each {|ev| yield(ev)}
     end
+
+    def empty?
+      @events.empty?
+    end
   end
 
 

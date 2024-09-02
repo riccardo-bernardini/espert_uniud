@@ -51,11 +51,13 @@ readable_file_or_die "$config"
 output_dir="$3"
 writable_dir_or_die "$output_dir"
 
-port=5432
+port=5433
 
-if false ; then
+if true ; then
     dv-runtime -p $port &
     runtime_pid=$!
+
+    sleep 5
 fi
 
 (while read ; do
@@ -71,8 +73,9 @@ fi
 add_module inp dv_converter
 add_module acc dv_accumulator
 add_module out dv_image_output
-set /mainloop/input/ file "$input"
-set /mainloop/out/ directory "$output_dir"
+set /mainloop/inp/ file $input
+set /mainloop/out/ directory $output_dir
+set /mainloop/out/ imageFilePrefix dv_frame
 EOF
 
 (while read ; do
@@ -100,14 +103,14 @@ EOF
 	 exit 1
      fi
  done)<<EOF
-set /mainloop/input/ running true
+set /mainloop/inp/ running true
 set /mainloop/acc/ running true
 EOF
 
 if [ -n "$runtime_pid" ]; then
     echo Waiting...
     
-    while [ `to_dv "get /mainloop/acc isRunning"` = "true" ]; do
+    while [ `to_dv "get /mainloop/acc/ isRunning"` = "true" ]; do
 	sleep 1
     done
 

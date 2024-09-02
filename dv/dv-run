@@ -1,0 +1,121 @@
+#!/usr/bin/bash
+
+function readable_file_or_die
+{
+    name=$1
+
+    if [ ! -f "$name" ]; then
+	echo "'$name' is not a regular file or it does not exist" >&2
+	exit 1
+    fi
+
+    if [ ! -r "$name" ]; then
+	echo "File '$name' is not readable" >&2
+	exit 1
+    fi
+}
+
+function writable_dir_or_die
+{
+    name=$1
+
+    if [ ! -d "$name" ]; then
+	echo "'$name' is not a directory or it does not exist" >&2
+	exit 1
+    fi
+
+    if [ ! -w "$name" ]; then
+	echo "Directory '$name' is not writable" >&2
+	exit 1
+    fi
+}
+
+function to_dv
+{
+    if [ -n "$runtime_pid" ]; then 
+	dv-control -p $port -s "$1"
+    fi
+}
+
+if [ $# -ne 3 ]; then
+    echo "Usage: $0 input config output-dir" >&2
+    exit 1
+fi
+
+input="$1"
+readable_file_or_die "$input"
+
+config="$2"
+readable_file_or_die "$config"
+
+output_dir="$3"
+writable_dir_or_die "$output_dir"
+
+port=5432
+
+if false ; then
+    dv-runtime -p $port &
+    runtime_pid=$!
+fi
+
+(while read ; do
+     echo "$REPLY"
+
+     to_dv "$REPLY" 
+
+     if [ $? -ne 0 ]; then
+	 echo $?
+	 exit 1
+     fi
+ done)<<EOF
+add_module inp dv_converter
+add_module acc dv_accumulator
+add_module out dv_image_output
+set /mainloop/input/ file "$input"
+set /mainloop/out/ directory "$output_dir"
+EOF
+
+(while read ; do
+     if [ "${REPLY:0:1}" = "#" ]; then
+	 continue
+     fi
+     
+     command="set /mainloop/acc/ $REPLY"
+     echo "$command"
+     to_dv "$command"
+
+     if [ $? -ne 0 ]; then
+	 echo $?
+	 exit 1
+     fi
+ done)< $config
+
+(while read ; do
+     echo "$REPLY"
+
+     to_dv "$REPLY"
+
+     if [ $? -ne 0 ]; then
+	 echo $?
+	 exit 1
+     fi
+ done)<<EOF
+set /mainloop/input/ running true
+set /mainloop/acc/ running true
+EOF
+
+if [ -n "$runtime_pid" ]; then
+    echo Waiting...
+    
+    while [ `to_dv "get /mainloop/acc isRunning"` = "true" ]; do
+	sleep 1
+    done
+
+    echo Done
+
+    kill $runtime_pid
+    wait $runtime_pid
+fi
+
+
+

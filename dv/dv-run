@@ -37,19 +37,32 @@ function to_dv
     fi
 }
 
-if [ $# -ne 3 ]; then
-    echo "Usage: $0 input config output-dir" >&2
+if [ $# -lt 3 -o $# -gt 4 ]; then
+    echo "Usage: $0 input config output-dir [prefix]" >&2
     exit 1
 fi
 
 input="$1"
 readable_file_or_die "$input"
+shift
 
-config="$2"
+config="$1"
 readable_file_or_die "$config"
+shift
 
-output_dir="$3"
+output_dir="$1"
 writable_dir_or_die "$output_dir"
+shift
+
+echo "(($#))"
+
+if [ $# -gt 0 ]; then
+    echo "[[[$#,$1]]]"
+    prefix="$1"
+    shift
+else
+    prefix="frame"
+fi
 
 port=5433
 
@@ -61,7 +74,7 @@ if true ; then
 fi
 
 (while read ; do
-     echo "$REPLY"
+     echo "$REPLY" >> /tmp/u.log
 
      to_dv "$REPLY" 
 
@@ -73,11 +86,18 @@ fi
 add_module inp dv_converter
 add_module acc dv_accumulator
 add_module out dv_image_output
+set /mainloop/acc/inputs/events/ from inp[events]
+set /mainloop/out/inputs/frames/ from acc[frames]
+set /mainloop/inp/ logLevel DEBUG
+set /mainloop/out/ logLevel DEBUG
+set /mainloop/out/ logLevel DEBUG
 set /mainloop/inp/ file $input
 set /mainloop/out/ directory $output_dir
-set /mainloop/out/ imageFilePrefix dv_frame
+set /mainloop/out/ imageFilePrefix $prefix
 EOF
 
+
+if true ; then
 (while read ; do
      if [ "${REPLY:0:1}" = "#" ]; then
 	 continue
@@ -92,6 +112,7 @@ EOF
 	 exit 1
      fi
  done)< $config
+fi
 
 (while read ; do
      echo "$REPLY"
@@ -103,15 +124,23 @@ EOF
 	 exit 1
      fi
  done)<<EOF
-set /mainloop/inp/ running true
+set /mainloop/out/ running true
 set /mainloop/acc/ running true
+set /mainloop/inp/ running true
 EOF
+
+to_dv "get /mainloop/out/ isRunning"
 
 if [ -n "$runtime_pid" ]; then
     echo Waiting...
+    sleep 5
     
-    while [ `to_dv "get /mainloop/acc/ isRunning"` = "true" ]; do
+    is_running=`to_dv "get /mainloop/out/ isRunning"`
+    echo $is_running
+    while [ $is_running = "true" ]; do
 	sleep 1
+	is_running=`to_dv "get /mainloop/out/ isRunning"`
+	echo $is_running
     done
 
     echo Done

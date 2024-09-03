@@ -1,0 +1,16 @@
+sliceMethod TIME
+# TIME, NUMBER
+# accumulationNumber 
+accumulationTime 1
+#
+decayFunction None
+# None,Linear,Exponential,Step
+decayParam 1.0
+eventContribution 0.5
+maxPotential 1.0
+minPotential 0.0
+neutralPotential 0.0
+rectifyPolarity false
+synchronousDecay false
+#
+colorDemosaicing false

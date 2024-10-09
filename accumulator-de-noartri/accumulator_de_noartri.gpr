@@ -1,0 +1,25 @@
+project Accumulator is
+
+   for Source_Dirs use ("src");
+   for Object_Dir use "obj";
+   for Main use ("convert.adb", "main.adb", "time_syntax-test.adb");
+   for Languages use ("Ada", "C");
+
+   package Compiler is
+      for Switches ("ada") use ("-g", "-fstack-check", "-O3", "-gnata", "-gnatf", "-gnatVa", "-gnatwa");
+   end Compiler;
+
+   package Builder is
+      for Switches ("ada") use ("-s");
+   end Builder;
+
+   package Binder is
+      for Switches ("ada") use ("-E");
+   end Binder;
+
+   package Linker is
+      for Switches ("ada") use ("-lpng16");
+   end Linker;
+
+end Accumulator;
+

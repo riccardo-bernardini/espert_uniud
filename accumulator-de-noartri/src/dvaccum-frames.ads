@@ -1,5 +1,5 @@
 
-package Images is
+package DVAccum.Frames is
    type Pixel_Value is new Float;
 
    type X_Coordinate_Type is mod 2 ** 16;
@@ -28,8 +28,8 @@ package Images is
    function Load (Filename : String;
                   Format   : Format_Type := Raw_Image_8) return Image_Type;
 
-   function Uniform (X_Size : Camera_Events.X_Coordinate_Type;
-                     Y_Size : Camera_Events.Y_Coordinate_Type;
+   function Uniform (X_Size : Positive;
+                     Y_Size : Positive;
                      Value  : Pixel_Value := 0.0)
                      return Image_Type;
 
@@ -38,4 +38,5 @@ package Images is
                    Format   : Format_Type;
                    Min      : Pixel_Value;
                    Max      : Pixel_Value);
-end Images;
+
+end DVAccum.Frames;

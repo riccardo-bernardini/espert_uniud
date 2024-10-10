@@ -1,6 +1,8 @@
 with DVAccum.Timestamps;
 use  DVAccum.Timestamps;
 
+with DVAccum.Frames;
+
 package DVAccum.Events is
 
 
@@ -10,8 +12,8 @@ package DVAccum.Events is
    type Event_Type is private;
 
    function New_Event (T      : Timestamp;
-                       X      : X_Coordinate_Type;
-                       Y      : Y_Coordinate_Type;
+                       X      : Frames.X_Coordinate_Type;
+                       Y      : Frames.Y_Coordinate_Type;
                        Weight : Weight_Type)
                        return Event_Type;
 
@@ -29,10 +31,10 @@ package DVAccum.Events is
 
 
    function T (Event : Event_Type) return Timestamp;
-   function X (Event : Event_Type) return X_Coordinate_Type;
-   function Y (Event : Event_Type) return Y_Coordinate_Type;
+   function X (Event : Event_Type) return Frames.X_Coordinate_Type;
+   function Y (Event : Event_Type) return Frames.Y_Coordinate_Type;
 
-   function Position (Event : Event_Type) return Point_Type;
+   function Position (Event : Event_Type) return Frames.Point_Type;
 
    function Weight (Event : Event_Type) return Weight_Type;
 
@@ -46,14 +48,14 @@ private
    type Event_Type is
       record
          T      : Timestamp;
-         X      : X_Coordinate_Type;
-         Y      : Y_Coordinate_Type;
+         X      : Frames.X_Coordinate_Type;
+         Y      : Frames.Y_Coordinate_Type;
          Weight : Weight_Type;
       end record;
 
    function New_Event (T      : Timestamp;
-                       X      : X_Coordinate_Type;
-                       Y      : Y_Coordinate_Type;
+                       X      : Frames.X_Coordinate_Type;
+                       Y      : Frames.Y_Coordinate_Type;
                        Weight : Weight_Type)
                        return Event_Type
    is (Event_Type'(T      => T,
@@ -64,10 +66,10 @@ private
    function T (Event : Event_Type) return Timestamp
    is (Event.T);
 
-   function X (Event : Event_Type) return X_Coordinate_Type
+   function X (Event : Event_Type) return Frames.X_Coordinate_Type
    is (Event.X);
 
-   function Y (Event : Event_Type) return Y_Coordinate_Type
+   function Y (Event : Event_Type) return Frames.Y_Coordinate_Type
    is (Event.Y);
 
    function Weight (Event : Event_Type) return Weight_Type

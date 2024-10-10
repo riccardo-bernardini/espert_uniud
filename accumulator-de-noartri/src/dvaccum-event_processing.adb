@@ -1,12 +1,6 @@
+with DVAccum.Event_Processing.Segment_Queues;
 
-with DVAccum.Frames;
-with DVAccum.Event_IO;
-with DVAccum.Timestamps;
-
-package Dvaccum.Event_Processing is
-   type Frame_Name_Generator is
-     access function (Frame_Number : Natural) return String;
-
+package body Dvaccum.Event_Processing is
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
                       Event_Weight   : Float;
@@ -15,5 +9,9 @@ package Dvaccum.Event_Processing is
                       To             : Timestamps.Timestamp;
                       Frame_Duration : Timestamps.Duration;
                       Oversampling   : Positive;
-                      Initial_Image  : Frames.Image_Type);
+                      Initial_Image  : Frames.Image_Type)
+   is
+   begin
+      null;
+   end Process;
 end Dvaccum.Event_Processing;

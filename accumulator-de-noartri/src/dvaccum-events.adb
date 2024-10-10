@@ -1,5 +1,10 @@
 pragma Ada_2012;
-package body Camera_Events is
+package body Dvaccum.Events is
+   function Less_Then_By_Pixel (A, B : Event_Type) return Boolean
+   is (A.X < B.X or
+         (A.X = B.X and A.Y < B.Y) or
+         (A.X = B.X and A.Y = B.Y and A.T < B.T));
+
    --------------
    -- Position --
    --------------
@@ -10,12 +15,24 @@ package body Camera_Events is
 
 
    function Translate (Event   : Event_Type;
-                       Delta_T : Times.Duration)
+                       Delta_T : Timestamps.Duration)
                        return Event_Type
    is (Event_Type'(T      => Event.T - Delta_T,
                    X      => Event.X,
                    Y      => Event.Y,
                    Weight => Event.Weight));
+
+
+   ---------------
+   -- Translate --
+   ---------------
+
+   procedure Translate (Event   : in out Event_Type;
+                        Delta_T : Timestamps.Duration)
+   is
+   begin
+      Event.T := Event.T - Delta_T;
+   end Translate;
 
 
    function Image (Event : Event_Type) return String
@@ -26,13 +43,10 @@ package body Camera_Events is
        & Event.Weight'Image
        & "]");
 
-   procedure Multiply_Weight (Event : in out Event_Type;
-                              By    : Integer)
+   procedure Rectify (Item : in out Event_Type)
    is
    begin
-      Event.Weight := Event.Weight * Weight_Type (By);
-   end Multiply_Weight;
+      Item.Weight := Increase;
+   end Rectify;
 
-
-
-end Camera_Events;
+end Dvaccum.events;

@@ -13,7 +13,7 @@ package DVAccum.Events is
       end record;
 
 
-   type Weight_Type is (Positive, Negative);
+   type Weight_Type is (Increase, Decrease);
 
    type Event_Type is private;
 
@@ -23,6 +23,9 @@ package DVAccum.Events is
                        Weight : Weight_Type)
                        return Event_Type;
 
+   procedure Translate (Event   : in out Event_Type;
+                        Delta_T : Timestamps.Duration);
+
    function Translate (Event   : Event_Type;
                        Delta_T : Timestamps.Duration)
                        return Event_Type
@@ -30,8 +33,8 @@ package DVAccum.Events is
        Pre => T (Event) >= Zero + Delta_T,
        Post => T (Translate'Result) = T (Event)-Delta_T;
 
-   procedure Multiply_Weight (Event : in out Event_Type;
-                              By    : Integer);
+   procedure Rectify (Item : in out Event_Type);
+
 
    function T (Event : Event_Type) return Timestamp;
    function X (Event : Event_Type) return X_Coordinate_Type;
@@ -41,9 +44,11 @@ package DVAccum.Events is
 
    function Weight (Event : Event_Type) return Weight_Type;
 
+   function Weight (Event : Event_Type) return Integer;
+
    function Image (Event : Event_Type) return String;
 
-   function Less_Then_By_Pixel (X, Y : Event_Type) return Boolean;
+   function Less_Then_By_Pixel (A, B : Event_Type) return Boolean;
 private
 
    type Event_Type is
@@ -76,5 +81,10 @@ private
    function Weight (Event : Event_Type) return Weight_Type
    is (Event.Weight);
 
+
+   function Weight (Event : Event_Type) return Integer
+   is (case Event.Weight is
+          when Increase => 1,
+          when Decrease => -1);
 
 end DVAccum.Events;

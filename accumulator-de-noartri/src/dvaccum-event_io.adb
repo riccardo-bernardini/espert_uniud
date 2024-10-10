@@ -1,5 +1,4 @@
 pragma Ada_2012;
-with Ada.Text_IO;
 
 with Ada.Containers;
 
@@ -71,16 +70,19 @@ package body DVAccum.Event_Io is
 
    procedure Read_CSV_Event_Stream
      (Input                  : in     Ada.Text_IO.File_Type;
-      Use_Absolute_Timestamp : in     Boolean;
       Events                 :    out Event_Sequences.Set;
       Metadata               :    out Sequence_Metadata;
       Rectify                : in     Boolean)
    is
       use Ada.Text_Io;
 
+      function Parse_Data_Line (Line : String)
+                                return DVaccum.Events.Event_Type
+        with
+          Pre => Type_Of (Line) = Data;
 
-      function Read_Data_Line (Line : String)
-                               return DVaccum.Events.Event_Type
+      function Parse_Data_Line (Line : String)
+                                return DVaccum.Events.Event_Type
       is
          use type Ada.Containers.Count_Type;
 
@@ -110,16 +112,16 @@ package body DVAccum.Event_Io is
                            X      => X_Coordinate_Type'Value (Fields (2)),
                            Y      => Y_Coordinate_Type'Value (Fields (3)),
                            Weight => Weight);
-      end Read_Data_Line;
+      end Parse_Data_Line;
 
       procedure Read_Metadata
-        (Metadata : in out Sequence_Metadata;
+        (Metadata : in out Metadata_Maps.Map;
          Line     : String)
         with
           Pre => Type_Of (Line) = Comment;
 
       procedure Read_Metadata
-        (Metadata : in out Sequence_Metadata;
+        (Metadata : in out Metadata_Maps.Map;
          Line     : String)
       is
          type Machine_Status is
@@ -144,7 +146,6 @@ package body DVAccum.Event_Io is
                       );
 
          Status       : Machine_Status := Looking_For_Hash;
-         New_Metadata : Metadata_Maps.Map;
 
          Key   : Unbounded_String := Null_Unbounded_String;
          Value : Unbounded_String := Null_Unbounded_String;
@@ -177,7 +178,6 @@ package body DVAccum.Event_Io is
                         null;
 
                      when ':'  =>
-                        New_Metadata.Clear;
                         Status := Error;
 
                      when others =>
@@ -206,7 +206,6 @@ package body DVAccum.Event_Io is
                         Status := Looking_For_Value;
 
                      when others =>
-                        New_Metadata.Wipe_Out;
                         Status := Error;
 
                   end case;
@@ -226,9 +225,9 @@ package body DVAccum.Event_Io is
                      when ' ' =>
                         Status := Looking_For_Key;
 
-                        New_Metadata.Map.Insert
-                          (Key   => Metadata_Key (To_String (Key)),
-                           Value => Metadata_Value (To_String (Value)));
+                        Metadata.Insert
+                          (Key      => Metadata_Key (Key),
+                           New_Item => Metadata_Value (Value));
 
                         Key := Null_Unbounded_String;
                         Value := Null_Unbounded_String;
@@ -247,17 +246,14 @@ package body DVAccum.Event_Io is
          end if;
 
          if Value /= Null_Unbounded_String then
-            New_Metadata.Set
-              (Key   => Event_Sequences.Metadata_Name (To_String (Key)),
-               Value => Event_Sequences.Metadata_Value (To_String (Value)));
+            Metadata.Insert
+              (Key      => Metadata_Key (Key),
+               New_Item => Metadata_Value (Value));
          end if;
-
-         Metadata.Update (New_Metadata);
       end Read_Metadata;
 
       Header_Seen        : Boolean := False;
-      Previous_Timestamp : Times.Timestamp := Times.Minus_Infinity;
-      Timestamp_Offset   : Times.Duration;
+      Previous_Timestamp : Timestamps.Timestamp := Timestamps.Minus_Infinity;
    begin
       while not End_Of_File (Input) loop
          declare
@@ -267,7 +263,7 @@ package body DVAccum.Event_Io is
             case Type_Of (Line) is
                when Comment =>
                   if not Header_Seen then
-                     Read_Metadata (Metadata, Line);
+                     Read_Metadata (Metadata.Map, Line);
                   end if;
 
                when Header =>
@@ -283,40 +279,28 @@ package body DVAccum.Event_Io is
                   end if;
 
                   declare
-                     use Camera_Events;
-                     use Times;
+                     use Dvaccum.Events;
+                     use Timestamps;
 
-                     Event : constant Event_Type :=
-                               Read_Data_Line (Line, Polarity_Format (Metadata));
+                     Event : Event_Type := Parse_Data_Line (Line);
                   begin
-                     if Events.Is_Empty then
-                        Timestamp_Offset := (if Use_Absolute_Timestamp then
-                                                Times.To_Duration (0.0)
-                                             else
-                                                Times.To_Duration (T (Event)));
+                     if Rectify then
+                        DVAccum.Events.Rectify (Event);
+                     end if;
 
-                     else
-                        if Previous_Timestamp > T (Event) then
-                           raise Bad_Event_Stream
-                             with "Non monotonic timestamps";
-                        end if;
+                     if not Events.Is_Empty
+                       and then Previous_Timestamp > T (Event)
+                     then
+                        raise Bad_Event_Stream with "Non monotonic timestamps";
                      end if;
 
                      Previous_Timestamp := T (Event);
 
-                     Events.Append (Translate (Event, Timestamp_Offset));
+                     Events.Insert (Event);
                   end;
             end case;
          end;
       end loop;
-
-      --  for Ev of Events loop
-      --     Put_Line (Camera_Events.Image (Ev));
-      --  end loop;
-      --
-      --  raise Program_Error;
-      --
-      --  Metadata.Dump;
    end Read_CSV_Event_Stream;
 
    ------------------------------
@@ -325,12 +309,12 @@ package body DVAccum.Event_Io is
 
    procedure Read_Binary_Event_Stream
      (Filename : in     String;
-      Events   :    out Event_Sequences.Event_Sequence;
+      Events   :    out Event_Sequences.Set;
       Metadata :    out Sequence_Metadata;
       Rectify  : in     Boolean)
    is
       use Ada.Streams.Stream_IO;
-      use Camera_Events;
+      use Dvaccum.Events;
       use Event_Sequences;
 
       Input_File : File_Type;
@@ -346,31 +330,30 @@ package body DVAccum.Event_Io is
          N_Metadata   : constant Counter := Counter'Input (Input_Stream);
       begin
          Events.Clear;
-         Metadata.Wipe_Out;
+         Metadata.Map.Clear;
 
          for I in 1 .. N_Events loop
             declare
                Ev : Event_Type := Event_Type'Input (Input_Stream);
             begin
-               if Weight (Ev) < 0 then
-                  Multiply_Weight (Event => Ev,
-                                   By    => Negative_Event_Weight);
+               if Rectify then
+                  DVAccum.Events.Rectify (Ev);
                end if;
 
-               Events.Append (Ev);
+               Events.Include (Ev);
             end;
          end loop;
 
          for I in 1 .. N_Metadata loop
             declare
-               Name : constant Metadata_Name :=
-                        Metadata_Name'Input (Input_Stream);
+               Name : constant Metadata_Key :=
+                        Metadata_Key'Input (Input_Stream);
 
                Value : constant Metadata_Value :=
                          Metadata_Value'Input (Input_Stream);
             begin
-               Metadata.Set (Key   => Name,
-                             Value => Value);
+               Metadata.Map.Include (Key      => Name,
+                                     New_Item => Value);
             end;
          end loop;
       end;
@@ -416,7 +399,7 @@ package body DVAccum.Event_Io is
          end;
 
       elsif Extension = ".evt" then
-         Read_Binary_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
+         Read_Binary_Event_Stream (Filename => Filename,
                                    Events   => Events,
                                    Metadata => Metadata,
                                    Rectify  => Rectify);
@@ -426,4 +409,19 @@ package body DVAccum.Event_Io is
            with "Unrecognized extension '" & Extension & "'";
       end if;
    end Read_Events;
+
+   ----------
+   -- Dump --
+   ----------
+
+   procedure Dump (What : Event_Sequences.Set;
+                   Where : Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Error)
+   is
+   begin
+      for Ev of What loop
+         Ada.Text_IO.Put_Line (File => Where,
+                               Item => Events.Image (Ev));
+      end loop;
+   end Dump;
+
 end DVAccum.Event_Io;

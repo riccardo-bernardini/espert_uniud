@@ -1,6 +1,7 @@
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Containers.Ordered_Sets;
 with Ada.Containers.Ordered_Maps;
+with Ada.Text_IO;
 
 with DVAccum.Events;
 with DVAccum.Timestamps;
@@ -12,6 +13,9 @@ package DVAccum.Event_Io is
      new Ada.Containers.Ordered_Sets
      (Element_Type => Events.Event_Type,
       "<"          => Events.Less_Then_By_Pixel);
+
+   procedure Dump (What : Event_Sequences.Set;
+                   Where : Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Error);
 
    type Sequence_Metadata is private;
 
@@ -47,4 +51,13 @@ private
          N_Cols        : Positive;
          Map           : Metadata_Maps.Map;
       end record;
+
+   function First_Time (Metadata : Sequence_Metadata)
+                        return Timestamps.Timestamp
+   is (Metadata.Min_Timestamp);
+
+   function Last_Time (Metadata : Sequence_Metadata)
+                       return Timestamps.Timestamp
+   is (Metadata.Max_Timestamp);
+
 end DVAccum.Event_Io;

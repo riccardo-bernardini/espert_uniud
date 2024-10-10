@@ -3,14 +3,6 @@ use  DVAccum.Timestamps;
 
 package DVAccum.Events is
 
-   type X_Coordinate_Type is mod 2 ** 16;
-   type Y_Coordinate_Type is mod 2 ** 16;
-
-   type Point_Type is
-      record
-         X : X_Coordinate_Type;
-         Y : Y_Coordinate_Type;
-      end record;
 
 
    type Weight_Type is (Increase, Decrease);

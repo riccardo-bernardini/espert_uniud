@@ -61,3 +61,4 @@ accumulator/obj
 .clang-format
 Test/*
 *~
+old-accumulator/obj/

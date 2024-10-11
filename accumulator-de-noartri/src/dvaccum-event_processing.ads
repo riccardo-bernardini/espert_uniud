@@ -36,4 +36,7 @@ private
    type Event_Array_Access is
      access constant Event_Array;
 
+   type Image_Access is
+     access constant Frames.Image_Type;
+
 end Dvaccum.Event_Processing;

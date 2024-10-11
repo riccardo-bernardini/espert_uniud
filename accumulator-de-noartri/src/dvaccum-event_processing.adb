@@ -17,7 +17,7 @@ package body Dvaccum.Event_Processing is
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
                       To             : Timestamps.Timestamp;
-                      Frame_Period   : Timestamps.Duration;
+                      Frame_Duration : Timestamps.Duration;
                       Oversampling   : Positive;
                       Initial_Image  : Frames.Image_Type)
    is
@@ -78,25 +78,33 @@ package body Dvaccum.Event_Processing is
 
          Scaled_Filter : Filter_Spec := Filter;
 
+         type Accumulator_Access is
+           access Accumulator_Tasks.Accumulator;
+
          type Accumulator_Array is
-           array (CPU range <>) of Accumulator_Tasks.Accumulator;
+           array (CPU range <>) of Accumulator_Access;
 
          Accumulators : Accumulator_Array (1 .. N_Cpu);
+
+         Parameters   : constant Accumulator_Tasks.Parameter_Access :=
+                          new Accumulator_Tasks.Parameter_Record'
+                            (Num_Degree     => Filter.Num_Degree,
+                             Den_Degree     => Filter.Den_Degree,
+                             Segments       => Segments,
+                             Events         => Event_Array_Access (Event_Storage),
+                             Pixels         => Pixels,
+                             Filter         => Scaled_Filter,
+                             From           => From,
+                             To             => To,
+                             Frame_Duration  => Frame_Duration,
+                             Oversampling   => Oversampling);
       begin
          for Coeff of  Scaled_Filter.Num loop
             Coeff := Coeff * Pixel_Value (Event_Weight);
          end loop;
 
          for I in Accumulators'Range loop
-            Accumulators (I).Start
-              (Segments       => Segments,
-               Events         => Event_Array_Access (Event_Storage),
-               Pixels         => Pixels,
-               Filter         => Scaled_Filter,
-               From           => From,
-               To             => To,
-               Frame_Period   => Frame_Period,
-               Oversampling   => Oversampling);
+            Accumulators (I) := new Accumulator_Tasks.Accumulator(Parameters);
          end loop;
       end Accumulate;
 

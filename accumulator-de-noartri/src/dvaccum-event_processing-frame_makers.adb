@@ -22,24 +22,25 @@ package body Dvaccum.Event_Processing.Frame_Makers is
             Frame_Number : constant Frame_Index :=
                              Parameters.Pixels.Next_Unprocessed_Frame;
 
-            Frame : constant Frames.Image_Type := Parameters.Initial_Image.all;
+            Filename : constant String :=
+                         Parameters.Frame_Name (Frame_Number);
+
+            Frame : Frames.Image_Type := Parameters.Initial_Image;
          begin
             exit when Frame_Number = No_Frame;
 
-            for Px in Parameters.Pixels.Every_Pixel loop
-               null;
+            for Pos in Parameters.Pixels.Every_Pixel loop
+               declare
+                  Pixel : constant Frames.Point_Type := Pixel_Buffers.Element (Pos);
+               begin
+                  Frame (Pixel.X, Pixel.Y) := Parameters.Pixels (Pixel, Frame_Number);
+               end;
             end loop;
 
-            declare
-               Filename : constant String :=
-                            Parameters.Frame_Name (To_Int (Frame_Number));
-            begin
-               PNG_IO.Save_Png (Filename => Filename,
-                                Image    => To_Png_Buffer (Frame),
-                                Color    => Png_Io.Gray,
-                                Depth    => 8);
-            end;
-
+            PNG_IO.Save_Png (Filename => Filename,
+                             Image    => To_Png_Buffer (Frame),
+                             Color    => Png_Io.Gray,
+                             Depth    => 8);
          end;
       end loop;
    end Frame_Maker;

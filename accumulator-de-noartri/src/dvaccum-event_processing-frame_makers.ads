@@ -1,12 +1,17 @@
 with DVAccum.Event_Processing.Pixel_Buffers;
+with DVAccum.Frames;    use DVAccum.Frames;
 
 private
 package Dvaccum.Event_Processing.Frame_Makers is
-   type Parameter_Record is
+   type Parameter_Record (Last_X : X_Coordinate_Type;
+                          Last_Y : Y_Coordinate_Type)
+   is
       record
          Pixels        : Pixel_Buffers.Pixel_Buffer;
          Frame_Name    : Frame_Name_Generator;
-         Initial_Image : Image_Access;
+         Offset        : Pixel_Value;
+         Initial_Image : Image_Type (X_Coordinate_Type'First .. Last_X,
+                                     Y_Coordinate_Type'First .. Last_Y);
       end record;
 
    type Parameter_Access is

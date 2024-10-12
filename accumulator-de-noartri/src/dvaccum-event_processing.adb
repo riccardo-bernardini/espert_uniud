@@ -2,10 +2,11 @@ with DVAccum.Event_Processing.Segment_Queues;
 with DVAccum.Event_Processing.Pixel_Buffers;
 with DVAccum.Event_Processing.Accumulator_Tasks;
 with DVAccum.Event_Processing.Frame_Makers;
---  with DVAccum.Event_Processing.Countdowns;
+with DVAccum.config;
 
 with System.Multiprocessors;
 
+use System;
 
 package body Dvaccum.Event_Processing is
    type Ev_Access is access Event_Array;
@@ -13,6 +14,7 @@ package body Dvaccum.Event_Processing is
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
                       Event_Weight   : Float;
+                      Offset         : frames.Pixel_Value;
                       Filter         : Filter_Spec;
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
@@ -114,19 +116,30 @@ package body Dvaccum.Event_Processing is
 
       procedure Save_Frames (Frame_Name : Frame_Name_Generator;
                              Pixels     : Pixel_Buffers.Pixel_Buffer;
+                             Offset     : Frames.Pixel_Value;
                              N_Cpu      : System.Multiprocessors.CPU)
       is
-         use System.Multiprocessors;
+        -- use System.Multiprocessors;
+         use Frame_Makers;
+
+         type Maker_Access is
+           access Frame_Maker;
 
          type Maker_Array is
-           array (CPU range <>) of Frame_Makers.Frame_Maker;
+           array (Multiprocessors.CPU range <>) of Maker_Access;
 
          Makers : Maker_Array (1 .. N_Cpu);
+
+         Parameters : constant Parameter_Access :=
+                        new Parameter_Record'(Last_X        => Initial_Image'Last (1),
+                                              Last_Y        => Initial_Image'Last (2),
+                                              Pixels        => Pixels,
+                                              Frame_Name    => Frame_Name,
+                                              Offset        => Offset,
+                                              Initial_Image => Initial_Image);
       begin
          for I in Makers'Range loop
-            Makers (I).Start (Pixels        => Pixels,
-                              Frame_Name    => Frame_Name,
-                              Initial_Image => Initial_Image);
+            Makers (I) := new Frame_Maker (Parameters);
          end loop;
       end Save_Frames;
 
@@ -149,10 +162,11 @@ package body Dvaccum.Event_Processing is
                   Pixels        => Pixels,
                   Filter        => Filter,
                   Event_Weight  => Event_Weight,
-                  N_Cpu         => System.Multiprocessors.Number_Of_CPUs);
+                  N_Cpu         => Config.Number_Of_Parallel_Tasks);
 
       Save_Frames (Frame_Name => Frame_Name,
                    Pixels     => Pixels,
-                   N_Cpu      => System.Multiprocessors.Number_Of_CPUs);
+                   Offset     => Offset,
+                   N_Cpu      => Config.Number_Of_Parallel_Tasks);
    end Process;
 end Dvaccum.Event_Processing;

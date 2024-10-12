@@ -1,17 +1,16 @@
-with PNG_IO;
 
 package body Dvaccum.Event_Processing.Frame_Makers is
-   function To_Png_Buffer (X : Frames.Image_Type)
-                           return PNG_IO.Image_Buffer
-   is
-   begin
-      return Result : PNG_IO.Image_Buffer :=
-        PNG_IO.Create (Integer (Frames.Width (X)),
-                       Integer (Frames.Height (X)))
-      do
-         null;
-      end return;
-   end To_Png_Buffer;
+   --  function To_Png_Buffer (X : Frames.Image_Type)
+   --                          return PNG_IO.Image_Buffer
+   --  is
+   --  begin
+   --     return Result : PNG_IO.Image_Buffer :=
+   --       PNG_IO.Create (Integer (Frames.Width (X)),
+   --                      Integer (Frames.Height (X)))
+   --     do
+   --        null;
+   --     end return;
+   --  end To_Png_Buffer;
 
    task body Frame_Maker is
    begin
@@ -37,10 +36,14 @@ package body Dvaccum.Event_Processing.Frame_Makers is
                end;
             end loop;
 
-            PNG_IO.Save_Png (Filename => Filename,
-                             Image    => To_Png_Buffer (Frame),
-                             Color    => Png_Io.Gray,
-                             Depth    => 8);
+            Frames.Save (Filename => Filename,
+                         Image    => frame,
+                         Format   => Frames.PNG);
+
+            --  PNG_IO.Save_Png (Filename => Filename,
+            --                   Image    => To_Png_Buffer (Frame),
+            --                   Color    => Png_Io.Gray,
+            --                   Depth    => 8);
          end;
       end loop;
    end Frame_Maker;

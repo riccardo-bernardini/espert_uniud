@@ -23,6 +23,58 @@ package DVAccum.Frames is
    function Height (Image : Image_Type) return Y_Coordinate_Type
    is (Image'Last (2)-Image'First (2)+1);
 
+   function "+" (Image : Image_Type; Offset : Pixel_Value) return Image_Type;
+
+   procedure Add (Image  : in out Image_Type;
+                  Offset : Pixel_Value)
+     with
+       Post => (for all X in Image'Range (1) =>
+                  (for all Y in Image'Range (2) =>
+                     (Image (X, Y) = Image'Old (X, Y) + Offset)));
+
+   function "*" (K : Pixel_Value; Image : Image_Type) return Image_Type;
+
+   procedure Multiply (Image  : in out Image_Type;
+                       K      : Pixel_Value)
+     with
+       Post => (for all X in Image'Range (1) =>
+                  (for all Y in Image'Range (2) =>
+                     (Image (X, Y) = K * Image'Old (X, Y))));
+
+   procedure Multiply_And_Add (Image  : in out Image_Type;
+                               K      : Pixel_Value;
+                               Offset : Pixel_Value)
+     with
+       Post => (for all X in Image'Range (1) =>
+                  (for all Y in Image'Range (2) =>
+                     (Image (X, Y) = K * Image'Old (X, Y) + Offset)));
+
+
+   function Rescale (Image    : Image_Type;
+                     Old_Min  : Pixel_Value;
+                     Old_Max  : Pixel_Value;
+                     New_Min  : Pixel_Value;
+                     New_Max  : Pixel_Value;
+                     Saturate : Boolean := True)
+                     return Image_Type;
+
+   procedure Rescale (Image    : in out Image_Type;
+                      Old_Min  : Pixel_Value;
+                      Old_Max  : Pixel_Value;
+                      New_Min  : Pixel_Value;
+                      New_Max  : Pixel_Value;
+                      Saturate : Boolean := True);
+
+   procedure Limit_Up (Image : in out Image_Type;
+                       Max   : Pixel_Value);
+
+   procedure Limit_Down (Image : in out Image_Type;
+                         Min   : Pixel_Value);
+
+   procedure Limit (Image : in out Image_Type;
+                    Min   : Pixel_Value;
+                    Max   : Pixel_Value);
+
    type Format_Type is (Raw_Image_8, Pgm, Png);
 
    function Load (Filename : String;
@@ -35,8 +87,6 @@ package DVAccum.Frames is
 
    procedure Save (Filename : String;
                    Image    : Image_Type;
-                   Format   : Format_Type;
-                   Min      : Pixel_Value;
-                   Max      : Pixel_Value);
+                   Format   : Format_Type);
 
 end DVAccum.Frames;

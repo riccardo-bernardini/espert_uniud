@@ -1,7 +1,7 @@
-with Times;
+with DVAccum.Timestamps;
 with Config.Syntax;
 
-private package Config.Data with SPARK_Mode is
+private package DVAccum.Config.Data with SPARK_Mode is
    use type Memory_Dynamic.Dynamic_Type;
    use type Images.Pixel_Value;
    use type Times.Timestamp;
@@ -171,4 +171,4 @@ private package Config.Data with SPARK_Mode is
    function Get (Field : Boolean_Field) return Boolean
      with
        Pre => Is_Set (Field);
- end Config.Data;
+ end DVAccum.Config.Data;

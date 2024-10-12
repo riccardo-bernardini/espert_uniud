@@ -1,6 +1,6 @@
 pragma Ada_2012;
 
-package body Config.Data with SPARK_Mode is
+package body DVAccum.Config.Data with SPARK_Mode is
 
    Set_Fields : array (Configuration_Field) of Boolean := (others => False);
 
@@ -244,4 +244,4 @@ begin
       -- We should nevee arrive here
       raise Program_Error;
    end if;
-end Config.Data;
+end DVAccum.Config.Data;

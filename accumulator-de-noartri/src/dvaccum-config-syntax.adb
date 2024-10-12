@@ -2,7 +2,7 @@ with Ada.Strings.Fixed;        use Ada.Strings;
 with Ada.Characters.Handling;
 --  with Ada.Strings.Maps.Constants;
 
-package body Config.Syntax is
+package body DVAccum.Config.Syntax is
    function Strip_Spaces (S : String) return String
    is (Fixed.Trim (Source => S,
                    Side   => Both));
@@ -138,50 +138,4 @@ package body Config.Syntax is
          Frame_Format       => Frame_Format);
    end Parse_Output_Filename_Template;
 
-end Config.Syntax;
---  Stripped : constant String := Strip_Spaces (Spec);
---
---  End_Of_Number : constant Natural :=
---                    Index (Source => Stripped,
---  --                           Set    => Decimal_Digit_Set or To_Set ("._-+eE"),
---  --                           Test   => Outside);
---  --
---  --  Unit : constant String :=
---  --           (if End_Of_Number = 0
---  --            then
---  --               ""
---  --            else
---  --               Strip_Spaces (Stripped (End_Of_Number .. Stripped'Last)));
---  --
---  --  Value : constant String :=
---  --            (if End_Of_Number = 0
---  --             then
---  --                Stripped
---  --             else
---  --                Stripped (Stripped'First .. End_Of_Number - 1));
---
---  --------------
---  -- To_Float --
---  --------------
---
---  function To_Float (X : String) return Float
---  is
---     use Gnat.Regpat;
---
---     Integer_Regexp : constant Pattern_Matcher :=
---                        Compile ("^[-+]?[0-9_]+$");
---
---     Float_Regexp : constant Pattern_Matcher :=
---                      Compile ("^[-+]?[0-9_]+\.[0-9_]+([eE][-+]?[0-9_]+)?$");
---  begin
---     return (if Match (Integer_Regexp, X) then
---                Float (Integer'Value (X))
---
---             elsif Match (Float_Regexp, X) then
---                Float'Value (X)
---
---             else
---                raise Bad_Syntax
---                  with "Bad number '" & X & "'");
---  end To_Float;
---
+end DVAccum.Config.Syntax;

@@ -1,5 +1,5 @@
 
-private package Config.Syntax is
+private package DVAccum.Config.Syntax is
 
 
    --  function Parse_Start_Time (Spec : String) return Times.Timestamp;
@@ -51,4 +51,4 @@ private package Config.Syntax is
 
    Bad_Syntax : exception;
 
-end Config.Syntax;
+end DVAccum.Config.Syntax;

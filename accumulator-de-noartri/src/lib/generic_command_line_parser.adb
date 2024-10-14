@@ -543,6 +543,7 @@ package body Generic_Command_Line_Parser is
 
       return Result;
    end Join;
+   pragma Unreferenced (Join);
 
    ----------------
    -- Help_Lines --

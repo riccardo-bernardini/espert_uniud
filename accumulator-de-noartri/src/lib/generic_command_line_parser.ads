@@ -8,10 +8,15 @@ generic
 package  Generic_Command_Line_Parser is
    type Option_Spec is private;
 
+   type CLI_Syntax is array (Options) of Option_Spec;
+
    function Option (Name : String) return Option_Spec;
 
 
    type Option_Modifier (<>) is private;
+
+   function "and" (Left : Option_Spec; Right : Option_Modifier)
+                   return Option_Spec;
 
    function Mandatory return Option_Modifier;
 
@@ -19,35 +24,24 @@ package  Generic_Command_Line_Parser is
 
    function If_Repeated (Action : Repeated_Option_Action) return Option_Modifier;
 
-   --  function Doc (Description : String) return Option_Modifier;
-
-   function "and" (Left : Option_Spec; Right : Option_Modifier)
-                   return Option_Spec;
-
-
-   type CLI_Syntax is array (Options) of Option_Spec;
 
    type Parsed_CL is tagged private
      with
        Constant_Indexing => Argument;
 
-   function Is_Defined (Item   : Parsed_CL;
-                        Option : Options)
+   function Is_Defined (Item   : Parsed_CL; Option : Options)
                         return Boolean;
 
-   function Is_Default (Item   : Parsed_CL;
-                        Option : Options)
+   function Is_Default (Item   : Parsed_CL; Option : Options)
                         return Boolean;
 
-   function Value (Item   : Parsed_CL;
-                   Option : Options) return String
+   function Value (Item   : Parsed_CL; Option : Options) return String
      with
        Pre => Item.Is_Defined (Option);
 
    function Argument_Count (Item : Parsed_CL) return Natural;
 
-   function Argument (Item : Parsed_CL;
-                      N    : Positive)
+   function Argument (Item : Parsed_CL; N : Positive)
                       return String
      with
        Pre => N <= Item.Argument_Count;

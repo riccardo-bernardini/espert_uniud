@@ -1,22 +1,19 @@
 with DVAccum.Timestamps;
-with Config.Syntax;
 
 private package DVAccum.Config.Data with SPARK_Mode is
-   use type Memory_Dynamic.Dynamic_Type;
-   use type Images.Pixel_Value;
-   use type Times.Timestamp;
-   use type Times.Duration;
+   use type Frames.Pixel_Value;
+   use type Timestamps.Timestamp;
+   use type Timestamps.Duration;
 
    type Configuration_Field is
      (
-      Decay,
-      Output_Filename_Template,
       Verbosity_Level,
       First_Image,
       -- String fields
-      Input,
+      Filter_Spec,
+      Input_Filename,
+      Output_Filename_Template,
       Log_Progress,
-      Metadata_Filename,
       -- Numeric fields
       Min,
       Max,
@@ -25,9 +22,11 @@ private package DVAccum.Config.Data with SPARK_Mode is
       Start_Time,
       Stop_Time,
       Event_Weigth,
-      -- Boolean fields
-      Negative_Event_Handling,
-      Lazy_Decay
+      -- Integer fields
+      Oversampling,
+      N_Tasks,
+      -- Boolean fields.  Old fields have been removed
+      Boolean_Placekeeper
      );
 
    type Start_Image_Class is (Uniform, External);
@@ -36,7 +35,7 @@ private package DVAccum.Config.Data with SPARK_Mode is
       record
          case Class is
             when Uniform =>
-               Level : Images.Pixel_Value;
+               Level : Frames.Pixel_Value;
 
             when External =>
                Filename : Unbounded_String;
@@ -44,11 +43,13 @@ private package DVAccum.Config.Data with SPARK_Mode is
       end record;
 
 
-   subtype String_Field is Configuration_Field range Input .. Metadata_Filename;
+   subtype String_Field is Configuration_Field range Filter_Spec .. Log_Progress;
 
    subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
 
-   subtype Boolean_Field is Configuration_Field range Lazy_Decay .. Lazy_Decay;
+   subtype Integer_Fields is Configuration_Field range Oversampling .. N_Tasks;
+
+   subtype Boolean_Field is Configuration_Field range Boolean_Placekeeper .. Boolean_Placekeeper;
 
    subtype Duration_Field is Configuration_Field range Sampling_Period .. Sampling_Period;
 
@@ -59,61 +60,40 @@ private package DVAccum.Config.Data with SPARK_Mode is
    function Is_All_Set return Boolean
    is (for all F in Configuration_Field => Is_Set (F));
 
-   --  procedure Set_Input_Filename (Item : String)
-   --    with
-   --      Pre => not Is_Set (Input),
-   --      Post => Is_Set (Input);
-   --
-   --  function Input_Filename return String
-   --    with
-   --      Pre => Is_Set (Input);
+
+   procedure Add_Input_Filename (Filename : String)
+     with
+       Post => Is_Set (Input_Filename) and N_Inputs = N_Inputs'Old + 1;
+
+
+   function N_Inputs return Natural
+     with
+       Post => (N_Inputs'Result = 0) = (not Is_Set (Input_Filename));
+
+   function Get_Input_Filename (N : Positive) return String
+     with
+       Pre => N <= N_Inputs;
 
 
    procedure Set_Verbosity_Level (Verb : Verbosity)
      with
-       Pre => not Is_Set (Verbosity_level),
-       Post => Is_Set (Verbosity_level);
+       Pre => not Is_Set (Verbosity_Level),
+       Post => Is_Set (Verbosity_Level);
 
    function Verbosity_Level return Verbosity
      with
-       Pre => Is_Set (Verbosity_level);
+       Pre => Is_Set (Verbosity_Level);
 
-
-   procedure Set_Output_Filename_Template (Item : Syntax.Radix_Spec)
-     with
-       Pre => not Is_Set (Output_Filename_Template),
-       Post => Is_Set (Output_Filename_Template);
-
-   function Output_Filename_Template return Syntax.Radix_Spec
-     with
-       Pre => Is_Set (Output_Filename_Template);
-
-   procedure Set_Negative_Event_Action (Action : Negative_Event_Action)
-     with
-       Pre => not Is_Set (Negative_Event_Handling),
-       Post => Is_Set (Negative_Event_Handling) and then Get_Negative_Event_Action = Action;
-
-   function Get_Negative_Event_Action return Negative_Event_Action
-     with
-       Pre => Is_Set (Negative_Event_Handling);
 
    procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
      with
        Pre => not Is_Set (First_Image),
        Post => Is_Set (First_Image) and then Get_First_Image_Spec = Spec;
 
-   function get_first_image_spec return Start_Image_Spec_Type
+   function Get_First_Image_Spec return Start_Image_Spec_Type
      with
        Pre => Is_Set (First_Image);
 
-   procedure Set_Decay (Item : Memory_Dynamic.Dynamic_Type)
-     with
-       Pre => not Is_Set (Decay),
-       Post => Is_Set (Decay) and then Decay = Item;
-
-   function Decay return Memory_Dynamic.Dynamic_Type
-     with
-       pre => Is_Set (Decay);
 
    procedure Set (Field : String_Field;
                   Value : String)
@@ -127,38 +107,48 @@ private package DVAccum.Config.Data with SPARK_Mode is
 
 
    procedure Set (Field : Numeric_Field;
-                  Value : Images.Pixel_Value)
+                  Value : Frames.Pixel_Value)
      with
        Pre => not Is_Set (Field),
        Post => (Is_Set (Field) and then Get (Field) = Value);
 
-   function Get (Field : Numeric_Field) return Images.Pixel_Value
+   function Get (Field : Numeric_Field) return Frames.Pixel_Value
+     with
+       Pre => Is_Set (Field);
+
+   procedure Set (Field : Integer_Fields;
+                  Value : Integer)
+     with
+       Pre => not Is_Set (Field),
+       Post => (Is_Set (Field) and then Get (Field) = Value);
+
+   function Get (Field : Integer_Fields) return Integer
      with
        Pre => Is_Set (Field);
 
    procedure Set (Field : Timestamp_Field;
-                  Value : Times.Timestamp)
+                  Value : Timestamps.Timestamp)
      with
        Pre =>  not Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
    procedure Update  (Field : Timestamp_Field;
-                      Value : Times.Timestamp)
+                      Value : Timestamps.Timestamp)
      with
        Pre =>  Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
-   function Get (Field : Timestamp_Field) return Times.Timestamp
+   function Get (Field : Timestamp_Field) return Timestamps.Timestamp
      with
        Pre => Is_Set (Field);
 
    procedure Set (Field : Duration_Field;
-                  Value : Times.Duration)
+                  Value : Timestamps.Duration)
      with
        Pre =>  not Is_Set (Field),
        Post => Is_Set (Field) and then Get (Field) = Value;
 
-   function Get (Field : Duration_Field) return Times.Duration
+   function Get (Field : Duration_Field) return Timestamps.Duration
      with
        Pre => Is_Set (Field);
 
@@ -171,4 +161,4 @@ private package DVAccum.Config.Data with SPARK_Mode is
    function Get (Field : Boolean_Field) return Boolean
      with
        Pre => Is_Set (Field);
- end DVAccum.Config.Data;
+end DVAccum.Config.Data;

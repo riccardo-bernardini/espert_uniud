@@ -1,3 +1,4 @@
+with String_Formatting;
 
 private package DVAccum.Config.Syntax is
 
@@ -31,14 +32,7 @@ private package DVAccum.Config.Syntax is
    Frame_Number_Default_Width : constant Positive := 5;
 
 
-   type Radix_Spec is
-      record
-         Head               : Unbounded_String;
-         Tail               : Unbounded_String;
-         Frame_Number_Width : Positive;
-         Padding_Char       : Character;
-         Frame_Format       : Frames.Format_Type;
-      end record;
+   subtype Radix_Spec is String_Formatting.Parsed_Format;
 
    type Sampling_Spec is
       record

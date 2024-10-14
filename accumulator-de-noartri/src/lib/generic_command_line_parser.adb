@@ -5,117 +5,291 @@ with Sparked_Command_Line;
 
 --  with Ada.Containers.Indefinite_Ordered_Maps;
 with Simple_Tables;
-
+with Ada.Strings.Fixed;
 
 
 package body Generic_Command_Line_Parser is
+
+   function Option (Name : String) return Option_Spec
+   is
+      procedure Parse_Option_Names (Source        : String;
+                                    Names         : out String_Vectors.Vector;
+                                    Help_Line     : out Unbounded_String;
+                                    Default       : out Unbounded_String;
+                                    Default_Found : out Boolean)
+        with
+          Pre => Source'Length < Natural'Last;
+
+      procedure Parse_Option_Names (Source        : String;
+                                    Names         : out String_Vectors.Vector;
+                                    Help_Line     : out Unbounded_String;
+                                    Default       : out Unbounded_String;
+                                    Default_Found : out Boolean)
+      is
+         use String_Vectors;
+
+         Cursor : Positive := Source'First;
+
+         End_Of_Source :  constant Character := Character'Val (0);
+
+         function At_End_Of_Source return Boolean
+         is (Cursor > Source'Last);
+
+         function Current_Char return Character
+         is (if At_End_Of_Source then
+                End_Of_Source
+             else
+                Source (Cursor));
+
+         procedure Next_Char is
+         begin
+            Cursor := Cursor + 1;
+         end Next_Char;
+
+         function Current_Tail return String
+         is (Source (Cursor .. Source'Last));
+
+         Accumulator : Unbounded_String;
+
+         procedure Reset_Accumulator is
+         begin
+            Accumulator := Null_Unbounded_String;
+         end Reset_Accumulator;
+
+         procedure Reset_Accumulator (C : Character) is
+         begin
+            Accumulator := To_Unbounded_String ((1 => C));
+         end Reset_Accumulator;
+
+         procedure Append (C : Character) is
+         begin
+            Accumulator := Accumulator & C;
+         end Append;
+
+
+         type Parser_Status is (
+                                Reading_Name,
+                                Name_Separator,
+                                Skipping_Space_After_Name,
+                                Skipping_Space_After_Separator,
+                                In_Default,
+                                Skipping_Space_After_Default,
+                                Documentation
+                               );
+
+         Status : Parser_Status := Reading_Name;
+      begin
+         Clear (Names);
+
+         Help_Line := Null_Unbounded_String;
+         Status := Reading_Name;
+         Default_Found := False;
+         Default := Null_Unbounded_String;
+
+         Reset_Accumulator;
+
+         while Status /= Documentation and not At_End_Of_Source loop
+            case Status is
+               when Reading_Name =>
+                  if Current_Char = '|' then
+                     Status := Name_Separator;
+                     Names.Append (To_String (Accumulator));
+                     Reset_Accumulator;
+
+                  elsif Current_Char = ' ' then
+                     Status := Skipping_Space_After_Name;
+                     Names.Append (To_String (Accumulator));
+                     Reset_Accumulator;
+
+                  elsif Current_Char = '[' then
+                     Status := In_Default;
+                     Names.Append (To_String (Accumulator));
+                     Reset_Accumulator;
+
+                  else
+                     Append (Current_Char);
+                  end if;
+
+               when Name_Separator =>
+                  if Current_Char = '|' or Current_Char = '[' then
+                     raise Bad_Option_Name with Source;
+
+                  elsif Current_Char = ' ' then
+                     Status := Skipping_Space_After_Separator;
+
+                  else
+                     Reset_Accumulator (Current_Char);
+                     Status := Reading_Name;
+
+                  end if;
+
+               when Skipping_Space_After_Separator =>
+                  if Current_Char = '|' or Current_Char = '[' then
+                     raise Bad_Option_Name with Source;
+
+                  elsif Current_Char = ' ' then
+                     Status := Skipping_Space_After_Separator;
+
+                  else
+                     Status := Reading_Name;
+                     Reset_Accumulator (Current_Char);
+
+                  end if;
+
+               when Skipping_Space_After_Name =>
+                  if Current_Char = '|' then
+                     Status := Name_Separator;
+
+                  elsif Current_Char = ' ' then
+                     Status := Skipping_Space_After_Name;
+
+                  elsif Current_Char = '[' then
+                     Status := In_Default;
+                     Reset_Accumulator;
+
+                  else
+                     Status := Documentation;
+
+                  end if;
+
+               when In_Default =>
+                  if Current_Char = ']' then
+                     Status := Skipping_Space_After_Default;
+                     Default_Found := True;
+                     Default := Accumulator;
+
+                  else
+                     Append (Current_Char);
+
+                  end if;
+
+               when Skipping_Space_After_Default =>
+                  if Current_Char /= ' ' then
+                     Status := Documentation;
+                  end if;
+
+               when Documentation =>
+                  raise Program_Error;  -- we should never arrive here
+            end case;
+
+            Next_Char;
+         end loop;
+
+         case Status is
+            when Reading_Name =>
+               Names.Append (To_String (Accumulator));
+
+            when Skipping_Space_After_Name | Skipping_Space_After_Default =>
+               null;
+
+            when In_Default | Name_Separator | Skipping_Space_After_Separator =>
+               raise Bad_Option_Name with Source;
+
+            when Documentation =>
+               Help_Line := To_Unbounded_String (Current_Tail);
+         end case;
+      end Parse_Option_Names;
+
+      Names : String_Vectors.Vector;
+      Help_Line : Unbounded_String;
+      Default : Unbounded_String;
+      Default_Found : Boolean;
+   begin
+      Parse_Option_Names (Source        => Name,
+                          Names         => Names,
+                          Help_Line     => Help_Line,
+                          Default       => Default,
+                          Default_Found => Default_Found);
+
+      if Default_Found then
+         return Option_Spec'(On_Missing    => Use_Default,
+                             On_Repetition => Die,
+                             Names         => Names,
+                             Doc           => Help_Line,
+                             Default       => Default);
+
+      else
+         return Option_Spec'(On_Missing    => Ignore,
+                             On_Repetition => Die,
+                             Names         => Names,
+                             Doc           => Help_Line,
+                             Default       => Null_Unbounded_String);
+      end if;
+   end Option;
+
+   ---------------
+   -- Mandatory --
+   ---------------
+
+   function Mandatory return Option_Modifier
+   is (Option_Modifier'(Class => Make_Mandatory));
+
+   -----------------
+   -- If_Repeated --
+   -----------------
+
+   function If_Repeated (Action : Repeated_Option_Action)
+                         return Option_Modifier
+   is (Option_Modifier'(Class => On_Repeat,
+                        Repeat_Action => Action));
+
+   function "and" (Left : Option_Spec; Right : Option_Modifier)
+                   return Option_Spec
+   is
+
+   begin
+      case Right.Class is
+         when Make_Mandatory =>
+            if Left.On_Missing = Use_Default then
+               raise Constraint_Error;
+            end if;
+
+            return Option_Spec'(On_Missing    => Die,
+                                On_Repetition => Left.On_Repetition,
+                                Names         => Left.Names,
+                                Doc           => Left.Doc,
+                                Default       => Left.Default);
+
+         when On_Repeat =>
+            return Option_Spec'(On_Missing    => Left.On_Missing,
+                                On_Repetition => Right.Repeat_Action,
+                                Names         => Left.Names,
+                                Doc           => Left.Doc,
+                                Default       => Left.Default);
+      end case;
+   end "and";
+
+
+
 
    package Name_Tables is
      new Simple_Tables (Key_Type     => Unbounded_String,
                         Element_Type => Options);
 
-   procedure Parse_Option_Names (Source    : String;
-                                 Names     : out String_Vectors.Vector;
-                                 Help_Line : out Unbounded_String)
-     with
-       Pre => Source'Length < Natural'Last;
 
-   procedure Parse_Option_Names (Source    : String;
-                                 Names     : out String_Vectors.Vector;
-                                 Help_Line : out Unbounded_String)
-   is
-      use String_Vectors;
-
-      Name_Accumulator : Unbounded_String := Null_Unbounded_String;
-      C                : Character;
-   begin
-      Clear (Names);
-
-      --  Put_Line ("Parse option names '" & Source & "'");
-
-      Help_Line := Null_Unbounded_String;
-
-      pragma Assert (Length (Name_Accumulator) = 0);
-
-      for I in Source'Range loop
-         pragma Loop_Invariant (Length (Name_Accumulator) <= I - Source'First);
-         C := Source (I);
-
-         case C is
-            when '=' | ' ' | '|' =>
-               if Name_Accumulator = Null_Unbounded_String then
-                  raise Bad_Option_Name with Source;
-               end if;
-
-               Append (Names, Name_Accumulator);
-               --  Put_Line ("Appending '" & To_String (Name_Accumulator) & "'");
-               Name_Accumulator := Null_Unbounded_String;
-
-               if C = '=' or C = ' ' then
-                  Help_Line := First_Element (Names)  & Source (I .. Source'Last);
-
-                  return;
-               end if;
-
-            when others =>
-               Name_Accumulator := Name_Accumulator & C;
-         end case;
-      end loop;
-
-      if Name_Accumulator /= Null_Unbounded_String then
-         Append (Names, Name_Accumulator);
-
-         --  Put_Line ("Appending '" & To_String (Name_Accumulator) & "'");
-      end if;
-   end Parse_Option_Names;
-
-   procedure Fill_Name_Table (Names               : Option_Names;
+   procedure Fill_Name_Table (Syntax              : CLI_Syntax;
                               Prefix              : String;
                               Table               : in out Name_Tables.Map;
-                              Help_Lines          : in out String_Vectors.Vector;
+                              Name_Case_Sensitive : Boolean);
+
+
+
+   procedure Fill_Name_Table (Syntax              : CLI_Syntax;
+                              Prefix              : String;
+                              Table               : in out Name_Tables.Map;
                               Name_Case_Sensitive : Boolean)
    is
-      use String_Vectors;
       use Name_Tables;
-
-      function Normalize (X : Unbounded_String) return String
-      is
-         use Ada.Characters.Handling;
-
-         S : constant String := To_String (X);
-      begin
-         if Name_Case_Sensitive then
-            return S;
-
-         else
-            return To_Lower (S);
-         end if;
-      end Normalize;
-
-      Parsed_Names : String_Vectors.Vector (4096);
-      Help_Line    : Unbounded_String;
+      use Ada.Characters.Handling;
    begin
 
       for Option in Options loop
-         Parse_Option_Names (Source    => Normalize (Names (Option)),
-                             Names     => Parsed_Names,
-                             Help_Line => Help_Line);
-
-         --  Put_Line("<<<");
-         --  for I in First_Index (Parsed_Names) .. Last_Index (Parsed_Names) loop
-         --     Put_Line (I'Image & " " & To_String (Element (Parsed_Names, I)));
-         --  end loop;
-         --
-         --  Put_Line(">>>");
-
-         if Help_Line /= Null_Unbounded_String then
-            Append (Help_Lines, Help_Line);
-         end if;
-
-         for I in First_Index (Parsed_Names) .. Last_Index (Parsed_Names) loop
+         for Name of Syntax (Option).Names loop
             declare
-               Name      : constant String := To_String (Element (Parsed_Names, I));
-               Full_Name : constant String := Prefix & Name;
+               function Normalize (X : String) return String
+               is (if Name_Case_Sensitive then  X else To_Lower (X));
+
+               Full_Name : constant String := Prefix & Normalize (Name);
             begin
                if Contains (Table, To_Unbounded_String (Full_Name)) then
                   raise Duplicate_Option_Name with Name;
@@ -125,33 +299,33 @@ package body Generic_Command_Line_Parser is
                           Key      => To_Unbounded_String (Full_Name),
                           New_Item => Option);
                end if;
-
             end;
          end loop;
       end loop;
-
-      --  declare
-      --     function Pippo (K : Unbounded_String; E : Options) return String
-      --     is ("[" & To_String (K) & "] " & E'Image);
-      --  begin
-      --     Dump (Table, Pippo'Access);
-      --  end;
    end Fill_Name_Table;
 
    ------------
    -- Update --
    ------------
 
-   procedure Update (What                    : in out Option_Values;
+   procedure Update (What                    : in out Option_Value_Array;
                      Name                    : String;
                      Value                   : String;
                      Name_To_Option          : Name_Tables.Map;
-                     When_Repeated           : When_Repeated_Do;
-                     Concatenation_Separator : String)
+                     Syntax                  : CLI_Syntax;
+                     Concatenation_Separator : String;
+                     Name_Case_Sensitive     : Boolean)
    is
       use Name_Tables;
+      use Ada.Characters.Handling;
 
-      Pos : constant Cursor := Find (Name_To_Option, To_Unbounded_String (Name));
+
+      function Normalize (X : String) return String
+      is (if Name_Case_Sensitive then  X else To_Lower (X));
+
+
+      Pos : constant Cursor := Find (Name_To_Option,
+                                     To_Unbounded_String (Normalize (Name)));
    begin
       if Pos = No_Element then
          raise Unknown_Option with Name;
@@ -160,16 +334,16 @@ package body Generic_Command_Line_Parser is
       declare
          Option : constant Options := Element (Name_To_Option, Pos);
       begin
-         if What (Option).Missing then
-            What (Option) := (Missing => False,
-                              Value   => To_Unbounded_String (Value));
+         if What (Option).Status /= User_Defined then
+            What (Option) := (Status => User_Defined,
+                              Value  => To_Unbounded_String (Value));
 
             return;
          end if;
 
-         pragma Assert (not What (Option).Missing);
+         pragma Assert (What (Option).Status = User_Defined);
 
-         case When_Repeated (Option) is
+         case Syntax (Option).On_Repetition is
             when Die =>
                raise Repeated_Option with Name;
 
@@ -177,6 +351,7 @@ package body Generic_Command_Line_Parser is
                What (Option).Value := What (Option).Value
                  & Concatenation_Separator
                  & To_Unbounded_String (Value);
+
             when Ignore =>
                null;
 
@@ -191,220 +366,166 @@ package body Generic_Command_Line_Parser is
    -- Parse --
    -----------
 
-   procedure Parse
-     (Source                  : String;
-      Names                   : Option_Names;
-      Result                  : out Option_Values;
-      When_Repeated           : When_Repeated_Do := Always_Die;
-      Option_Value_Separator  : Character        := Default_Value_Separator;
-      Include_Prefix          : Character := No_Include_Prefix;
+   function Parse_Arguments
+     (Source                  : String_Vectors.Vector;
+      Syntax                  : CLI_Syntax;
+      Option_Value_Separator  : String := Default_Value_Separator;
+      Include_Prefix          : String := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
       Concatenation_Separator : String := Default_Concatenation_Separator;
       Name_Case_Sensitive     : Boolean := False)
+      return Parsed_CL
    is
+      use Ada.Strings;
 
-      procedure Process_Include (Filename : Unbounded_String)
+      procedure Process_Include (Filename : String)
       is
       begin
          raise Program_Error with "Include not implemented";
       end Process_Include;
 
-      type Status_Type is
-        (
-         Skipping_Spaces,
-         Begin_Include_Filename,
-         In_Include_Filename,
-         In_Name,
-         Begin_Of_Value,
-         In_Value
-        );
-
-      Name_To_Option : Name_Tables.Map := Name_Tables.New_Map (100 * Options'Pos (Options'Last));
-
-
-      Status : Status_Type := Skipping_Spaces;
-
-      Name_Accumulator  : Unbounded_String;
-      Value_Accumulator : Unbounded_String;
-      Include_Filename  : Unbounded_String;
-
-      Ignored           : String_Vectors.Vector (4096);
-   begin
-      Fill_Name_Table (Names               => Names,
-                       Table               => Name_To_Option,
-                       Prefix              => Option_Prefix,
-                       Help_Lines          => Ignored,
-                       Name_Case_Sensitive => Name_Case_Sensitive);
-
-      Result := (others => (Missing => True));
-
-      declare
-         Padded_Source : constant String := Source & " ";
-         Closing_Value : Character;
+      procedure Process_Option (Input    : String;
+                                Result   : in out Option_Value_Array;
+                                Name_Map : Name_Tables.Map)
+      is
+         Separator_Pos : constant Natural :=
+                           Fixed.Index (Source  => Input,
+                                        Pattern => Option_Value_Separator);
       begin
-         --
-         -- The following initializations are not really necessary since
-         -- these variables are initialized when needed by the state
-         -- automata implemented by for loop + case.  However, without
-         -- them SPARK complains that they could be not initialized.
-         --
-         Closing_Value := ASCII.NUL;
-         Name_Accumulator := Null_Unbounded_String;
-         Value_Accumulator := Null_Unbounded_String;
-         Include_Filename := Null_Unbounded_String;
+         if Separator_Pos = 0 then
+            Update (What                    => Result,
+                    Name                    => Input,
+                    Value                   => "",
+                    Name_To_Option          => Name_Map,
+                    Syntax                  => Syntax,
+                    Concatenation_Separator => Concatenation_Separator,
+                    Name_Case_Sensitive     => Name_Case_Sensitive);
 
-         for Current_Char of Padded_Source loop
-            case Status is
-               when Skipping_Spaces =>
-                  if Current_Char = Include_Prefix and Include_Prefix /= No_Include_Prefix then
-                     Status := Begin_Include_Filename;
+         elsif Separator_Pos = Input'First then
+            raise Constraint_Error;
 
-                  elsif Current_Char /= ' '  then
-                     Name_Accumulator := Null_Unbounded_String & Current_Char;
-                     Status := In_Name;
+         else
+            Update (What                    => Result,
+                    Name                    => Input (Input'First .. Separator_Pos - 1),
+                    Value                   => Input (Separator_Pos + 1 .. Input'Last),
+                    Name_To_Option          => Name_Map,
+                    Syntax                  => Syntax,
+                    Concatenation_Separator => Concatenation_Separator,
+                    Name_Case_Sensitive     => Name_Case_Sensitive);
 
-                  end if;
+         end if;
+      end Process_Option;
 
-               when Begin_Include_Filename =>
-                  Include_Filename := Null_Unbounded_String;
+      function Begin_With (What : String; Prefix : String) return Boolean
+      is (What'Length >= Prefix'Length and then
+          Fixed.Head (What, Prefix'Length) = Prefix);
 
-                  if Current_Char = ''' then
-                     Closing_Value := ''';
-                  else
-                     Include_Filename := Include_Filename & Current_Char;
-                     Closing_Value := ' ';
-                  end if;
 
-                  Status := In_Include_Filename;
+      Name_To_Option : Name_Tables.Map :=
+                         Name_Tables.New_Map (100 * Options'Pos (Options'Last));
 
-               when In_Include_Filename =>
-                  if Current_Char = Closing_Value then
-                     Process_Include (Include_Filename);
-                  else
-                     Include_Filename := Include_Filename & Current_Char;
-                  end if;
 
-               when In_Name =>
-                  if Current_Char = ' '  then
-                     Update (What                    => Result,
-                             Name                    => To_String (Name_Accumulator),
-                             Value                   => "",
-                             Name_To_Option          => Name_To_Option,
-                             When_Repeated           => When_Repeated,
-                             Concatenation_Separator => Concatenation_Separator);
+      No_Value          : constant Option_Value :=
+                            (Status => Undefined,
+                             Value  => Null_Unbounded_String);
 
-                     Status := Skipping_Spaces;
+      No_More_Options : Boolean;
+   begin
+      return Result : Parsed_CL :=
+        Parsed_CL'(Arguments => String_Vectors.Empty_Vector,
+                   Missing   => Option_Lists.Empty_List,
+                   Options   => (others => No_Value))
+      do
 
-                  elsif Current_Char = Option_Value_Separator then
-                     Status := Begin_Of_Value;
+         Fill_Name_Table (Syntax              => Syntax,
+                          Table               => Name_To_Option,
+                          Prefix              => Option_Prefix,
+                          Name_Case_Sensitive => Name_Case_Sensitive);
 
-                  else
-                     Name_Accumulator := Name_Accumulator & Current_Char;
-                  end if;
-
-               when Begin_Of_Value =>
-                  Value_Accumulator := Null_Unbounded_String;
-                  Status := In_Value;
-
-                  if Current_Char = '"' then
-                     Closing_Value := '"';
-
-                  else
-                     Closing_Value := ' ';
-                     Value_Accumulator := Value_Accumulator & Current_Char;
-
-                  end if;
-
-               when In_Value =>
-                  if Current_Char = Closing_Value  then
-                     Update (What                    => Result,
-                             Name                    => To_String (Name_Accumulator),
-                             Value                   => To_String (Value_Accumulator),
-                             Name_To_Option          => Name_To_Option,
-                             When_Repeated           => When_Repeated,
-                             Concatenation_Separator => Concatenation_Separator);
-
-                     Name_Accumulator := Null_Unbounded_String;
-                     Value_Accumulator := Null_Unbounded_String;
-
-                     Status := Skipping_Spaces;
-                  else
-                     Value_Accumulator := Value_Accumulator & Current_Char;
-                  end if;
-
-            end case;
+         for Opt in Options loop
+            if Syntax (Opt).On_Missing = Use_Default then
+               Result.Options (Opt) :=  (Status => Default,
+                                         Value  => Syntax (Opt).Default);
+            end if;
          end loop;
-      end;
 
 
-   end Parse;
+         No_More_Options := False;
+
+         for Word of Source loop
+            if No_More_Options then
+               Result.Arguments.Append (Word);
+
+            elsif Word = Option_Prefix then
+               No_More_Options := True;
+
+            elsif Begin_With (Word, Option_Prefix) then
+               Process_Option (Input    => Word,
+                               Result   => Result.Options,
+                               Name_Map => Name_To_Option);
+
+            elsif Begin_With (Word, Include_Prefix) then
+               Process_Include (Word);
+
+            else
+               Result.Arguments.Append (Word);
+            end if;
+         end loop;
+
+
+         for Opt in Options loop
+            if not Result.Is_Defined (Opt) and Syntax (Opt).On_Missing = Die then
+               Result.Missing.Append (Opt);
+            end if;
+         end loop;
+
+      end return;
+   end Parse_Arguments;
 
    -----------
    -- Parse --
    -----------
 
-   procedure Parse
-     (Names                   : Option_Names;
-      Result                  : out Option_Values;
-      When_Repeated           : When_Repeated_Do := Always_Die;
-      Option_Value_Separator  : Character        := Default_Value_Separator;
-      Include_Prefix          : Character := No_Include_Prefix;
+   function Parse_CL
+     (Syntax                  : CLI_Syntax;
+      Option_Value_Separator  : String := Default_Value_Separator;
+      Include_Prefix          : String := No_Include_Prefix;
       Option_Prefix           : String := Default_Option_Prefix;
       Concatenation_Separator : String := Default_Concatenation_Separator;
       Name_Case_Sensitive     : Boolean := False)
+      return Parsed_CL
    is
-      function Command_Line_Restored return String
+      function Command_Line_Restored return String_Vectors.Vector
       is
          use Sparked_Command_Line;
 
-         Accumulator : Unbounded_String := Null_Unbounded_String;
+         Result : String_Vectors.Vector;
       begin
          for I in 1 .. Argument_Count loop
-            Accumulator := Accumulator & " " & Argument (I);
+            Result.Append (Argument (I));
          end loop;
 
 
-         return To_String (Accumulator);
+         return Result;
       end Command_Line_Restored;
    begin
-      Parse (Source                  => Command_Line_Restored,
-             Result                  => Result,
-             Names                   => Names,
-             When_Repeated           => When_Repeated,
-             Option_Value_Separator  => Option_Value_Separator,
-             Include_Prefix          => Include_Prefix,
-             Option_Prefix           => Option_Prefix,
-             Concatenation_Separator => Concatenation_Separator,
-             Name_Case_Sensitive     => Name_Case_Sensitive);
-   end Parse;
+      return Parse_Arguments
+        (Source                  => Command_Line_Restored,
+         Syntax                  => Syntax,
+         Option_Value_Separator  => Option_Value_Separator,
+         Include_Prefix          => Include_Prefix,
+         Option_Prefix           => Option_Prefix,
+         Concatenation_Separator => Concatenation_Separator,
+         Name_Case_Sensitive     => Name_Case_Sensitive);
+   end Parse_CL;
 
 
-   --------------------------
-   -- Find_Missing_Options --
-   --------------------------
-
-   function Find_Missing_Options (Values    : Option_Values;
-                                  Mandatory : Option_Flags)
-                                  return String_Vectors.Vector
-   is
-      use String_Vectors;
-
-      Missing_Options : String_Vectors.Vector (Values'Length);
-   begin
-      for Opt in Options loop
-         if Values (Opt).Missing and Mandatory (Opt) then
-            Append (Missing_Options, To_Unbounded_String (Options'Image (Opt)));
-         end if;
-      end loop;
-
-      return Missing_Options;
-   end Find_Missing_Options;
 
    ----------
    -- Join --
    ----------
 
-   function Join (Item : String_Vectors.Vector;
+   function Join (Item      : String_Vectors.Vector;
                   Separator : String)
                   return Unbounded_String
    is
@@ -420,88 +541,25 @@ package body Generic_Command_Line_Parser is
          Result := Result & Element (Item, I);
       end loop;
 
-      return result;
+      return Result;
    end Join;
-
-   --------------------------
-   -- Find_Missing_Options --
-   --------------------------
-
-   function Find_Missing_Options  (Values    : Option_Values;
-                                   Mandatory : Option_Flags;
-                                   Join_With : String := " ")
-                                   return String
-   is
-      Missing : constant String_Vectors.Vector :=
-                  Find_Missing_Options (Values, Mandatory);
-   begin
-      return To_String (Join (Missing, Join_With));
-   end Find_Missing_Options;
 
    ----------------
    -- Help_Lines --
    ----------------
 
-   function Help_Lines (Specs : Option_Names)
+   function Help_Lines (Syntax : CLI_Syntax)
                         return String_Vectors.Vector
    is
-
-      Ignored : Name_Tables.Map := Name_Tables.New_Map (Specs'Length * 100);
-      Result  : String_Vectors.Vector (Specs'Length);
    begin
-      Fill_Name_Table (Names               => Specs,
-                       Prefix              => "",
-                       Table               => Ignored,
-                       Help_Lines          => Result,
-                       Name_Case_Sensitive => True);
-
-      return Result;
+      return Result  : String_Vectors.Vector do
+         for Descr of Syntax loop
+            if Descr.Doc /= Null_Unbounded_String then
+               Result.Append (To_String (Descr.Doc));
+            end if;
+         end loop;
+      end return;
    end Help_Lines;
 
-   --------------------
-   -- Apply_Defaults --
-   --------------------
 
-   procedure Apply_Defaults (Values    : in out Option_Values;
-                             Missing   : out Unbounded_String;
-                             Defaults  : Option_Defaults)
-   is
-      Tmp : String_Vectors.Vector (Values'Length);
-   begin
-      Apply_Defaults (Values    => Values,
-                      Missing   => tmp,
-                      Defaults  => Defaults);
-
-      Missing := Join (Tmp, " ");
-   end Apply_Defaults;
-
-   --------------------
-   -- Apply_Defaults --
-   --------------------
-
-   procedure Apply_Defaults (Values    : in out Option_Values;
-                             Missing   : in out String_Vectors.Vector;
-                             Defaults  : Option_Defaults)
-   is
-      use String_Vectors;
-   begin
-      for Opt in Options loop
-         if Values (Opt).Missing then
-
-            case Defaults (Opt).Class is
-               when Mandatory =>
-                  Append (Missing, To_Unbounded_String (Options'Image (Opt)));
-
-               when Use_Default =>
-                  Values (Opt) := (Missing => False,
-                                   Value   => Defaults (Opt).Default);
-
-               when Ignore =>
-                  null;
-            end case;
-
-         end if;
-      end loop;
-   end Apply_Defaults;
-
-end Generic_Command_Line_Parser;
+   end Generic_Command_Line_Parser;

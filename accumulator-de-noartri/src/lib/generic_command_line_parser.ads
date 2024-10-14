@@ -27,7 +27,7 @@ package  Generic_Command_Line_Parser is
 
    type Parsed_CL is tagged private
      with
-       Constant_Indexing => Argument;
+       Constant_Indexing => Value;
 
    function Is_Defined (Item   : Parsed_CL; Option : Options)
                         return Boolean;
@@ -36,6 +36,14 @@ package  Generic_Command_Line_Parser is
                         return Boolean;
 
    function Value (Item   : Parsed_CL; Option : Options) return String
+     with
+       Pre => Item.Is_Defined (Option);
+
+   function Value (Item   : Parsed_CL; Option : Options) return Integer
+     with
+       Pre => Item.Is_Defined (Option);
+
+   function Value (Item   : Parsed_CL; Option : Options) return Float
      with
        Pre => Item.Is_Defined (Option);
 
@@ -164,5 +172,11 @@ private
 
    function Missing_Options (Item : Parsed_CL) return Option_Lists.List
    is (Item.Missing);
+
+   function Value (Item   : Parsed_CL; Option : Options) return Integer
+   is (Integer'Value (Item.Value (Option)));
+
+   function Value (Item   : Parsed_CL; Option : Options) return Float
+   is (Float'Value (Item.Value (Option)));
 
 end Generic_Command_Line_Parser;

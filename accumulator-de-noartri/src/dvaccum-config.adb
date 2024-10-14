@@ -24,8 +24,6 @@ with Patterns;
 package body DVAccum.Config with SPARK_Mode is
    use type Timestamps.Timestamp;
 
-   function "+" (X : String) return Unbounded_String
-                 renames To_Unbounded_String;
 
    function Strip_Spaces (S : String) return String
    is (Fixed.Trim (Source => S,
@@ -67,7 +65,6 @@ package body DVAccum.Config with SPARK_Mode is
          Parallel,
          Frame_Rate,
          Output_Template,
-         Input_Spec,
          Log_Progress,
          First_Image,
          Start_Time,
@@ -81,67 +78,36 @@ package body DVAccum.Config with SPARK_Mode is
       package CL_Parser is
         new Generic_Command_Line_Parser (Options);
 
-      Option_Specs : constant CL_Parser.Option_Names :=
+      use CL_Parser;
+
+      Option_Specs : constant CL_Parser.CLI_Syntax :=
                        (
-                        Filter               => +"filter",
-                        Oversampling         => +"oversampling|over",
-                        Parallel             => +"n-tasks|parallel",
-                        Frame_Rate           => +"framerate|frame-rate|fps",
-                        Output_Template      => +"output",
-                        Input_Spec           => +"input",
-                        Log_Progress         => +"log-progress|log-to|progress|log",
-                        First_Image          => +"first-image|first",
-                        Start_Time           => +"start",
-                        Stop_Time            => +"stop",
-                        Min                  => +"min",
-                        Max                  => +"max",
-                        Neutral              => +"neutral",
-                        Event_Weigth         => +"weight"
+                        Filter               => Option ("filter") and Mandatory,
+                        Oversampling         => Option ("oversampling|over [1]"),
+                        Parallel             => Option ("n-tasks|parallel"),
+                        Frame_Rate           => Option ("framerate|frame-rate|fps") and Mandatory,
+                        Output_Template      => Option ("output [%b-%d.png]"),
+                        Log_Progress         => Option ("log-progress|log-to|progress|log []"),
+                        First_Image          => Option ("first-image|first [neutral]"),
+                        Start_Time           => Option ("start [0]"),
+                        Stop_Time            => Option ("stop [inf]"),
+                        Min                  => Option ("min [0.0]"),
+                        Max                  => Option ("max [255.0]"),
+                        Neutral              => Option ("neutral [0.0]"),
+                        Event_Weigth         => Option ("gain|weight [1.0]")
                        );
 
-      Defaults : constant CL_Parser.Option_Defaults :=
-                   (
-                    Filter               => CL_Parser.Mandatory_Option,
-                    Oversampling         => (CL_Parser.Use_Default, +"1"),
-                    Parallel             => CL_Parser.Ignore_If_Missing,
-                    Frame_Rate           => CL_Parser.Mandatory_Option
-                    ,
-                    Output_Template      => CL_Parser.Mandatory_Option,
-                    Input_Spec           => CL_Parser.Ignore_If_Missing,
-                    Log_Progress         => (CL_Parser.Use_Default, +""),
-                    First_Image          => (CL_Parser.Use_Default, +""),
-                    Start_Time           => CL_Parser.Ignore_If_Missing,
-                    Stop_Time            => CL_Parser.Ignore_If_Missing,
-                    Min                  => (CL_Parser.Use_Default, +"-1.0"),
-                    Max                  => (CL_Parser.Use_Default, +"1.0"),
-                    Neutral              => CL_Parser.Ignore_If_Missing,
-                    Event_Weigth         => (CL_Parser.Use_Default, +"0.25")
-                   );
 
-      procedure Set_Sampling_Spec (Msg : out Unbounded_String)
-        with
-          Pre => not Is_Set (Sampling_Period),
-          Post => Is_Set (Sampling_Period);
 
-      procedure Set_Start_And_Stop_Times
-        with
-          Pre =>
-            not Is_Set (Start_Time)
-            and not Is_Set (Stop_Time),
-            Post =>
-              Is_Set (Start_Time)
-              and  Is_Set (Stop_Time);
 
-      procedure Set_Levels
+      procedure Set_Levels (Min, Max, Neutral : Float)
         with
-          Pre => not Is_Set (Min)
-          and not Is_Set (Max)
-          and not Is_Set (Neutral)
-          and not Parsed_Options (Min).Missing
-          and not Parsed_Options (Max).Missing,
-          Post => Is_Set (Min)
-          and Is_Set (Max)
-          and Is_Set (Neutral);
+          Pre => not Is_Set (Data.Min)
+          and not Is_Set (Data.Max)
+          and not Is_Set (Data.Neutral),
+          Post => Is_Set (Data.Min)
+          and Is_Set (Data.Max)
+          and Is_Set (Data.Neutral);
 
       --  procedure Set_Decay
       --    with
@@ -158,183 +124,78 @@ package body DVAccum.Config with SPARK_Mode is
                 or Argument (1) = "--help"
                 or Argument (1) = "?")));
 
-      function To_Pixel_Value (X : Unbounded_String) return Frames.Pixel_Value
-      is (Frames.Pixel_Value'Value (To_String (X)));
 
-
-
-      Parsed_Options       : CL_Parser.Option_Values;
-
-      procedure Parse_Options_And_Apply_Defaults (Missing_Options : out Unbounded_String)
-      is
+      procedure Set_Levels (Min, Max, Neutral : Float) is
+         use Frames;
       begin
-         CL_Parser.Parse (Names  => Option_Specs,
-                          Result => Parsed_Options);
-
-         CL_Parser.Apply_Defaults (Values   => Parsed_Options,
-                                   Missing  => Missing_Options,
-                                   Defaults => Defaults);
-      end Parse_Options_And_Apply_Defaults;
-
-      procedure Set_Levels is
-      begin
-         Set (Min, To_Pixel_Value (Parsed_Options (Min).Value));
-         Set (Max, To_Pixel_Value (Parsed_Options (Max).Value));
-
-         if Parsed_Options (Neutral).Missing then
-
-            Set (Neutral, (Get (Min) + Get (Max)) / 2.0);
-
-         else
-            Set (Neutral, To_Pixel_Value (Parsed_Options (Neutral).Value));
-
-         end if;
+         Set (Data.Min, Pixel_Value (Min));
+         Set (Data.Max, Pixel_Value (Max));
+         Set (Data.Neutral, Pixel_Value (Neutral));
       end Set_Levels;
 
 
-      procedure Set_Sampling_Spec (Msg : out Unbounded_String) is
-         use Timestamps;
+      function Parse_First_Image_Spec (Spec : String)
+                                       return Start_Image_Spec_Type
+        with
+          Pre => Data.Is_Set (Neutral)
+          and Data.Is_Set (Max)
+          and Data.Is_Set (Min);
 
-         T : Timestamps.Duration;
+      function Parse_First_Image_Spec (Spec : String)
+                                       return Start_Image_Spec_Type
+      is
       begin
-         T := Value (To_String (Parsed_Options (Frame_Rate).Value));
+         if Spec = "" or Spec = "neutral" then
+            return Start_Image_Spec_Type'(Class    => Uniform,
+                                          Level    => Get (Neutral));
 
-
-         Set (Sampling_Period, T);
-         --  Set (Start_Time, Parse_Start_Time (To_String (Parsed_Options (Start_Time).Value)));
-         --  Set (Stop_Time, Parse_Stop_Time (To_String (Parsed_Options (Stop_Time).Value)));
-
-         Msg := Null_Unbounded_String;
-      end Set_Sampling_Spec;
-
-      --  procedure Set_Negative_Event_Action (Err : out Unbounded_String)
-      --  is
-      --  begin
-      --     if Parsed_Options (On_Negative).Missing then
-      --        Data.Set_Negative_Event_Action (Keep);
-      --        Err := Null_Unbounded_String;
-      --
-      --        return;
-      --     end if;
-      --
-      --
-      --     declare
-      --        Action : constant String := To_String (Parsed_Options (On_Negative).Value);
-      --     begin
-      --        if Action = "keep" or Action = "k" then
-      --           Data.Set_Negative_Event_Action (Keep);
-      --           Err := Null_Unbounded_String;
-      --
-      --        elsif Action = "rectify" or Action = "rect" or Action = "r"  then
-      --           Data.Set_Negative_Event_Action (Rectify);
-      --           Err := Null_Unbounded_String;
-      --
-      --        elsif Action = "clip" or Action = "c" or Action = "0"
-      --          or Action = "ignore"
-      --        then
-      --           Data.Set_Negative_Event_Action (Clip);
-      --           Err := Null_Unbounded_String;
-      --
-      --        else
-      --           Err := To_Unbounded_String ("Unknown negative event action '" & Action & "'");
-      --        end if;
-      --     end;
-      --  end Set_Negative_Event_Action;
-
-      procedure Set_Start_And_Stop_Times is
-
-         Start : Timestamps.Timestamp := Timestamps.Minus_Infinity;
-         Stop  : Timestamps.Timestamp := Timestamps.Infinity;
-      begin
-         Start := (if Parsed_Options (Start_Time).Missing then
-                      Timestamps.Minus_Infinity
-                   else
-                      Timestamps.Value (To_String (Parsed_Options (Start_Time).Value)));
-
-         Stop := (if Parsed_Options (Stop_Time).Missing then
-                     Timestamps.Infinity
-                  else
-                     Timestamps.Value (To_String (Parsed_Options (Stop_Time).Value)));
-
-         --  if not Parsed_Options (Synch_With).Missing then
-         --     declare
-         --        Filename : constant String :=
-         --                     To_String (Parsed_Options (Synch_With).Value);
-         --
-         --        Events   : Event_Sequences.Event_Sequence;
-         --        Metadata : Event_Sequences.Metadata_Map;
-         --     begin
-         --        Event_Streams.Read_Event_Stream (Filename               => Filename,
-         --                                         Use_Absolute_Timestamp => True,
-         --                                         Events                 => Events,
-         --                                         Metadata               => Metadata,
-         --                                         Negative_Event_Weight  => 1);
-         --
-         --        Start := Timestamps.Max (Start, Event_Sequences.T_Min (Events));
-         --        Stop := Timestamps.Min (Stop, Event_Sequences.T_Max (Events));
-         --     end;
-         --  end if;
-
-         Set (Start_Time, Start);
-         Set (Stop_Time, Stop);
-      end Set_Start_And_Stop_Times;
-
-      --  procedure Handle_Metadata_Request is
-      --  begin
-      --     if Parsed_Options (Metadata_Filename).Missing then
-      --        Set (Metadata_Filename, "");
-      --
-      --     elsif Parsed_Options (Metadata_Filename).Value /= Null_Unbounded_String then
-      --        Set (Metadata_Filename, To_String (Parsed_Options (Metadata_Filename).Value));
-      --
-      --     else
-      --        Set (Metadata_Filename, To_String (Output_Filename_Template.Head) & ".meta");
-      --
-      --     end if;
-      --  end Handle_Metadata_Request;
-
-      procedure Handle_First_Image (Err : out Unbounded_String)  is
-         First_Image_Value : constant String :=
-                               To_String (Parsed_Options (First_Image).Value);
-      begin
-         if First_Image_Value = "" then
-            Set_First_Image_Spec ((Class    => Uniform,
-                                   Level    => Get (Neutral)));
-
-         elsif Patterns.Is_Float (First_Image_Value) then
+         elsif Patterns.Is_Float (Spec) then
             declare
                use Frames;
 
                Level : constant Pixel_Value :=
-                         Pixel_Value'Value (First_Image_Value);
+                         Pixel_Value'Value (Spec);
             begin
                if Level > Get (Max) or Level < Get (Min) then
-                  Err := To_Unbounded_String ("First image level out of bounds");
-                  return;
+                  raise Bad_Syntax
+                    with "Initial level out of bounds";
                end if;
 
-               Set_First_Image_Spec ((Class    => Uniform,
-                                      Level    => Level));
+               return Start_Image_Spec_Type'((Class    => Uniform,
+                                              Level    => Level));
 
             end;
 
          else
-            pragma Assert (First_Image_Value /= "");
+            pragma Assert (Spec /= "");
 
-            Set_First_Image_Spec ((Class    => External,
-                                   Filename => To_Unbounded_String (First_Image_Value)));
+            return Start_Image_Spec_Type'(Class    => External,
+                                          Filename => To_Unbounded_String (Spec));
 
          end if;
 
-         Err := Null_Unbounded_String;
+      end Parse_First_Image_Spec;
 
-      end Handle_First_Image;
+      function Missing_Options_Report (Opts : Option_Lists.List)
+                                       return Parsing_Report
+      is
+         function Join (Opts : Option_Lists.List) return Unbounded_String
+         is
+            Result : Unbounded_String;
+         begin
+            for O of Opts loop
+               Result := Result & Options'Image (O);
+            end loop;
 
-      function Make_Report (Msg : Unbounded_String) return Parsing_Report
-      is (Parsing_Report'(Status  => Bad_Command_Line,
-                          Message => Msg));
+            return Result;
+         end Join;
 
-      Error : Unbounded_String;
+      begin
+         return Parsing_Report'(Status  => Bad_Command_Line,
+                                Message =>
+                                  "Missing mandatory options: " & Join (Opts));
+
+      end Missing_Options_Report;
    begin
       if Help_Asked then
          Report := Parsing_Report'(Status  => Full_Help_Asked,
@@ -344,60 +205,61 @@ package body DVAccum.Config with SPARK_Mode is
       end if;
 
 
-      Set_Verbosity_Level ((if Is_A_Tty (2) then Interactive else Logging));
+      Set_Verbosity_Level ((if Is_A_Tty (2) then
+                              Interactive
+                           else
+                              Logging));
 
       declare
-         Missing_Options : Unbounded_String;
-      begin
-         Parse_Options_And_Apply_Defaults (Missing_Options);
+         use Timestamps;
+         use Frames;
 
-         if Missing_Options /= Null_Unbounded_String then
-            Report := Parsing_Report'(Status  => Bad_Command_Line,
-                                      Message =>  "Missing mandatory options: " & Missing_Options);
+         Parsed_Options : constant Parsed_CL := Parse_CL (Option_Specs);
+      begin
+         if not Parsed_Options.Missing_Options.Is_Empty then
+            Report := Missing_Options_Report (Parsed_Options.Missing_Options);
 
             return;
          end if;
+
+         Set_Levels (Min     => Parsed_Options (Min),
+                     Max     => Parsed_Options (Max),
+                     Neutral => Parsed_Options (Neutral));
+
+         Set (Data.Start_Time, Timestamp'(Value (Parsed_Options (Start_Time))));
+
+         Set (Data.Stop_Time, Timestamp'(Value (Parsed_Options (Stop_Time))));
+
+         Set (Sampling_Period, Timestamps.Duration'(Value (Parsed_Options (Frame_Rate))));
+
+         Set_First_Image_Spec (Parse_First_Image_Spec (Parsed_Options (First_Image)));
+
+         Set (Data.Output_Filename_Template, String'(Parsed_Options (Output_Template)));
+
+         Set (Data.Log_Progress, String'(Parsed_Options (Log_Progress)));
+
+         Set (Data.Event_Weigth, Pixel_Value (Float'(Parsed_Options (Event_Weigth))));
+
+         Set (Data.Filter_Spec, String'(Parsed_Options (Filter)));
+
+         Set (Data.Oversampling, Integer'(Parsed_Options (Oversampling)));
+
+         if not Parsed_Options.Is_Defined (Parallel) then
+            Set (Data.N_Tasks, Integer (System.Multiprocessors.Number_Of_CPUs));
+         else
+            Set (Data.N_Tasks, Integer'(Parsed_Options (Parallel)));
+         end if;
+
+
+         if Parsed_Options.Argument_Count = 0 then
+            Add_Input_Filename ("-");
+
+         else
+            for I in 1 .. Parsed_Options.Argument_Count loop
+               Add_Input_Filename (Parsed_Options.Argument (I));
+            end loop;
+         end if;
       end;
-
-      Set_Levels;
-
-      Set_Start_And_Stop_Times;
-
-      Set_Sampling_Spec (Error);
-
-      if Error /= Null_Unbounded_String then
-         Report := Make_Report (Error);
-         return;
-      end if;
-
-      Handle_First_Image (Error);
-
-      if Error /= Null_Unbounded_String then
-         Report := Make_Report (Error);
-         return;
-      end if;
-
-      Set (Data.Output_Filename_Template,
-           To_String (Parsed_Options (Output_Template).Value));
-
-
-      Set (Data.Log_Progress, To_String (Parsed_Options (Log_Progress).Value));
-
-
-      if Parsed_Options (Input_Spec).Missing  then
-         Set (Input_Filename, "-");
-      else
-         Set (Input_Filename, To_String (Parsed_Options (Input_Spec).Value));
-      end if;
-
-      Set (Event_Weigth, To_Pixel_Value (Parsed_Options (Event_Weigth).Value));
-
-      --  Set_Negative_Event_Action (Error);
-
-      if Error /= Null_Unbounded_String then
-         Report := Make_Report (Error);
-         return;
-      end if;
 
       pragma Assert (Is_All_Set);
 

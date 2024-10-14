@@ -7,7 +7,7 @@ with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 use DVAccum;
 
-package Config with SPARK_Mode is
+package dvaccum.Config with SPARK_Mode is
    -- Used in contracts
    function Package_Ready return Boolean
      with Ghost;
@@ -148,4 +148,4 @@ package Config with SPARK_Mode is
 
    function Number_Of_Parallel_Tasks return System.Multiprocessors.CPU;
 
-end Config;
+end Dvaccum.Config;

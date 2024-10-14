@@ -37,14 +37,14 @@ private package DVAccum.Config.Syntax is
          Tail               : Unbounded_String;
          Frame_Number_Width : Positive;
          Padding_Char       : Character;
-         Frame_Format       : Images.Format_Type;
+         Frame_Format       : Frames.Format_Type;
       end record;
 
    type Sampling_Spec is
       record
-         Start           : Times.Timestamp;
-         Stop            : Times.Timestamp;
-         Sampling_Period : Times.Duration;
+         Start           : Timestamps.Timestamp;
+         Stop            : Timestamps.Timestamp;
+         Sampling_Period : Timestamps.Duration;
       end record;
 
    function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec;

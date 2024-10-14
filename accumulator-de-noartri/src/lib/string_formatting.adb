@@ -263,6 +263,63 @@ package body String_Formatting is
       end if;
    end Parse_Precision;
 
+   package body Flag_Parsing is
+      procedure Extract_Flags (Input          : String;
+                               Names          : Flag_Names;
+                               Present        : out Flag_Array;
+                               First_Non_Flag : out Positive)
+      is
+         procedure Find_Flag (C     : Character;
+                              Found : out Boolean;
+                              Flag  : out Flags)
+           with
+             Post => (not Found) or else (Names (Flag) = C);
+
+         ---------------
+         -- Find_Flag --
+         ---------------
+
+         procedure Find_Flag (C     : Character;
+                              Found : out Boolean;
+                              Flag  : out Flags)
+         is
+         begin
+            for F in Names'Range loop
+               if Names (F) = C then
+                  Found := True;
+                  Flag := F;
+               end if;
+            end loop;
+
+            Found := False;
+            Flag := Flags'First;
+         end Find_Flag;
+
+      begin
+         Present := (others => False);
+
+         for I in Input'Range loop
+            declare
+               Flag : Flags;
+               Found : Boolean;
+            begin
+               Find_Flag (C     => Input (I),
+                          Found => Found,
+                          Flag  => Flag);
+
+               if Found then
+                 Present (Flag) := True;
+               else
+                  First_Non_Flag := I;
+                  return;
+               end if;
+            end;
+         end loop;
+
+         First_Non_Flag := Input'Last + 1;
+      end Extract_Flags;
+   end Flag_Parsing;
+
    -------------
    -- Provide --
    -------------

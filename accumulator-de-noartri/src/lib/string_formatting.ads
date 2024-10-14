@@ -36,13 +36,18 @@ package String_Formatting is
                     Provider            : Provider_Function;
                     Accepted_Directives : String := "";
                     Directive_Prefix    : Character := '%')
-                    return String;
+                    return String
+     with
+       Pre => Characters.Handling.Is_Special (Directive_Prefix);
 
    function Expand (Format              : String;
                     Provider            : Provider_Interface'Class;
                     Accepted_Directives : String := "";
                     Directive_Prefix    : Character := '%')
-                    return String;
+                    return String
+     with
+       Pre => Characters.Handling.Is_Special (Directive_Prefix);
+
 
    function Expand (Format   : Parsed_Format;
                     Provider : Provider_Function)
@@ -55,6 +60,19 @@ package String_Formatting is
    procedure Parse_Precision (Input : String;
                               Size  : out Positive;
                               Prec  : out Natural);
+
+   generic
+      type Flags is (<>);
+   package Flag_Parsing is
+      type Flag_Names is array (Flags) of Character;
+
+      type Flag_Array is array (Flags) of Boolean;
+
+      procedure Extract_Flags (Input          : String;
+                               Names          : Flag_Names;
+                               Present        : out Flag_Array;
+                               First_Non_Flag : out Positive);
+   end Flag_Parsing;
 private
    type Callback_Based_Provider (Callback : Provider_Function) is
      new Provider_Interface

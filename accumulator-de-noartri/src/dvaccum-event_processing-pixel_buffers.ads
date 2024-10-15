@@ -32,11 +32,6 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
        with
          Constant_Indexing => Value;
 
-   type Frame_Index is private;
-
-   No_Frame : constant Frame_Index;
-
-   function To_Int (X : Frame_Index) return Natural;
 
    type Pixel_ID is private;
 
@@ -74,19 +69,13 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
                                     return Frame_Index;
 
    function Value (Buffer : Pixel_Buffer;
-                   Time   : Frame_Index;
-                   Pixel  : Pixel_Id)
+                   Pixel  : Frames.Point_Type;
+                   Time   : Frame_Index)
                    return Frames.Pixel_Value;
 
 private
    type Pixel_ID is new Natural;
 
-   type Frame_Index is new Natural;
-
-   subtype Valid_Frame_Index is
-     Frame_Index range Frame_Index'First + 1 .. Frame_Index'Last;
-
-   No_Frame : constant Frame_Index := Frame_Index'First;
 
 
    package Pixel_Data_Lists is

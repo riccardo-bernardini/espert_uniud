@@ -39,13 +39,13 @@ package  Generic_Command_Line_Parser is
      with
        Pre => Item.Is_Defined (Option);
 
-   function Value (Item   : Parsed_CL; Option : Options) return Integer
-     with
-       Pre => Item.Is_Defined (Option);
-
-   function Value (Item   : Parsed_CL; Option : Options) return Float
-     with
-       Pre => Item.Is_Defined (Option);
+   --  function Value (Item   : Parsed_CL; Option : Options) return Integer
+   --    with
+   --      Pre => Item.Is_Defined (Option);
+   --
+   --  function Value (Item   : Parsed_CL; Option : Options) return Float
+   --    with
+   --      Pre => Item.Is_Defined (Option);
 
    function Argument_Count (Item : Parsed_CL) return Natural;
 
@@ -173,10 +173,10 @@ private
    function Missing_Options (Item : Parsed_CL) return Option_Lists.List
    is (Item.Missing);
 
-   function Value (Item   : Parsed_CL; Option : Options) return Integer
-   is (Integer'Value (Item.Value (Option)));
-
-   function Value (Item   : Parsed_CL; Option : Options) return Float
-   is (Float'Value (Item.Value (Option)));
+   --  function Value (Item   : Parsed_CL; Option : Options) return Integer
+   --  is (Integer'Value (Item.Value (Option)));
+   --
+   --  function Value (Item   : Parsed_CL; Option : Options) return Float
+   --  is (Float'Value (Item.Value (Option)));
 
 end Generic_Command_Line_Parser;

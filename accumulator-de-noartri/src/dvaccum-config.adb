@@ -88,7 +88,7 @@ package body DVAccum.Config with SPARK_Mode is
                         Frame_Rate           => Option ("framerate|frame-rate|fps") and Mandatory,
                         Output_Template      => Option ("output [%b-%d.png]"),
                         Log_Progress         => Option ("log-progress|log-to|progress|log []"),
-                        First_Image          => Option ("first-image|first [neutral]"),
+                        First_Image          => Option ("first-image|first [neutral:]"),
                         Start_Time           => Option ("start [0]"),
                         Stop_Time            => Option ("stop [inf]"),
                         Min                  => Option ("min [0.0]"),
@@ -96,23 +96,6 @@ package body DVAccum.Config with SPARK_Mode is
                         Neutral              => Option ("neutral [0.0]"),
                         Event_Weigth         => Option ("gain|weight [1.0]")
                        );
-
-
-
-
-      procedure Set_Levels (Min, Max, Neutral : Float)
-        with
-          Pre => not Is_Set (Data.Min)
-          and not Is_Set (Data.Max)
-          and not Is_Set (Data.Neutral),
-          Post => Is_Set (Data.Min)
-          and Is_Set (Data.Max)
-          and Is_Set (Data.Neutral);
-
-      --  procedure Set_Decay
-      --    with
-      --      Pre => not Is_Set (Decay),
-      --      Post => Is_Set (Decay);
 
 
       function Help_Asked return Boolean
@@ -125,13 +108,6 @@ package body DVAccum.Config with SPARK_Mode is
                 or Argument (1) = "?")));
 
 
-      procedure Set_Levels (Min, Max, Neutral : Float) is
-         use Frames;
-      begin
-         Set (Data.Min, Pixel_Value (Min));
-         Set (Data.Max, Pixel_Value (Max));
-         Set (Data.Neutral, Pixel_Value (Neutral));
-      end Set_Levels;
 
 
       function Parse_First_Image_Spec (Spec : String)
@@ -144,34 +120,61 @@ package body DVAccum.Config with SPARK_Mode is
       function Parse_First_Image_Spec (Spec : String)
                                        return Start_Image_Spec_Type
       is
-      begin
-         if Spec = "" or Spec = "neutral" then
+         use Frames;
+
+         function Uniform_Image (Level : Pixel_Value) return Start_Image_Spec_Type
+         is
+         begin
+            if Level > Get (Max) or Level < Get (Min) then
+               raise Bad_Syntax
+                 with "Initial level out of bounds";
+            end if;
+
             return Start_Image_Spec_Type'(Class    => Uniform,
-                                          Level    => Get (Neutral));
+                                          Level    => Level);
+
+         end Uniform_Image;
+
+         function Image_File (Filename : String) return Start_Image_Spec_Type
+         is
+         begin
+            if Filename = "" then
+               raise Constraint_Error;
+            end if;
+
+            return (Class    => External,
+                    Filename => To_Unbounded_String (Filename));
+         end Image_File;
+
+         function Begin_With (What : String; Prefix : String) return Boolean
+         is (What'Length >= Prefix'Length and then
+             Fixed.Head (What, Prefix'Length) = Prefix);
+
+         function Tail (X : String) return String
+         is
+            Pos : constant Natural := ada.Strings.Fixed.Index (X, ":");
+         begin
+            if Pos = 0 then
+               raise Constraint_Error;
+            end if;
+
+            return X (Pos + 1 .. X'Last);
+         end Tail;
+      begin
+         if Spec = "" or Spec = "uniform:" then
+            return Uniform_Image (Get (Neutral));
 
          elsif Patterns.Is_Float (Spec) then
-            declare
-               use Frames;
+            return Uniform_Image (Pixel_Value'Value (Spec));
 
-               Level : constant Pixel_Value :=
-                         Pixel_Value'Value (Spec);
-            begin
-               if Level > Get (Max) or Level < Get (Min) then
-                  raise Bad_Syntax
-                    with "Initial level out of bounds";
-               end if;
+         elsif Begin_With (Spec, "uniform:") or Begin_With (Spec, "constant:") then
+            return Uniform_Image (Pixel_Value'Value (Tail (Spec)));
 
-               return Start_Image_Spec_Type'((Class    => Uniform,
-                                              Level    => Level));
-
-            end;
+         elsif Begin_With (Spec, "file:") then
+            return Image_File (Tail (Spec));
 
          else
-            pragma Assert (Spec /= "");
-
-            return Start_Image_Spec_Type'(Class    => External,
-                                          Filename => To_Unbounded_String (Spec));
-
+            return Image_File (Spec);
          end if;
 
       end Parse_First_Image_Spec;
@@ -222,9 +225,9 @@ package body DVAccum.Config with SPARK_Mode is
             return;
          end if;
 
-         Set_Levels (Min     => Parsed_Options (Min),
-                     Max     => Parsed_Options (Max),
-                     Neutral => Parsed_Options (Neutral));
+         Set (Data.Min, Pixel_Value'Value (Parsed_Options (Min)));
+         Set (Data.Max, Pixel_Value'Value (Parsed_Options (Max)));
+         Set (Data.Neutral, Pixel_Value'Value (Parsed_Options (Neutral)));
 
          Set (Data.Start_Time, Timestamp'(Value (Parsed_Options (Start_Time))));
 
@@ -234,20 +237,20 @@ package body DVAccum.Config with SPARK_Mode is
 
          Set_First_Image_Spec (Parse_First_Image_Spec (Parsed_Options (First_Image)));
 
-         Set (Data.Output_Filename_Template, String'(Parsed_Options (Output_Template)));
+         Set (Data.Output_Filename_Template, Parsed_Options (Output_Template));
 
-         Set (Data.Log_Progress, String'(Parsed_Options (Log_Progress)));
+         Set (Data.Log_Progress, Parsed_Options (Log_Progress));
 
-         Set (Data.Event_Weigth, Pixel_Value (Float'(Parsed_Options (Event_Weigth))));
+         Set (Data.Event_Weigth, Pixel_Value'Value (Parsed_Options (Event_Weigth)));
 
          Set (Data.Filter_Spec, String'(Parsed_Options (Filter)));
 
-         Set (Data.Oversampling, Integer'(Parsed_Options (Oversampling)));
+         Set (Data.Oversampling, Integer'Value (Parsed_Options (Oversampling)));
 
          if not Parsed_Options.Is_Defined (Parallel) then
             Set (Data.N_Tasks, Integer (System.Multiprocessors.Number_Of_CPUs));
          else
-            Set (Data.N_Tasks, Integer'(Parsed_Options (Parallel)));
+            Set (Data.N_Tasks, Integer'Value (Parsed_Options (Parallel)));
          end if;
 
 

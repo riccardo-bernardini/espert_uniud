@@ -32,6 +32,9 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
        with
          Constant_Indexing => Value;
 
+   type Pixel_Buffer_Access is
+     access Pixel_Buffer;
+
 
    type Pixel_ID is private;
 

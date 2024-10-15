@@ -3,6 +3,7 @@ with DVAccum.Frames;
 with DVAccum.Event_IO;
 with DVAccum.Timestamps;
 with DVAccum.Events;
+with DVAccum.Filters;
 
 package Dvaccum.Event_Processing is
 
@@ -22,20 +23,11 @@ package Dvaccum.Event_Processing is
    type Frame_Name_Generator is
      access function (Frame : Frame_Index) return String;
 
-   type Filter_Coefficients is
-     array (Natural range <>) of Frames.Pixel_Value;
-
-   type Filter_Spec (Num_Degree, Den_Degree : Natural) is
-      record
-         Num : Filter_Coefficients (0 .. Num_Degree);
-         Den : Filter_Coefficients (0 .. Den_Degree);
-      end record;
-
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
-                      Event_Weight   : Float;
-                      Offset         : frames.Pixel_Value;
-                      Filter         : Filter_Spec;
+                      Event_Weight   : Frames.Pixel_Value;
+                      Offset         : Frames.Pixel_Value;
+                      Filter         : Filters.Filter_Type;
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
                       To             : Timestamps.Timestamp;

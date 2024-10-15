@@ -9,7 +9,7 @@ package DVAccum.Events is
 
    type Weight_Type is (Increase, Decrease);
 
-   type Event_Type is private;
+   type Event_Type is tagged private;
 
    function New_Event (T      : Timestamp;
                        X      : Frames.X_Coordinate_Type;
@@ -46,6 +46,7 @@ package DVAccum.Events is
 private
 
    type Event_Type is
+     tagged
       record
          T      : Timestamp;
          X      : Frames.X_Coordinate_Type;

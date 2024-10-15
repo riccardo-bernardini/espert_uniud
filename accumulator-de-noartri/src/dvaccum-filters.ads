@@ -51,6 +51,10 @@ package Dvaccum.Filters is
 
    Parsing_Error : exception;
 
+   function "*" (Gain : Frames.Pixel_Value;
+                 Filter : Filter_Type)
+                 return Filter_Type;
+
    procedure Reset (Filter : in out Filter_Type);
 
    procedure Process (Filter : in out Filter_Type;

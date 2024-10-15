@@ -2,7 +2,7 @@ with DVAccum.Event_Processing.Segment_Queues;
 with DVAccum.Event_Processing.Pixel_Buffers;
 with DVAccum.Event_Processing.Accumulator_Tasks;
 with DVAccum.Event_Processing.Frame_Makers;
-with DVAccum.config;
+with DVAccum.Config;
 
 with System.Multiprocessors;
 
@@ -13,9 +13,9 @@ package body Dvaccum.Event_Processing is
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
-                      Event_Weight   : Float;
-                      Offset         : frames.Pixel_Value;
-                      Filter         : Filter_Spec;
+                      Event_Weight   : Frames.Pixel_Value;
+                      Offset         : Frames.Pixel_Value;
+                      Filter         : Filters.Filter_Type;
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
                       To             : Timestamps.Timestamp;
@@ -31,6 +31,8 @@ package body Dvaccum.Event_Processing is
          use Segment_Queues;
          use Frames;
 
+         function Pixel_Of (Ev : Events.Event_Type) return Frames.Point_Type
+         is ((Ev.X, Ev.Y));
          No_Pixel : constant Frames.Point_Type := (X_Coordinate_Type'Last,
                                                    Y_Coordinate_Type'Last);
 
@@ -42,15 +44,15 @@ package body Dvaccum.Event_Processing is
          for Ev of Source loop
             if Current_Pixel = No_Pixel then
                Begin_Of_Segment := Cursor;
-               Current_Pixel := (Events.X (Ev), Events.Y (Ev));
+               Current_Pixel := Pixel_Of (Ev);
 
-            elsif Current_Pixel /= (Events.X (Ev), Events.Y (Ev)) then
+            elsif Current_Pixel /= Pixel_Of(Ev) then
                Segments.Append (Event_Segment'(First    => Begin_Of_Segment,
                                                Last     => Cursor - 1,
                                                Location => Current_Pixel));
 
                Begin_Of_Segment := Cursor;
-               Current_Pixel := (Events.X (Ev), Events.Y (Ev));
+               Current_Pixel := Pixel_Of (Ev);
 
             end if;
 
@@ -71,14 +73,15 @@ package body Dvaccum.Event_Processing is
         (Event_Storage : Ev_Access;
          Segments      : Segment_Queues.Segment_Queue_Access;
          Pixels        : Pixel_Buffers.Pixel_Buffer;
-         Filter        : Filter_Spec;
-         Event_Weight  : Float;
+         Filter        : Filters.Filter_Type;
+         Event_Weight  : Frames.Pixel_Value;
          N_Cpu         : System.Multiprocessors.CPU)
       is
          use System.Multiprocessors;
          use Frames;
+         use Filters;
 
-         Scaled_Filter : Filter_Spec := Filter;
+         Scaled_Filter : constant Filters.Filter_Type := Event_Weight * Filter;
 
          type Accumulator_Access is
            access Accumulator_Tasks.Accumulator;
@@ -90,23 +93,17 @@ package body Dvaccum.Event_Processing is
 
          Parameters   : constant Accumulator_Tasks.Parameter_Access :=
                           new Accumulator_Tasks.Parameter_Record'
-                            (Num_Degree     => Filter.Num_Degree,
-                             Den_Degree     => Filter.Den_Degree,
-                             Segments       => Segments,
-                             Events         => Event_Array_Access (Event_Storage),
-                             Pixels         => Pixels,
-                             Filter         => Scaled_Filter,
-                             From           => From,
-                             To             => To,
+                            (Segments        => Segments,
+                             Events          => Event_Array_Access (Event_Storage),
+                             Pixels          => Pixels,
+                             Filter          => Scaled_Filter,
+                             From            => From,
+                             To              => To,
                              Frame_Duration  => Frame_Duration,
-                             Oversampling   => Oversampling);
+                             Oversampling    => Oversampling);
       begin
-         for Coeff of  Scaled_Filter.Num loop
-            Coeff := Coeff * Pixel_Value (Event_Weight);
-         end loop;
-
          for I in Accumulators'Range loop
-            Accumulators (I) := new Accumulator_Tasks.Accumulator(Parameters);
+            Accumulators (I) := new Accumulator_Tasks.Accumulator (Parameters);
          end loop;
       end Accumulate;
 
@@ -119,7 +116,7 @@ package body Dvaccum.Event_Processing is
                              Offset     : Frames.Pixel_Value;
                              N_Cpu      : System.Multiprocessors.CPU)
       is
-        -- use System.Multiprocessors;
+         -- use System.Multiprocessors;
          use Frame_Makers;
 
          type Maker_Access is

@@ -7,7 +7,7 @@ package Dvaccum.Event_Processing.Accumulator_Tasks is
       record
          Segments       : Segment_Queues.Segment_Queue_Access;
          Events         : Event_Array_Access;
-         Pixels         : Pixel_Buffers.Pixel_Buffer;
+         Pixels         : Pixel_Buffers.Pixel_Buffer_Access;
          Filter         : Filters.Filter_Type;
          From           : Timestamps.Timestamp;
          To             : Timestamps.Timestamp;

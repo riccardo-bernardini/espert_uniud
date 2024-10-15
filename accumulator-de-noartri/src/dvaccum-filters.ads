@@ -49,6 +49,8 @@ package Dvaccum.Filters is
    function Parse (Descr    : String;
                    Sampling : Float) return Filter_Type;
 
+   Parsing_Error : exception;
+
    procedure Reset (Filter : in out Filter_Type);
 
    procedure Process (Filter : in out Filter_Type;
@@ -64,13 +66,12 @@ package Dvaccum.Filters is
          Input'First = Apply'Result'First
          and Input'Last = Apply'Result'Last;
 private
-   type Filter_Atom (Num_Degree   : Natural;
-                     Den_Degree   : Natural;
-                     Status_Size  : Positive) is
+   type Filter_Atom (Degree : Natural) is
       record
-         Num    : Signal (0 .. Num_Degree);
-         Den    : Signal (0 .. Den_Degree);
-         Status : Signal (1 .. Status_Size) := (others => 0.0);
+         Is_Fir : Boolean;
+         Num    : Signal (0 .. Degree) := (others => 0.0);
+         Den    : Signal (0 .. Degree) := (others => 0.0);
+         Status : Signal (1 .. Degree) := (others => 0.0);
       end record;
 
    package Atom_Vectors is

@@ -1,14 +1,34 @@
 with Ada.Strings.Fixed;
+with Ada.Numerics.Elementary_Functions;
 
 with Tokenize;
 with Patterns;
 
 package body Dvaccum.Filters is
+   ---------------
+   -- Make_Atom --
+   ---------------
+
+   function Make_Atom (Num, Den : Signal)
+                       return Filter_Atom
+   is
+      Max_Deg : constant Natural := Natural'Max (Num'Last, Den'Last);
+
+   begin
+      return Result : Filter_Atom (Max_Deg) do
+         Result.Den (Den'Range) := Den;
+         Result.Num (Num'Range) := Num;
+
+         Result.Is_Fir := (Den'Length = 1);
+      end return;
+   end Make_Atom;
+
    function Parse (Descr    : String;
                    Sampling : Float) return Filter_Type
    is
       use Tokenize;
       use Ada.Strings;
+      use Frames;
 
       function Strip (S : String) return String
       is (Fixed.Trim (Source => S,
@@ -25,7 +45,6 @@ package body Dvaccum.Filters is
 
          function Parse_Poly (X : String) return Signal
          is
-            use Frames;
 
             Coeffs : constant String_Vectors.Vector := Split (X);
          begin
@@ -35,7 +54,8 @@ package body Dvaccum.Filters is
                      C : constant String := Strip (Coeffs (I + Coeffs.First_Index));
                   begin
                      if not Patterns.Is_Float (C) then
-                        raise Constraint_Error;
+                        raise Parsing_Error
+                          with "Invalid number [" & C & "]";
                      end if;
 
                      Result (I) := Pixel_Value'Value (C);
@@ -49,7 +69,6 @@ package body Dvaccum.Filters is
                                        return Filter_Atom
          is
             use type Ada.Containers.Count_Type;
-            use Frames;
 
             function Tau_To_Pole (Input    : String;
                                   Sampling : Float)
@@ -76,15 +95,20 @@ package body Dvaccum.Filters is
 
                end if;
 
+
                declare
-                  Den : constant Signal := Parse_Poly (Input (Input'First .. Last));
-                  Tau : constant Float := Mult * Float (Den (Den'First));
+                  use Ada.Numerics.Elementary_Functions;
+
+                  Number : constant String := Input (Input'First .. Last);
+                  Tau : Float;
                begin
-                  if Den'Length /= 1 then
-                     raise Constraint_Error;
+                  if not Patterns.Is_Float (Number) then
+                     raise Parsing_Error
+                       with "Invalid number [" & Number & "]";
                   end if;
 
-                  return Pixel_Value (Sampling / Tau);
+                  Tau := Mult * Float'Value (Number);
+                  return Pixel_Value (Exp (-Sampling / Tau));
                end;
 
             end Tau_To_Pole;
@@ -98,7 +122,7 @@ package body Dvaccum.Filters is
             declare
                Num_Part  : constant String := Strip (Parts (1));
                Num       : Pixel_Value;
-               Pole : constant Pixel_Value := Tau_To_Pole (Strip (Parts (2)), Sampling);
+               Pole      : constant Pixel_Value := Tau_To_Pole (Strip (Parts (2)), Sampling);
             begin
                if Num_Part = "" then
                   Num := 1.0;
@@ -111,13 +135,9 @@ package body Dvaccum.Filters is
 
                end if;
 
-               return Filter_Atom'
-                 (Num_Degree  => 0,
-                  Den_Degree  => 1,
-                  Status_Size => 1,
-                  Num         => (0 => Num),
-                  Den         => (1.0, -Pole),
-                  Status      => (others => 0.0));
+               return Make_Atom (Num => (0 => Num),
+                                 Den => (1.0, -Pole));
+
             end;
          end Parse_Time_Constant;
 
@@ -135,13 +155,7 @@ package body Dvaccum.Filters is
                Num : constant Signal := Parse_Poly (Parts (1));
                Den : constant Signal := Parse_Poly (Parts (2));
             begin
-               return Filter_Atom'
-                 (Num_Degree  => Num'Last,
-                  Den_Degree  => Den'Last,
-                  Status_Size => Integer'Max (Num'Length, Den'Length),
-                  Num         => Num,
-                  Den         => Den,
-                  Status      => (others => 0.0));
+               return Make_Atom (Num => Num, Den => Den);
             end;
          end Parse_Iir;
 
@@ -151,12 +165,7 @@ package body Dvaccum.Filters is
          begin
             pragma Assert (Num'First = 0);
 
-            return Filter_Atom'(Num_Degree  => Num'Last,
-                                Den_Degree  => 0,
-                                Status_Size => Num'Length,
-                                Num         => Num,
-                                Den         => (0 => 0.0),
-                                Status      => (others => 0.0));
+            return Make_Atom (Num => Num, Den => (0 => 1.0));
          end Parse_Fir;
 
          type Filter_Class is (FIR, IIR, Time_Constant);
@@ -176,6 +185,15 @@ package body Dvaccum.Filters is
             end if;
          end Classify;
       begin
+         if Input = "integrator"
+           or Input = "int"
+           or Input = "accumulator"
+           or Input = "acc"
+         then
+            return Make_Atom (Num => (0 => 1.0),
+                              Den => (0 => 1.0, 1 => -1.0));
+         end if;
+
          case Classify (Input) is
             when FIR =>
                return Parse_FIR (Input);
@@ -217,9 +235,33 @@ package body Dvaccum.Filters is
                       Output :    out Frames.Pixel_Value;
                       Input  :        Frames.Pixel_Value)
    is
+      use type Frames.Pixel_Value;
    begin
-      pragma Compile_Time_Warning (True, "Unimplemented");
-      raise Program_Error;
+      if Filter.Is_FIR then
+         Output := Input * Filter.Num (0)+Filter.Status (1);
+
+         for I in 1 .. Filter.Degree - 1 loop
+            Filter.Status (I) :=
+              Filter.Status (I + 1) +
+              Input * Filter.Num (I);
+         end loop;
+
+         Filter.Status (Filter.Degree) :=
+           Input * Filter.Num (Filter.Degree);
+      else
+         Output := Input * Filter.Num (0)+Filter.Status (1);
+
+         for I in 1 .. Filter.Degree - 1 loop
+            Filter.Status (I) :=
+              Filter.Status (I + 1) +
+              Input * Filter.Num (I) +
+              Output * Filter.Den (I);
+         end loop;
+
+         Filter.Status (Filter.Degree) :=
+           Input * Filter.Num (Filter.Degree) +
+           Output * Filter.Den (Filter.Degree);
+      end if;
    end Process;
 
    -------------

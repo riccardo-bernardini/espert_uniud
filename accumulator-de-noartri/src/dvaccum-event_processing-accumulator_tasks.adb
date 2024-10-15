@@ -2,25 +2,37 @@
 package body Dvaccum.Event_Processing.Accumulator_Tasks is
    task body Accumulator is
       use Segment_Queues;
+      use Pixel_Buffers;
 
-      procedure Store (Data     : Filters.Signal;
+      function Subsample (Data : Filters.Signal)
+                          return Pixel_History
+      is
+         Size : constant Positive := Data'Length / Parameters.Oversampling;
+      begin
+         return Result : Pixel_History (0 .. Size - 1) do
+            for I in Result'Range loop
+               Result (I) := Data (I * Parameters.Oversampling);
+            end loop;
+         end return;
+      end Subsample;
+
+      procedure Store (Data     : Pixel_History;
                        Location : Frames.Point_Type)
       is
-         N_Stored : constant Positive := Data'Length / Parameters.Oversampling;
-         Buffer   : Pixel_Buffers.Pixel_History (0 .. N_Stored - 1);
       begin
-         for I in Buffer'Range loop
-            Buffer (I) := Data (I * Parameters.Oversampling);
-         end loop;
-
-         Parameters.Pixels.Store (Location, Buffer);
+         Parameters.Pixels.Store (Location, Data);
       end Store;
 
-      function Make_Signal (Start, Stop : Natural)
-                            return Filters.Signal
+      type Event_Array is
+        array (Natural range <>) of Events.Event_Type;
+
+      function Extract_Segment (Start, Stop : Natural)
+                                return Event_Array
       is
-         Buffer : Filters.Signal (0 .. Stop - Start + 1);
-         Cursor : Natural := Result'First;
+         use type Timestamps.Timestamp;
+
+         Buffer : Event_Array (0 .. Stop - Start + 1);
+         Cursor : Natural := Buffer'First;
       begin
          for I in Start .. Stop loop
             if
@@ -31,7 +43,34 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
                Cursor := Cursor + 1;
             end if;
          end loop;
-      end Make_Signal;
+
+         return Buffer;
+      end Extract_Segment;
+
+      function Collate (Segment : Event_Array) return Filters.Signal
+      is
+         use Timestamps;
+         use Frames;
+
+         Step : constant Timestamps.Duration :=
+                  Parameters.Frame_Duration / Float (Parameters.Oversampling);
+
+         N_Samples : constant Positive :=
+                       Positive ((Parameters.To - Parameters.From) / Step);
+
+
+         Index : Natural;
+      begin
+         return Result : Filters.Signal (0 .. N_Samples - 1) := (others => 0.0)
+         do
+            for Ev of Segment loop
+               Index := Natural ((Ev.T - Parameters.From) / Step);
+
+               Result (Index) := Result (Index) +
+                 Pixel_Value (Integer'(Ev.Weight));
+            end loop;
+         end return;
+      end Collate;
 
       Working_Segment : Event_Segment;
 
@@ -43,10 +82,14 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
          exit when Working_Segment = No_Segment;
 
          declare
-            Signal : constant Filters.Signal := Make_Signal (Working_Segment.First,
-                                                             Working_Segment.Last);
+            Segment : constant Event_Array := Extract_Segment (Working_Segment.First,
+                                                               Working_Segment.Last);
+
+            Signal    : constant Filters.Signal := Collate (Segment);
+            Recovered : constant Filters.Signal := Filters.Apply (Filter, Signal);
+            Result    : constant Pixel_History  := Subsample (Recovered);
          begin
-            Store (Filters.Apply (Filter, Signal), Working_Segment.Location);
+            Store (Result, Working_Segment.Location);
          end;
       end loop;
    end Accumulator;

@@ -55,6 +55,8 @@ package DVAccum.Timestamps is
 
    function "/" (X, Y : Duration) return Float;
 
+   function "/" (X : Duration; Y : Float) return Duration;
+
    function "+" (T : Timestamp; D : Duration) return Timestamp
      with
        Post => (if not Is_Finite (T) then "+"'Result = T);
@@ -139,9 +141,12 @@ private
 
    function "<=" (X, Y : Timestamp) return Boolean
    is (not (X > Y));
-  function "/" (X, Y : Duration) return Float
+
+   function "/" (X, Y : Duration) return Float
    is (Float (X) / Float (Y));
 
+   function "/" (X : Duration; Y : Float) return Duration
+   is (Duration (Float (X) / Y));
 
    function Image (X         : Duration;
                    With_Unit : Boolean := False)

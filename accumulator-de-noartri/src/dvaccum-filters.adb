@@ -89,21 +89,33 @@ package body Dvaccum.Filters is
 
             end Tau_To_Pole;
 
-            Parts : constant String_Vectors.Vector := Split (X, '@');
+            Parts : constant String_Vectors.Vector := Split (X, '#');
          begin
             if Parts.Length /= 2 then
                raise Constraint_Error;
             end if;
 
             declare
-               Num  : constant Signal := Parse_Poly (Parts (1));
+               Num_Part  : constant String := Strip (Parts (1));
+               Num       : Pixel_Value;
                Pole : constant Pixel_Value := Tau_To_Pole (Strip (Parts (2)), Sampling);
             begin
+               if Num_Part = "" then
+                  Num := 1.0;
+
+               elsif Patterns.Is_Float (Num_Part) then
+                  Num := Pixel_Value'Value (Num_Part);
+
+               else
+                  raise Constraint_Error;
+
+               end if;
+
                return Filter_Atom'
                  (Num_Degree  => 0,
                   Den_Degree  => 1,
                   Status_Size => 1,
-                  Num         => Num,
+                  Num         => (0 => Num),
                   Den         => (1.0, -Pole),
                   Status      => (others => 0.0));
             end;
@@ -156,7 +168,7 @@ package body Dvaccum.Filters is
             if Index (X, "/") /= 0 then
                return IIR;
 
-            elsif Index (X, "@") /= 0 then
+            elsif Index (X, "#") /= 0 then
                return Time_Constant;
 
             else

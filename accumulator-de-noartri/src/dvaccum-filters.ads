@@ -15,7 +15,7 @@ with DVAccum.Frames;
 --  The syntax for a textual description of a filter is as follows
 --
 --     filter = branch ('+' branch)*
---     branch = (poly ('/' poly)?) | (number '@' number unit)
+--     branch = (poly ('/' poly)?) | (number? '#' number unit)
 --     poly   = (number)+
 --     unit   = ('u'|'m')'s'
 --     number = <floating point number>

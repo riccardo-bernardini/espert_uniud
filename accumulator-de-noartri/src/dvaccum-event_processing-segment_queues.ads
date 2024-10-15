@@ -33,7 +33,7 @@ private package DVaccum.Event_Processing.Segment_Queues is
       procedure Append (S : Event_Segment);
       procedure Done_Appending;
 
-      entry Next_Segment (S : out Event_Segment);
+      procedure Next_Segment (S : out Event_Segment);
 
       function Size return Ada.Containers.Count_Type;
    private

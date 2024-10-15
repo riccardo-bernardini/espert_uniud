@@ -38,16 +38,6 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
 
    function To_Int (X : Frame_Index) return Natural;
 
-   type Pixel_Cursor is private;
-
-   function Has_Element (Pos : Pixel_Cursor) return Boolean;
-
-   package Pixel_Iterators is
-     new Ada.Iterator_Interfaces (Pixel_Cursor, Has_Element);
-
-   function Every_Pixel (Buffer : Pixel_Buffer)
-                         return Pixel_Iterators.Forward_Iterator'Class;
-
    type Pixel_ID is private;
 
    type Pixel_Descriptor is
@@ -55,6 +45,21 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
          Location : Frames.Point_Type;
          Index    : Pixel_ID;
       end record;
+
+   type Pixel_Cursor is private;
+
+   function Has_Element (Pos : Pixel_Cursor) return Boolean;
+
+   function Element (Pos : Pixel_Cursor) return Pixel_Descriptor
+     with
+       Pre => Has_Element (Pos);
+
+   package Pixel_Iterators is
+     new Ada.Iterator_Interfaces (Pixel_Cursor, Has_Element);
+
+   function Every_Pixel (Buffer : Pixel_Buffer)
+                         return Pixel_Iterators.Forward_Iterator'Class;
+
 
    type Pixel_History is array (Natural range <>) of Frames.Pixel_Value;
 
@@ -69,8 +74,8 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
                                     return Frame_Index;
 
    function Value (Buffer : Pixel_Buffer;
-                   Index  : Frame_Index;
-                   Time   : Timestamps.Timestamp)
+                   Time   : Frame_Index;
+                   Pixel  : Pixel_Id)
                    return Frames.Pixel_Value;
 
 private

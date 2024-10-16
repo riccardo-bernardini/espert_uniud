@@ -24,7 +24,7 @@ use Ada;
 private package Dvaccum.Event_Processing.Pixel_Buffers is
 
    type Pixel_Buffer is
-     new Finalization.Controlled
+     new Finalization.Limited_Controlled
    with
      private
        with
@@ -61,7 +61,7 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
      array (Natural range <>) of Frames.Pixel_Value;
 
    function Create (N_Frames, N_Pixels : Positive)
-                    return Pixel_Buffer;
+                    return Pixel_Buffer_Access;
 
    procedure Store (Buffer : in out Pixel_Buffer;
                     Pixel  : Frames.Point_Type;
@@ -136,17 +136,17 @@ private
 
    type Frame_Dispenser_Access is access Frame_Number_Dispenser;
 
-   type Pixel_Array is
-     array (Valid_Frame_Index range <>) of Frames.Pixel_Value;
+   subtype Sample_Array is Pixel_History;
 
-   type Pixel_Array_Access is access Pixel_Array;
+   type Sample_Array_Access is access Sample_Array;
 
    type Pixel_Buffer is
-     new Finalization.Controlled
+     new Finalization.Limited_Controlled
    with
       record
+         N_Frames        : Positive;
          Pixels          : Pixel_List_Access;
-         Values          : Pixel_Array_Access;
+         Samples         : Sample_Array_Access;
          Allocator       : Pixel_Allocator_Access;
          Frame_Dispenser : Frame_Dispenser_Access;
       end record;

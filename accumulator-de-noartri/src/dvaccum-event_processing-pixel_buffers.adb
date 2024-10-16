@@ -1,4 +1,7 @@
 pragma Ada_2012;
+
+with Ada.Unchecked_Deallocation;
+
 package body Dvaccum.Event_Processing.Pixel_Buffers is
 
    -----------------
@@ -28,11 +31,38 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- Create --
    ------------
 
-   function Create (N_Frames, N_Pixels : Positive) return Pixel_Buffer is
+   function Create (N_Frames, N_Pixels : Positive)
+                    return Pixel_Buffer_Access
+   is
+      use Ada.Finalization;
+
+      Pixels  : constant Pixel_List_Access :=
+                  new Pixel_List (1 .. Pixel_Index (N_Pixels));
+
+      Samples : constant Sample_Array_Access :=
+                  new Sample_Array (1 .. N_Frames * N_Pixels);
+
+      Allocator : constant Pixel_Allocator_Access :=
+                    new Pixel_Table_Allocator (Pixels);
+
+      Frame_Dispenser : constant Frame_Dispenser_Access :=
+                          new Frame_Number_Dispenser (N_Frames);
    begin
-      pragma Compile_Time_Warning (Standard.True, "Create unimplemented");
-      return raise Program_Error with "Unimplemented function Create";
+      return new Pixel_Buffer'
+        (Limited_Controlled
+         with
+           Pixels                 => Pixels,
+         Samples                => Samples,
+         Allocator              => Allocator,
+         Frame_Dispenser        => Frame_Dispenser,
+         N_Frames               => N_Frames);
    end Create;
+
+   function Index_Of (Buffer   : Pixel_Buffer;
+                      position : Pixel_Index;
+                      Frame    : Frame_Index)
+                      return Natural
+   is (Natural (Position) * Buffer.N_Frames + Natural (Frame) + Buffer.Samples'First);
 
    -----------
    -- Store --
@@ -43,9 +73,17 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       Pixel  : Frames.Point_Type;
       Data   :        Pixel_History)
    is
+      Position : Pixel_Index;
    begin
-      pragma Compile_Time_Warning (Standard.True, "Store unimplemented");
-      raise Program_Error with "Unimplemented procedure Store";
+      Buffer.Allocator.Next_Free_Entry (Position);
+      Buffer.Pixels (Position) := Pixel;
+
+      declare
+         Start : constant Positive := Index_Of (Buffer, Position, 0);
+   --                Natural (Position) * Buffer.N_Frames + Buffer.Samples'First;
+      begin
+         Buffer.Samples (Start .. Start + Data'Length) := Data;
+      end;
    end Store;
 
    ----------------------------
@@ -70,11 +108,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       Pixel  : Pixel_Index;
       Time   : Frame_Index)
       return Frames.Pixel_Value
-   is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Value unimplemented");
-      return raise Program_Error with "Unimplemented function Value";
-   end Value;
+   is (Buffer.Samples (Index_Of (Buffer, Pixel, Time)));
 
    -----------
    -- First --
@@ -138,9 +172,23 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    --------------
 
    overriding procedure Finalize (Object : in out Pixel_Buffer) is
+      procedure Free is
+        new Ada.Unchecked_Deallocation(Sample_Array, Sample_Array_Access);
+
+      procedure Free is
+        new Ada.Unchecked_Deallocation(Frame_Number_Dispenser, Frame_Dispenser_Access);
+
+      procedure Free is
+        new Ada.Unchecked_Deallocation(Pixel_Table_Allocator, Pixel_Allocator_Access);
+
+      procedure Free is
+        new Ada.Unchecked_Deallocation(Pixel_List, Pixel_List_Access);
+
    begin
-      pragma Compile_Time_Warning (Standard.True, "Finalize unimplemented");
-      raise Program_Error with "Unimplemented procedure Finalize";
+      Free (Object.Allocator);
+      Free (Object.Frame_Dispenser);
+      Free (Object.Pixels);
+      Free (Object.Samples);
    end Finalize;
 
 end Dvaccum.Event_Processing.Pixel_Buffers;

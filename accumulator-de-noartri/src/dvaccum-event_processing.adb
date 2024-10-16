@@ -72,7 +72,7 @@ package body Dvaccum.Event_Processing is
       procedure Accumulate
         (Event_Storage : Ev_Access;
          Segments      : Segment_Queues.Segment_Queue_Access;
-         Pixels        : Pixel_Buffers.Pixel_Buffer;
+         Pixels        : Pixel_Buffers.Pixel_Buffer_Access;
          Filter        : Filters.Filter_Type;
          Event_Weight  : Frames.Pixel_Value;
          N_Cpu         : System.Multiprocessors.CPU)
@@ -112,7 +112,7 @@ package body Dvaccum.Event_Processing is
       -----------------
 
       procedure Save_Frames (Frame_Name : Frame_Name_Generator;
-                             Pixels     : Pixel_Buffers.Pixel_Buffer;
+                             Pixels     : Pixel_Buffers.Pixel_Buffer_Access;
                              Offset     : Frames.Pixel_Value;
                              N_Cpu      : System.Multiprocessors.CPU)
       is
@@ -146,7 +146,8 @@ package body Dvaccum.Event_Processing is
       Segments : constant Segment_Queues.Segment_Queue_Access :=
                    new Segment_Queues.Segment_Queue;
 
-      Pixels : Pixel_Buffers.Pixel_Buffer;
+      Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
+                 Pixel_Buffers.Create (-1, -1);
 
 
    begin

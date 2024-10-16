@@ -7,7 +7,7 @@ package Dvaccum.Event_Processing.Frame_Makers is
                           Last_Y : Y_Coordinate_Type)
    is
       record
-         Pixels        : Pixel_Buffers.Pixel_Buffer;
+         Pixels        : Pixel_Buffers.Pixel_Buffer_Access;
          Frame_Name    : Frame_Name_Generator;
          Offset        : Pixel_Value;
          Initial_Image : Image_Type (X_Coordinate_Type'First .. Last_X,

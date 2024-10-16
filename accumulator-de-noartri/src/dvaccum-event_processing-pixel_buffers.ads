@@ -1,9 +1,7 @@
-with Ada.Containers.Doubly_Linked_Lists;
 with Ada.Finalization;
 with Ada.Iterator_Interfaces;
 
 with DVAccum.Frames;
-with DVAccum.Timestamps;
 
 use Ada;
 
@@ -18,8 +16,8 @@ use Ada;
 --  an initial location for its history, call it start(pk).  The value of pixel pk at time
 --  t is start(pk)+t
 --
---  Every frame maker needs to pick a frame number and the cicle on the set of good
---  pixels.
+--  Every frame maker needs to pick a frame number and to cycle on the
+--  set of good pixels.
 --
 --
 --
@@ -36,12 +34,12 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
      access Pixel_Buffer;
 
 
-   type Pixel_ID is private;
+   type Pixel_Index is private;
 
    type Pixel_Descriptor is
       record
-         Location : Frames.Point_Type;
-         Index    : Pixel_ID;
+         Location : Frames.Point_Type; -- Pixel coordinate
+         Index    : Pixel_Index;       -- Used to access the buffer
       end record;
 
    type Pixel_Cursor is private;
@@ -59,7 +57,8 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
                          return Pixel_Iterators.Forward_Iterator'Class;
 
 
-   type Pixel_History is array (Natural range <>) of Frames.Pixel_Value;
+   type Pixel_History is
+     array (Natural range <>) of Frames.Pixel_Value;
 
    function Create (N_Frames, N_Pixels : Positive)
                     return Pixel_Buffer;
@@ -72,25 +71,43 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
                                     return Frame_Index;
 
    function Value (Buffer : Pixel_Buffer;
-                   Pixel  : Frames.Point_Type;
+                   Pixel  : Pixel_Index;
                    Time   : Frame_Index)
                    return Frames.Pixel_Value;
 
 private
-   type Pixel_ID is new Natural;
+   --
+   --  We store the pixel histories in a one-dimensional vector.
+   --  The pixel value of pixel px at frame T (T=0,1 ,2, ..)is stored in the
+   --  location start(px)+T
+   --
+   --  We know in advance the length of each history (it is the same for
+   --  every pixel) and the number of histories (they are given to the
+   --  Create function).  Therefore, we can allocate an array long enough.
+   --
+   --  At any time there is
+   --  * A first unused location, marking the beginning of the free area
+   --  * The next frame to be produced
+   --
+   type Pixel_Index is new Natural;
 
 
+   type Pixel_List is
+     array (Pixel_Index range <>) of Frames.Point_Type;
 
-   package Pixel_Data_Lists is
-     new Ada.Containers.Doubly_Linked_Lists (Pixel_Descriptor);
+   type Pixel_List_Access is access Pixel_List;
 
-   type Pixel_Cursor is new Pixel_Data_Lists.Cursor;
+   type Pixel_Cursor is
+      record
+         Cursor     : Pixel_Index;
+         Container  : Pixel_List_Access;
+      end record;
 
    type Pixel_Iterator is
      new Pixel_Iterators.Forward_Iterator
    with
       record
-         Cursor : Pixel_Cursor;
+         Container : Pixel_List_Access;
       end record;
 
    overriding
@@ -98,6 +115,17 @@ private
 
    overriding
    function Next (Object : Pixel_Iterator; Position : Pixel_Cursor) return Pixel_Cursor;
+
+
+   protected type Pixel_Table_Allocator (Table : Pixel_List_Access)
+   is
+      procedure Next_Free_Entry (Index : out Pixel_Index);
+   private
+      First_Free : Pixel_Index := Table'First;
+   end Pixel_Table_Allocator;
+
+   type Pixel_Allocator_Access is access Pixel_Table_Allocator;
+
 
    protected type Frame_Number_Dispenser (N_Frames : Positive)
    is
@@ -108,25 +136,6 @@ private
 
    type Frame_Dispenser_Access is access Frame_Number_Dispenser;
 
-   protected type Protected_Allocator (N_Frames : Positive)
-   is
-      procedure Allocate (Pixel : Frames.Point_Type;
-                          Index : out Frame_Index)
-        with
-          Post => Index in Valid_Frame_Index;
-
-      procedure Next_Pixel (Pixel : out Frames.Point_Type;
-                            Index : out Frame_Index);
-   private
-      Allocation_Table : Pixel_Data_Lists.List;
-
-      Next_To_Process : Pixel_Data_Lists.Cursor := Pixel_Data_Lists.No_Element;
-
-      First_Free : Frame_Index := Frame_Index'First;
-   end Protected_Allocator;
-
-   type Protected_Allocator_Access is access Protected_Allocator;
-
    type Pixel_Array is
      array (Valid_Frame_Index range <>) of Frames.Pixel_Value;
 
@@ -136,8 +145,9 @@ private
      new Finalization.Controlled
    with
       record
-         Allocator       : Protected_Allocator_Access;
-         Pixels          : Pixel_Array_Access;
+         Pixels          : Pixel_List_Access;
+         Values          : Pixel_Array_Access;
+         Allocator       : Pixel_Allocator_Access;
          Frame_Dispenser : Frame_Dispenser_Access;
       end record;
 

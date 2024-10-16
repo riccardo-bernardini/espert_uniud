@@ -5,21 +5,17 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- Has_Element --
    -----------------
 
-   function Has_Element (Pos : Pixel_Cursor) return Boolean is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Has_Element unimplemented");
-      return raise Program_Error with "Unimplemented function Has_Element";
-   end Has_Element;
+   function Has_Element (Pos : Pixel_Cursor) return Boolean
+   is (Pos.Cursor <= Pos.Container'Last);
 
    -------------
    -- Element --
    -------------
 
-   function Element (Pos : Pixel_Cursor) return Pixel_Descriptor is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Element unimplemented");
-      return raise Program_Error with "Unimplemented function Element";
-   end Element;
+   function Element (Pos : Pixel_Cursor) return Pixel_Descriptor
+   is ((Location => Pos.Container (Pos.Cursor),
+        Index    => Pos.Cursor));
+
 
    -----------------
    -- Every_Pixel --
@@ -27,12 +23,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
 
    function Every_Pixel
      (Buffer : Pixel_Buffer) return Pixel_Iterators.Forward_Iterator'Class
-   is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Every_Pixel unimplemented");
-      return raise Program_Error with "Unimplemented function Every_Pixel";
-   end Every_Pixel;
-
+   is (Pixel_Iterator'(Container => Buffer.Pixels));
    ------------
    -- Create --
    ------------
@@ -48,7 +39,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -----------
 
    procedure Store
-     (Buffer : in out Pixel_Buffer; Pixel : Frames.Point_Type;
+     (Buffer : in out Pixel_Buffer;
+      Pixel  : Frames.Point_Type;
       Data   :        Pixel_History)
    is
    begin
@@ -62,12 +54,11 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
 
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer) return Frame_Index
    is
+      Result : Frame_Index;
    begin
-      pragma Compile_Time_Warning
-        (Standard.True, "Next_Unprocessed_Frame unimplemented");
-      return
-        raise Program_Error
-          with "Unimplemented function Next_Unprocessed_Frame";
+      Buffer.Frame_Dispenser.Next_Frame (Result);
+
+      return Result;
    end Next_Unprocessed_Frame;
 
    -----------
@@ -75,7 +66,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -----------
 
    function Value
-     (Buffer : Pixel_Buffer; Pixel : Frames.Point_Type; Time : Frame_Index)
+     (Buffer : Pixel_Buffer;
+      Pixel  : Pixel_Index;
+      Time   : Frame_Index)
       return Frames.Pixel_Value
    is
    begin
@@ -87,11 +80,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- First --
    -----------
 
-   overriding function First (Object : Pixel_Iterator) return Pixel_Cursor is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "First unimplemented");
-      return raise Program_Error with "Unimplemented function First";
-   end First;
+   overriding function First (Object : Pixel_Iterator) return Pixel_Cursor
+   is ((Cursor    => Object.Container'First,
+        Container => Object.Container));
 
    ----------
    -- Next --
@@ -99,11 +90,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
 
    overriding function Next
      (Object : Pixel_Iterator; Position : Pixel_Cursor) return Pixel_Cursor
-   is
-   begin
-      pragma Compile_Time_Warning (Standard.True, "Next unimplemented");
-      return raise Program_Error with "Unimplemented function Next";
-   end Next;
+   is ((Cursor    => Position.Cursor + 1,
+        Container => Position.Container));
 
    ----------------------------
    -- Frame_Number_Dispenser --
@@ -117,9 +105,12 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
 
       procedure Next_Frame (N : out Frame_Index) is
       begin
-         pragma Compile_Time_Warning
-           (Standard.True, "Next_Frame unimplemented");
-         raise Program_Error with "Unimplemented procedure Next_Frame";
+         if Next > Frame_Index (N_Frames) then
+            N := No_Frame;
+         else
+            N := Next;
+            Next := Next + 1;
+         end if;
       end Next_Frame;
 
    end Frame_Number_Dispenser;
@@ -128,33 +119,19 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- Protected_Allocator --
    -------------------------
 
-   protected body Protected_Allocator is
+   protected body Pixel_Table_Allocator is
 
-      --------------
-      -- Allocate --
-      --------------
-
-      procedure Allocate (Pixel : Frames.Point_Type; Index : out Frame_Index)
+      procedure Next_Free_Entry (Index : out Pixel_Index)
       is
       begin
-         pragma Compile_Time_Warning (Standard.True, "Allocate unimplemented");
-         raise Program_Error with "Unimplemented procedure Allocate";
-      end Allocate;
+         if First_Free > Table'Last then
+            raise Constraint_Error;
+         end if;
 
-      ----------------
-      -- Next_Pixel --
-      ----------------
-
-      procedure Next_Pixel
-        (Pixel : out Frames.Point_Type; Index : out Frame_Index)
-      is
-      begin
-         pragma Compile_Time_Warning
-           (Standard.True, "Next_Pixel unimplemented");
-         raise Program_Error with "Unimplemented procedure Next_Pixel";
-      end Next_Pixel;
-
-   end Protected_Allocator;
+         Index := First_Free;
+         First_Free := First_Free + 1;
+      end Next_Free_Entry;
+   end Pixel_Table_Allocator;
 
    --------------
    -- Finalize --

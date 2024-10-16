@@ -6,6 +6,22 @@ with Patterns;
 
 package body Dvaccum.Filters is
 
+   ---------
+   -- "*" --
+   ---------
+
+   function "*" (Left : Sample_Value; Right : Coefficients)
+                 return Coefficients
+   is
+   begin
+      return Result : Coefficients (Right'Range) do
+         for I in Result'Range loop
+            Result (I) := Left * Right (I);
+         end loop;
+      end return;
+   end "*";
+
+
    procedure Dump (Item : Filter_Type;
                    To   : Text_IO.File_Type := Text_IO.Standard_Output)
    is
@@ -57,6 +73,24 @@ package body Dvaccum.Filters is
    -- Make_Atom --
    ---------------
 
+   --
+   --  We follow the Matlab/Octave convention: the first coefficient
+   --  of Den (the coefficient of z^0) is expected to be 1, if it
+   --  it is not, we normalize the filter by dividing both numerator
+   --  and denominator by Den(0).
+   --
+   --  This implies that Den must not be empty and the coefficient of
+   --  Den(0) must be non-zero
+   --
+   function Make_Atom (Num, Den : Coefficients)
+                       return Filter_Atom
+     with
+       Pre =>
+         Num'Length > 0
+         and Den'Length > 0
+         and Den'First = 0
+         and Den (Den'First) /= 0.0;
+
    function Make_Atom (Num, Den : Coefficients)
                        return Filter_Atom
    is
@@ -64,16 +98,21 @@ package body Dvaccum.Filters is
 
       Max_Deg : constant Natural := Natural'Max (Num'Last, Den'Last);
 
+      --
+      --  We follow the Octave/Matlab convention: if Den(0) is not 1,
+      --  we normalize the filter by dividing by Den(0)
+      --
+      C       : constant Sample_Value := 1.0 / Den (Den'First);
    begin
-      Put_Line (Num'First'image & "," &
-                  Num'Last'image & ", " &
-                  Den'First'image & "," &
-                  Den'Last'image & ", " &
-                  Max_Deg'image);
+      --  Put_Line (Num'First'image & "," &
+      --              Num'Last'image & ", " &
+      --              Den'First'image & "," &
+      --              Den'Last'image & ", " &
+      --              Max_Deg'image);
 
       return Result : Filter_Atom (Max_Deg) do
-         Result.Den (Den'Range) := Den;
-         Result.Num (Num'Range) := Num;
+         Result.Den (Den'Range) := C * Den;
+         Result.Num (Num'Range) := C * Num;
 
          Result.Is_Fir := (Den'Length = 1);
       end return;
@@ -290,6 +329,9 @@ package body Dvaccum.Filters is
                       Output :    out Sample_Value;
                       Input  :        Sample_Value)
    is
+      --
+      --  We use the Direct Transpose form II
+      --
    begin
       if Filter.Is_FIR then
          Output := Input * Filter.Num (0)+Filter.Status (1);
@@ -305,15 +347,21 @@ package body Dvaccum.Filters is
       else
          Output := Input * Filter.Num (0)+Filter.Status (1);
 
+         --
+         --  Note that the coefficients in Den are applied with
+         --  a minus sign.  This because Den has the transfer
+         --  function coefficients that differ by the sign from the
+         --  difference equation coefficients
+         --
          for I in 1 .. Filter.Degree - 1 loop
             Filter.Status (I) :=
               Filter.Status (I + 1) +
-              Input * Filter.Num (I) +
+              Input * Filter.Num (I) -
               Output * Filter.Den (I);
          end loop;
 
          Filter.Status (Filter.Degree) :=
-           Input * Filter.Num (Filter.Degree) +
+           Input * Filter.Num (Filter.Degree) -
            Output * Filter.Den (Filter.Degree);
       end if;
    end Process;

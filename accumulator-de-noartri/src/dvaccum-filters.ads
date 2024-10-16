@@ -78,6 +78,8 @@ private
    type Coefficients is
      array (Natural range <>) of Sample_Value;
 
+   function "*" (Left : Sample_Value; Right : Coefficients)
+                 return Coefficients;
    type Filter_Atom (Degree : Natural) is
       record
          Is_Fir : Boolean;

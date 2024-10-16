@@ -31,9 +31,6 @@ private package DVAccum.Config.Syntax is
 
    Frame_Number_Default_Width : constant Positive := 5;
 
-
-   subtype Radix_Spec is String_Formatting.Parsed_Format;
-
    type Sampling_Spec is
       record
          Start           : Timestamps.Timestamp;
@@ -41,7 +38,8 @@ private package DVAccum.Config.Syntax is
          Sampling_Period : Timestamps.Duration;
       end record;
 
-   function Parse_Output_Filename_Template (Template : Unbounded_String) return Radix_Spec;
+   function Parse_Output_Filename_Template (Template : String)
+                                            return String_Formatting.Parsed_Format;
 
    Bad_Syntax : exception;
 

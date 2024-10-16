@@ -18,10 +18,11 @@ package body Dvaccum.Event_Processing.Frame_Makers is
 
             for Pos in Parameters.Pixels.Every_Pixel loop
                declare
-                  Pixel : constant Frames.Point_Type :=
-                            Pixel_Buffers.Element (Pos).Location;
+                  Pixel : constant Pixel_Buffers.Pixel_Descriptor :=
+                            Pixel_Buffers.Element (Pos);
                begin
-                  Frame (Pixel.X, Pixel.Y) := Parameters.Pixels (Pixel, Frame_Number);
+                  Frame (Pixel.Location.X, Pixel.Location.Y) :=
+                    Parameters.Pixels (Pixel.Index, Frame_Number);
                end;
             end loop;
 

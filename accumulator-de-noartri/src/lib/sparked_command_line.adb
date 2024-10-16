@@ -24,4 +24,4 @@ package body sparked_Command_Line is
    function Command_Name return String
    is (Ada.Command_Line.Command_Name);
 
-end Sparked_Command_Line; ;
+end Sparked_Command_Line;

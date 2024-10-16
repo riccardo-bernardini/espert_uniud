@@ -1,18 +1,24 @@
 pragma Ada_2012;
 
+with Ada.Containers.Indefinite_Vectors;
+
 package body DVAccum.Config.Data with SPARK_Mode is
+   package String_Vectors is
+     new Ada.Containers.Indefinite_Vectors (Positive, String);
 
    Set_Fields : array (Configuration_Field) of Boolean := (others => False);
 
    type String_Field_Array is array (String_Field) of Unbounded_String;
 
-   type Numeric_Field_Array is array (Numeric_Field) of Images.Pixel_Value;
+   type Integer_Field_Array is array (Integer_Field) of Integer;
+
+   type Numeric_Field_Array is array (Numeric_Field) of Frames.Pixel_Value;
 
    type Boolean_Field_Array is array (Boolean_Field) of Boolean;
 
-   type Duration_Field_Array is array (Duration_Field) of Times.Duration;
+   type Duration_Field_Array is array (Duration_Field) of Timestamps.Duration;
 
-   type Timestamp_Field_Array is array (Timestamp_Field) of Times.Timestamp;
+   type Timestamp_Field_Array is array (Timestamp_Field) of Timestamps.Timestamp;
 
    --
    --  Why using a record? Wouldn't be it simpler to use just variables?
@@ -22,15 +28,14 @@ package body DVAccum.Config.Data with SPARK_Mode is
    --
    type Config_Data_Record is
       record
-         Decay_Handler           : Memory_Dynamic.Dynamic_Type;
          Requested_Verbosity     : Verbosity;
-         Input_Filename          : Unbounded_String := Null_Unbounded_String;
-         Frame_Filename_Template : Config.Syntax.Radix_Spec;
+         Input_Filenames         : String_Vectors.Vector;
 
          First_Image_Spec        : Start_Image_Spec_Type;
 
          String_Fields           : String_Field_Array;
          Numeric_Fields          : Numeric_Field_Array;
+         Integer_Fields          : Integer_Field_Array;
          Timestamp_Fields        : Timestamp_Field_Array;
          Duration_Fields         : Duration_Field_Array;
          Boolean_Fields          : Boolean_Field_Array;
@@ -38,6 +43,18 @@ package body DVAccum.Config.Data with SPARK_Mode is
       end record;
 
    Config_Data : Config_Data_Record;
+
+   procedure Add_Input_Filename (Filename : String)
+   is
+   begin
+      Config_Data.Input_Filenames.Append (Filename);
+   end Add_Input_Filename;
+
+   function N_Inputs return Natural
+   is (Natural (Config_Data.Input_Filenames.Length));
+
+   function Get_Input_Filename (N : Positive) return String
+   is (Config_Data.Input_Filenames (N));
 
    procedure Is_Set (Field : Configuration_Field)
      with
@@ -49,15 +66,15 @@ package body DVAccum.Config.Data with SPARK_Mode is
       Set_Fields (Field) := True;
    end Is_Set;
 
-   procedure Set_Negative_Event_Action (Action : Negative_Event_Action)
-   is
-   begin
-      Config_Data.On_Negative_Event := Action;
-      Is_Set (Negative_Event_Handling);
-   end Set_Negative_Event_Action;
-
-   function Get_Negative_Event_Action return Negative_Event_Action
-   is (Config_Data.On_Negative_Event);
+   --  procedure Set_Negative_Event_Action (Action : Negative_Event_Action)
+   --  is
+   --  begin
+   --     Config_Data.On_Negative_Event := Action;
+   --     Is_Set (Negative_Event_Handling);
+   --  end Set_Negative_Event_Action;
+   --
+   --  function Get_Negative_Event_Action return Negative_Event_Action
+   --  is (Config_Data.On_Negative_Event);
 
    procedure Set_First_Image_Spec (Spec : Start_Image_Spec_Type)
    is
@@ -112,40 +129,17 @@ package body DVAccum.Config.Data with SPARK_Mode is
    function Verbosity_Level return Verbosity
    is (Config_Data.Requested_Verbosity);
 
-   ----------------------------------
-   -- Set_Output_Filename_Template --
-   ----------------------------------
 
-   procedure Set_Output_Filename_Template (Item : Syntax.Radix_Spec) is
+   procedure Set (Field : Integer_Field;
+                  Value : Integer)
+   is
    begin
-      Config_Data.Frame_Filename_Template := Item;
-      Is_Set (Output_Filename_Template);
-   end Set_Output_Filename_Template;
+      Config_Data.Integer_Fields (Field) := Value;
+      Is_Set (Field);
+   end Set;
 
-   ------------------------------
-   -- Output_Filename_Template --
-   ------------------------------
-
-   function Output_Filename_Template return Syntax.Radix_Spec
-   is (Config_Data.Frame_Filename_Template);
-
-
-   ---------------
-   -- Set_Decay --
-   ---------------
-
-   procedure Set_Decay (Item : Memory_Dynamic.Dynamic_Type) is
-   begin
-      Config_Data.Decay_Handler := Item;
-      Is_Set (Decay);
-   end Set_Decay;
-
-   -----------
-   -- Decay --
-   -----------
-
-   function Decay return Memory_Dynamic.Dynamic_Type
-   is (Config_Data.Decay_Handler);
+   function Get (Field : Integer_Field) return Integer
+   is (Config_Data.Integer_Fields (Field));
 
    procedure Set (Field : String_Field;
                   Value : String) is
@@ -162,7 +156,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Set --
    ---------
 
-   procedure Set (Field : Numeric_Field; Value : Images.Pixel_Value) is
+   procedure Set (Field : Numeric_Field; Value : Frames.Pixel_Value) is
    begin
       Config_Data.Numeric_Fields (Field) := Value;
       Is_Set (Field);
@@ -173,7 +167,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
    ------------
 
    procedure Update  (Field : Timestamp_Field;
-                      Value : Times.Timestamp)is
+                      Value : Timestamps.Timestamp)is
    begin
       Config_Data.Timestamp_Fields (Field) := Value;
    end Update;
@@ -183,14 +177,14 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Numeric_Field) return Images.Pixel_Value
+   function Get (Field : Numeric_Field) return Frames.Pixel_Value
    is (Config_Data.Numeric_Fields (Field));
 
    ---------
    -- Set --
    ---------
 
-   procedure Set (Field : Timestamp_Field; Value : Times.Timestamp) is
+   procedure Set (Field : Timestamp_Field; Value : Timestamps.Timestamp) is
    begin
       Config_Data.Timestamp_Fields (Field) := Value;
       Is_Set (Field);
@@ -200,14 +194,14 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Timestamp_Field) return Times.Timestamp
+   function Get (Field : Timestamp_Field) return Timestamps.Timestamp
    is (Config_Data.Timestamp_Fields (Field));
 
    ---------
    -- Set --
    ---------
 
-   procedure Set (Field : Duration_Field; Value : Times.Duration) is
+   procedure Set (Field : Duration_Field; Value : Timestamps.Duration) is
    begin
       Config_Data.Duration_Fields (Field) := Value;
       Is_Set (Field);
@@ -217,7 +211,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Duration_Field) return Times.Duration
+   function Get (Field : Duration_Field) return Timestamps.Duration
    is (Config_Data.Duration_Fields (Field));
 
 

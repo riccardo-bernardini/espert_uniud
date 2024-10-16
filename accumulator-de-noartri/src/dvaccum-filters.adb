@@ -5,6 +5,22 @@ with Tokenize;
 with Patterns;
 
 package body Dvaccum.Filters is
+
+   function "*" (Gain : Frames.Pixel_Value;
+                 Filter : Filter_Type)
+                 return Filter_Type
+   is
+      use type Frames.Pixel_Value;
+   begin
+      return Result : Filter_Type := Filter do
+         for Atom of Result.Atoms loop
+            for C of Atom.Num loop
+               C := C * Gain;
+            end loop;
+         end loop;
+      end return;
+   end "*";
+
    ---------------
    -- Make_Atom --
    ---------------

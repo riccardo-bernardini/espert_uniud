@@ -1,5 +1,5 @@
 --  with Ada.Text_IO; use Ada.Text_IO;
-with Time_Syntax;
+with Dvaccum.Time_Syntax;
 
 package body DVAccum.Timestamps is
    use type Time_Syntax.Time_In_Microseconds;

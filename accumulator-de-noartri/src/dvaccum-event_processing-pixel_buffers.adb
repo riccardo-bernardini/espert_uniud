@@ -70,7 +70,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
 
    procedure Store
      (Buffer : in out Pixel_Buffer;
-      Pixel  : Frames.Point_Type;
+      Pixel  :        Point_Type;
       Data   :        Pixel_History)
    is
       Position : Pixel_Index;
@@ -107,7 +107,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
      (Buffer : Pixel_Buffer;
       Pixel  : Pixel_Index;
       Time   : Frame_Index)
-      return Frames.Pixel_Value
+      return Sample_Value
    is (Buffer.Samples (Index_Of (Buffer, Pixel, Time)));
 
    -----------

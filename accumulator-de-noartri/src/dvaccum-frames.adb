@@ -20,14 +20,14 @@ package body DVAccum.Frames is
 
    type Byte is mod 2 ** 8;
 
-   function To_Byte (Val : Pixel_Value)
+   function To_Byte (Val : Sample_Value)
                      return Byte
    is
    begin
       if Val < 0.0 then
          return 0;
 
-      elsif Val > Pixel_Value (Byte'Last) then
+      elsif Val > Sample_Value (Byte'Last) then
          return Byte'Last;
 
       else
@@ -73,11 +73,11 @@ package body DVAccum.Frames is
                              Name => Filename);
 
          declare
-            X_Size : constant X_Coordinate_Type :=
-                       X_Coordinate_Type (Get_Unsigned_16 (Input));
+            X_Size : constant Coord_X :=
+                       Coord_X (Get_Unsigned_16 (Input));
 
-            Y_Size : constant Y_Coordinate_Type :=
-                       Y_Coordinate_Type (Get_Unsigned_16 (Input));
+            Y_Size : constant Coord_Y :=
+                       Coord_Y (Get_Unsigned_16 (Input));
 
             Result : Image_Type (0 .. X_Size - 1, 0 .. Y_Size - 1);
          begin
@@ -111,11 +111,11 @@ package body DVAccum.Frames is
    function Uniform
      (X_Size : Positive;
       Y_Size : Positive;
-      Value  : Pixel_Value := 0.0)
+      Value  : Sample_Value := 0.0)
       return Image_Type
    is
-      Last_X : constant X_Coordinate_Type := X_Coordinate_Type (X_Size) - 1;
-      Last_Y : constant Y_Coordinate_Type := Y_Coordinate_Type (Y_Size) - 1;
+      Last_X : constant Coord_X := Coord_X (X_Size) - 1;
+      Last_Y : constant Coord_Y := Coord_Y (Y_Size) - 1;
 
       Result  : constant Image_Type (0 .. Last_X, 0 .. Last_Y) :=
                   (others => (others => Value));
@@ -191,8 +191,8 @@ package body DVAccum.Frames is
 
 
          Put (Output, "P5"
-              & " " & Strip_Spaces (X_Coordinate_Type'Image (Width (Image)))
-              & " " & Strip_Spaces (Y_Coordinate_Type'Image (Height (Image)))
+              & " " & Strip_Spaces (Coord_X'Image (Width (Image)))
+              & " " & Strip_Spaces (Coord_Y'Image (Height (Image)))
               & " 255"
               & Latin_9.LF);
 
@@ -250,7 +250,7 @@ package body DVAccum.Frames is
    -- "+" --
    ---------
 
-   function "+" (Image : Image_Type; Offset : Pixel_Value) return Image_Type
+   function "+" (Image : Image_Type; Offset : Sample_Value) return Image_Type
    is
       Result : Image_Type := Image;
    begin
@@ -264,7 +264,7 @@ package body DVAccum.Frames is
    ---------
 
    procedure Add (Image  : in out Image_Type;
-                  Offset : Pixel_Value)
+                  Offset : Sample_Value)
    is
    begin
       Multiply_And_Add (Image, 1.0, Offset);
@@ -275,7 +275,7 @@ package body DVAccum.Frames is
    --------------
 
    procedure Multiply (Image  : in out Image_Type;
-                       K      : Pixel_Value)
+                       K      : Sample_Value)
    is
    begin
       Multiply_And_Add (Image, K, 0.0);
@@ -286,8 +286,8 @@ package body DVAccum.Frames is
    ----------------------
 
    procedure Multiply_And_Add (Image  : in out Image_Type;
-                               K      : Pixel_Value;
-                               Offset : Pixel_Value)
+                               K      : Sample_Value;
+                               Offset : Sample_Value)
    is
    begin
       for Px of Image loop
@@ -299,7 +299,7 @@ package body DVAccum.Frames is
    -- "+" --
    ---------
 
-   function "*" (K : Pixel_Value; Image : Image_Type) return Image_Type
+   function "*" (K : Sample_Value; Image : Image_Type) return Image_Type
    is
       Result : Image_Type := Image;
    begin
@@ -313,10 +313,10 @@ package body DVAccum.Frames is
    -------------
 
    function Rescale (Image    : Image_Type;
-                     Old_Min  : Pixel_Value;
-                     Old_Max  : Pixel_Value;
-                     New_Min  : Pixel_Value;
-                     New_Max  : Pixel_Value;
+                     Old_Min  : Sample_Value;
+                     Old_Max  : Sample_Value;
+                     New_Min  : Sample_Value;
+                     New_Max  : Sample_Value;
                      Saturate : Boolean := True)
                      return Image_Type
    is
@@ -337,17 +337,17 @@ package body DVAccum.Frames is
    -------------
 
    procedure Rescale (Image    : in out Image_Type;
-                      Old_Min  : Pixel_Value;
-                      Old_Max  : Pixel_Value;
-                      New_Min  : Pixel_Value;
-                      New_Max  : Pixel_Value;
+                      Old_Min  : Sample_Value;
+                      Old_Max  : Sample_Value;
+                      New_Min  : Sample_Value;
+                      New_Max  : Sample_Value;
                       Saturate : Boolean := True)
    is
-      Old_Delta : constant Pixel_Value := Old_Max - Old_Min;
-      New_Delta : constant Pixel_Value := New_Max - New_Min;
+      Old_Delta : constant Sample_Value := Old_Max - Old_Min;
+      New_Delta : constant Sample_Value := New_Max - New_Min;
 
-      K         : constant Pixel_Value := New_Delta / Old_Delta;
-      Offset    : constant Pixel_Value := New_Min - Old_Min * K;
+      K         : constant Sample_Value := New_Delta / Old_Delta;
+      Offset    : constant Sample_Value := New_Min - Old_Min * K;
    begin
       Multiply_And_Add (Image, K, Offset);
 
@@ -364,7 +364,7 @@ package body DVAccum.Frames is
    --------------
 
    procedure Limit_Up (Image : in out Image_Type;
-                       Max   : Pixel_Value)
+                       Max   : Sample_Value)
    is
    begin
       for Px of Image loop
@@ -379,7 +379,7 @@ package body DVAccum.Frames is
    ----------------
 
    procedure Limit_Down (Image : in out Image_Type;
-                         Min   : Pixel_Value)
+                         Min   : Sample_Value)
    is
    begin
       for Px of Image loop
@@ -394,8 +394,8 @@ package body DVAccum.Frames is
    -----------
 
    procedure Limit (Image : in out Image_Type;
-                    Min   : Pixel_Value;
-                    Max   : Pixel_Value)
+                    Min   : Sample_Value;
+                    Max   : Sample_Value)
    is
    begin
       for Px of Image loop

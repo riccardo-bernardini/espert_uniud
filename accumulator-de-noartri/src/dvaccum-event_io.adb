@@ -11,8 +11,6 @@ with Ada.Streams.Stream_IO;
 
 with Tokenize;
 
-with DVAccum.Frames;
-
 use Ada;
 use Ada.Strings;
 
@@ -111,8 +109,8 @@ package body DVAccum.Event_Io is
          end if;
 
          return New_Event (T      => DVaccum.Timestamps.Value (Fields (1)),
-                           X      => Frames.X_Coordinate_Type'Value (Fields (2)),
-                           Y      => Frames.Y_Coordinate_Type'Value (Fields (3)),
+                           X      => Coord_X'Value (Fields (2)),
+                           Y      => Coord_Y'Value (Fields (3)),
                            Weight => Weight);
       end Parse_Data_Line;
 

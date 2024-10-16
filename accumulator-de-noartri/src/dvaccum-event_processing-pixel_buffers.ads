@@ -1,7 +1,6 @@
 with Ada.Finalization;
 with Ada.Iterator_Interfaces;
 
-with DVAccum.Frames;
 
 use Ada;
 
@@ -38,7 +37,7 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
 
    type Pixel_Descriptor is
       record
-         Location : Frames.Point_Type; -- Pixel coordinate
+         Location : Point_Type; -- Pixel coordinate
          Index    : Pixel_Index;       -- Used to access the buffer
       end record;
 
@@ -58,13 +57,13 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
 
 
    type Pixel_History is
-     array (Natural range <>) of Frames.Pixel_Value;
+     array (Natural range <>) of Sample_Value;
 
    function Create (N_Frames, N_Pixels : Positive)
                     return Pixel_Buffer_Access;
 
    procedure Store (Buffer : in out Pixel_Buffer;
-                    Pixel  : Frames.Point_Type;
+                    Pixel  : Point_Type;
                     Data   : Pixel_History);
 
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
@@ -73,7 +72,7 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
    function Value (Buffer : Pixel_Buffer;
                    Pixel  : Pixel_Index;
                    Time   : Frame_Index)
-                   return Frames.Pixel_Value;
+                   return Sample_Value;
 
 private
    --
@@ -93,7 +92,7 @@ private
 
 
    type Pixel_List is
-     array (Pixel_Index range <>) of Frames.Point_Type;
+     array (Pixel_Index range <>) of Point_Type;
 
    type Pixel_List_Access is access Pixel_List;
 

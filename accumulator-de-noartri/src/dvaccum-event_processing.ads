@@ -25,8 +25,8 @@ package Dvaccum.Event_Processing is
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
-                      Event_Weight   : Frames.Pixel_Value;
-                      Offset         : Frames.Pixel_Value;
+                      Event_Weight   : Sample_Value;
+                      Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;

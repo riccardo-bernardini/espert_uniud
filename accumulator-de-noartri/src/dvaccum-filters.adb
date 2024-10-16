@@ -6,11 +6,43 @@ with Patterns;
 
 package body Dvaccum.Filters is
 
-   function "*" (Gain : Frames.Pixel_Value;
+   procedure Dump (Item : Filter_Type;
+                   To   : Text_IO.File_Type := Text_IO.Standard_Output)
+   is
+      use Ada.Text_IO;
+
+      ----------
+      -- Dump --
+      ----------
+
+      procedure Dump (Item : Filter_Atom;
+                      To   : Text_IO.File_Type)
+      is
+      begin
+         for C of Item.Num loop
+            Put (File => To, Item => C'Image & " ");
+         end loop;
+
+         if not Item.Is_Fir then
+            Put (File => To, Item => " / ");
+
+            for C of Item.Den loop
+               Put (File => To, Item => C'Image & " ");
+            end loop;
+         end if;
+      end Dump;
+   begin
+      for Atom of Item.Atoms loop
+         Dump (Atom, To);
+         New_Line (To);
+      end loop;
+   end Dump;
+
+   function "*" (Gain : Sample_Value;
                  Filter : Filter_Type)
                  return Filter_Type
    is
-      use type Frames.Pixel_Value;
+
    begin
       return Result : Filter_Type := Filter do
          for Atom of Result.Atoms loop
@@ -25,12 +57,20 @@ package body Dvaccum.Filters is
    -- Make_Atom --
    ---------------
 
-   function Make_Atom (Num, Den : Signal)
+   function Make_Atom (Num, Den : Coefficients)
                        return Filter_Atom
    is
+      use Ada.Text_IO;
+
       Max_Deg : constant Natural := Natural'Max (Num'Last, Den'Last);
 
    begin
+      Put_Line (Num'First'image & "," &
+                  Num'Last'image & ", " &
+                  Den'First'image & "," &
+                  Den'Last'image & ", " &
+                  Max_Deg'image);
+
       return Result : Filter_Atom (Max_Deg) do
          Result.Den (Den'Range) := Den;
          Result.Num (Num'Range) := Num;
@@ -44,7 +84,6 @@ package body Dvaccum.Filters is
    is
       use Tokenize;
       use Ada.Strings;
-      use Frames;
 
       function Strip (S : String) return String
       is (Fixed.Trim (Source => S,
@@ -55,16 +94,16 @@ package body Dvaccum.Filters is
                            Sampling : Float)
                            return Filter_Atom
       is
-         function Parse_Poly (X : String) return Signal
+         function Parse_Poly (X : String) return Coefficients
            with
              Post => Parse_Poly'Result'First = 0;
 
-         function Parse_Poly (X : String) return Signal
+         function Parse_Poly (X : String) return Coefficients
          is
 
             Coeffs : constant String_Vectors.Vector := Split (X);
          begin
-            return Result : Signal (0 .. Integer (Coeffs.Length) - 1) do
+            return Result : Coefficients (0 .. Integer (Coeffs.Length) - 1) do
                for I in Result'Range loop
                   declare
                      C : constant String := Strip (Coeffs (I + Coeffs.First_Index));
@@ -74,7 +113,7 @@ package body Dvaccum.Filters is
                           with "Invalid number [" & C & "]";
                      end if;
 
-                     Result (I) := Pixel_Value'Value (C);
+                     Result (I) := Sample_Value'Value (C);
                   end;
                end loop;
             end return;
@@ -88,7 +127,7 @@ package body Dvaccum.Filters is
 
             function Tau_To_Pole (Input    : String;
                                   Sampling : Float)
-                                  return Frames.Pixel_Value
+                                  return Sample_Value
             is
                Mult : Float;
                Last : Positive;
@@ -124,7 +163,7 @@ package body Dvaccum.Filters is
                   end if;
 
                   Tau := Mult * Float'Value (Number);
-                  return Pixel_Value (Exp (-Sampling / Tau));
+                  return Sample_Value (Exp (-Sampling / Tau));
                end;
 
             end Tau_To_Pole;
@@ -137,14 +176,14 @@ package body Dvaccum.Filters is
 
             declare
                Num_Part  : constant String := Strip (Parts (1));
-               Num       : Pixel_Value;
-               Pole      : constant Pixel_Value := Tau_To_Pole (Strip (Parts (2)), Sampling);
+               Num       : Sample_Value;
+               Pole      : constant Sample_Value := Tau_To_Pole (Strip (Parts (2)), Sampling);
             begin
                if Num_Part = "" then
                   Num := 1.0;
 
                elsif Patterns.Is_Float (Num_Part) then
-                  Num := Pixel_Value'Value (Num_Part);
+                  Num := Sample_Value'Value (Num_Part);
 
                else
                   raise Constraint_Error;
@@ -168,8 +207,8 @@ package body Dvaccum.Filters is
             end if;
 
             declare
-               Num : constant Signal := Parse_Poly (Parts (1));
-               Den : constant Signal := Parse_Poly (Parts (2));
+               Num : constant Coefficients := Parse_Poly (Parts (1));
+               Den : constant Coefficients := Parse_Poly (Parts (2));
             begin
                return Make_Atom (Num => Num, Den => Den);
             end;
@@ -177,7 +216,7 @@ package body Dvaccum.Filters is
 
          function Parse_Fir (X : String) return Filter_Atom
          is
-            Num : constant Signal := Parse_Poly (X);
+            Num : constant Coefficients := Parse_Poly (X);
          begin
             pragma Assert (Num'First = 0);
 
@@ -248,10 +287,9 @@ package body Dvaccum.Filters is
    -------------
 
    procedure Process (Filter : in out Filter_Atom;
-                      Output :    out Frames.Pixel_Value;
-                      Input  :        Frames.Pixel_Value)
+                      Output :    out Sample_Value;
+                      Input  :        Sample_Value)
    is
-      use type Frames.Pixel_Value;
    begin
       if Filter.Is_FIR then
          Output := Input * Filter.Num (0)+Filter.Status (1);
@@ -285,12 +323,10 @@ package body Dvaccum.Filters is
    -------------
 
    procedure Process (Filter : in out Filter_Type;
-                      Output :    out Frames.Pixel_Value;
-                      Input  :        Frames.Pixel_Value)
+                      Output :    out Sample_Value;
+                      Input  :        Sample_Value)
    is
-      use Frames;
-
-      Buffer : Pixel_Value;
+      Buffer : Sample_Value;
    begin
       Output := 0.0;
 

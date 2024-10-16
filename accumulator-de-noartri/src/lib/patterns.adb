@@ -38,7 +38,7 @@ package body patterns is
             when Sign =>
                case Current_Char is
                   when '0' .. '9' =>
-                     Status := Fractional_Part;
+                     Status := Integer_Part;
 
                   when others =>
                      return False;

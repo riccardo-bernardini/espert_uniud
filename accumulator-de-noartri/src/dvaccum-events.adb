@@ -1,6 +1,5 @@
 pragma Ada_2012;
 package body Dvaccum.Events is
-   use Frames;
 
    function Less_Then_By_Pixel (A, B : Event_Type) return Boolean
    is (A.X < B.X or

@@ -1,49 +1,39 @@
 
 package DVAccum.Frames is
-   type Pixel_Value is new Float;
-
-   type X_Coordinate_Type is mod 2 ** 16;
-   type Y_Coordinate_Type is mod 2 ** 16;
-
-   type Point_Type is
-      record
-         X : X_Coordinate_Type;
-         Y : Y_Coordinate_Type;
-      end record;
 
 
    type Image_Type is
-     array (X_Coordinate_Type range <>,
-            Y_Coordinate_Type range <>)
-     of Pixel_Value;
+     array (Coord_X range <>,
+            Coord_Y range <>)
+     of Sample_Value;
 
-   function Width (Image : Image_Type) return X_Coordinate_Type
+   function Width (Image : Image_Type) return Coord_X
    is (Image'Last (1)-Image'First (1)+1);
 
-   function Height (Image : Image_Type) return Y_Coordinate_Type
+   function Height (Image : Image_Type) return Coord_Y
    is (Image'Last (2)-Image'First (2)+1);
 
-   function "+" (Image : Image_Type; Offset : Pixel_Value) return Image_Type;
+   function "+" (Image : Image_Type; Offset : Sample_Value) return Image_Type;
 
    procedure Add (Image  : in out Image_Type;
-                  Offset : Pixel_Value)
+                  Offset : Sample_Value)
      with
        Post => (for all X in Image'Range (1) =>
                   (for all Y in Image'Range (2) =>
                      (Image (X, Y) = Image'Old (X, Y) + Offset)));
 
-   function "*" (K : Pixel_Value; Image : Image_Type) return Image_Type;
+   function "*" (K : Sample_Value; Image : Image_Type) return Image_Type;
 
    procedure Multiply (Image  : in out Image_Type;
-                       K      : Pixel_Value)
+                       K      : Sample_Value)
      with
        Post => (for all X in Image'Range (1) =>
                   (for all Y in Image'Range (2) =>
                      (Image (X, Y) = K * Image'Old (X, Y))));
 
    procedure Multiply_And_Add (Image  : in out Image_Type;
-                               K      : Pixel_Value;
-                               Offset : Pixel_Value)
+                               K      : Sample_Value;
+                               Offset : Sample_Value)
      with
        Post => (for all X in Image'Range (1) =>
                   (for all Y in Image'Range (2) =>
@@ -51,29 +41,29 @@ package DVAccum.Frames is
 
 
    function Rescale (Image    : Image_Type;
-                     Old_Min  : Pixel_Value;
-                     Old_Max  : Pixel_Value;
-                     New_Min  : Pixel_Value;
-                     New_Max  : Pixel_Value;
+                     Old_Min  : Sample_Value;
+                     Old_Max  : Sample_Value;
+                     New_Min  : Sample_Value;
+                     New_Max  : Sample_Value;
                      Saturate : Boolean := True)
                      return Image_Type;
 
    procedure Rescale (Image    : in out Image_Type;
-                      Old_Min  : Pixel_Value;
-                      Old_Max  : Pixel_Value;
-                      New_Min  : Pixel_Value;
-                      New_Max  : Pixel_Value;
+                      Old_Min  : Sample_Value;
+                      Old_Max  : Sample_Value;
+                      New_Min  : Sample_Value;
+                      New_Max  : Sample_Value;
                       Saturate : Boolean := True);
 
    procedure Limit_Up (Image : in out Image_Type;
-                       Max   : Pixel_Value);
+                       Max   : Sample_Value);
 
    procedure Limit_Down (Image : in out Image_Type;
-                         Min   : Pixel_Value);
+                         Min   : Sample_Value);
 
    procedure Limit (Image : in out Image_Type;
-                    Min   : Pixel_Value;
-                    Max   : Pixel_Value);
+                    Min   : Sample_Value;
+                    Max   : Sample_Value);
 
    type Format_Type is (Raw_Image_8, Pgm, Png);
 
@@ -82,7 +72,7 @@ package DVAccum.Frames is
 
    function Uniform (X_Size : Positive;
                      Y_Size : Positive;
-                     Value  : Pixel_Value := 0.0)
+                     Value  : Sample_Value := 0.0)
                      return Image_Type;
 
    procedure Save (Filename : String;

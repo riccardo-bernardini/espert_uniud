@@ -17,7 +17,7 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
       end Subsample;
 
       procedure Store (Data     : Pixel_History;
-                       Location : Frames.Point_Type)
+                       Location : Point_Type)
       is
       begin
          Parameters.Pixels.Store (Location, Data);
@@ -50,7 +50,6 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
       function Collate (Segment : Event_Array) return Filters.Signal
       is
          use Timestamps;
-         use Frames;
 
          Step : constant Timestamps.Duration :=
                   Parameters.Frame_Duration / Float (Parameters.Oversampling);
@@ -67,7 +66,7 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
                Index := Natural ((Ev.T - Parameters.From) / Step);
 
                Result (Index) := Result (Index) +
-                 Pixel_Value (Integer'(Ev.Weight));
+                 Sample_Value (Integer'(Ev.Weight));
             end loop;
          end return;
       end Collate;

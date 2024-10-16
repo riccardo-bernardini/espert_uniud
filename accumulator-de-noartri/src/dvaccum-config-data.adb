@@ -12,7 +12,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
 
    type Integer_Field_Array is array (Integer_Field) of Integer;
 
-   type Numeric_Field_Array is array (Numeric_Field) of Frames.Pixel_Value;
+   type Numeric_Field_Array is array (Numeric_Field) of Sample_Value;
 
    type Boolean_Field_Array is array (Boolean_Field) of Boolean;
 
@@ -156,7 +156,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Set --
    ---------
 
-   procedure Set (Field : Numeric_Field; Value : Frames.Pixel_Value) is
+   procedure Set (Field : Numeric_Field; Value : Sample_Value) is
    begin
       Config_Data.Numeric_Fields (Field) := Value;
       Is_Set (Field);
@@ -177,7 +177,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
    -- Get --
    ---------
 
-   function Get (Field : Numeric_Field) return Frames.Pixel_Value
+   function Get (Field : Numeric_Field) return Sample_Value
    is (Config_Data.Numeric_Fields (Field));
 
    ---------

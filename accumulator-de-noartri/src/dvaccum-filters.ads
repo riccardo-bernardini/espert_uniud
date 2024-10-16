@@ -1,6 +1,7 @@
 with Ada.Containers.Indefinite_Vectors;
+with Ada.Text_IO;
 
-with DVAccum.Frames;
+use Ada;
 
 --
 --  This package implements filter to be used to accumulate the events.  Every
@@ -44,22 +45,26 @@ package Dvaccum.Filters is
    type Filter_Type is private;
 
    type Signal is
-     array (Integer range <>) of Frames.Pixel_Value;
+     array (Integer range <>) of Sample_Value;
+
 
    function Parse (Descr    : String;
                    Sampling : Float) return Filter_Type;
 
+   procedure Dump (Item : Filter_Type;
+                   To   : Text_IO.File_Type := Text_IO.Standard_Output);
+
    Parsing_Error : exception;
 
-   function "*" (Gain : Frames.Pixel_Value;
+   function "*" (Gain : Sample_Value;
                  Filter : Filter_Type)
                  return Filter_Type;
 
    procedure Reset (Filter : in out Filter_Type);
 
    procedure Process (Filter : in out Filter_Type;
-                      Output :    out Frames.Pixel_Value;
-                      Input  :        Frames.Pixel_Value);
+                      Output :    out Sample_Value;
+                      Input  :        Sample_Value);
 
 
    function Apply (Filter : in out Filter_Type;
@@ -70,11 +75,14 @@ package Dvaccum.Filters is
          Input'First = Apply'Result'First
          and Input'Last = Apply'Result'Last;
 private
+   type Coefficients is
+     array (Natural range <>) of Sample_Value;
+
    type Filter_Atom (Degree : Natural) is
       record
          Is_Fir : Boolean;
-         Num    : Signal (0 .. Degree) := (others => 0.0);
-         Den    : Signal (0 .. Degree) := (others => 0.0);
+         Num    : Coefficients (0 .. Degree) := (others => 0.0);
+         Den    : Coefficients (0 .. Degree) := (others => 0.0);
          Status : Signal (1 .. Degree) := (others => 0.0);
       end record;
 

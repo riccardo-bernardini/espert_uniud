@@ -21,7 +21,7 @@ private package DVaccum.Event_Processing.Segment_Queues is
       record
          First    : Event_Index;
          Last     : Event_Index;
-         Location : Frames.Point_Type;
+         Location : Point_Type;
       end record;
 
    No_Segment : constant Event_Segment;

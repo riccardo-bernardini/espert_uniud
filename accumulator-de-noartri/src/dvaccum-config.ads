@@ -83,15 +83,15 @@ package Dvaccum.Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
-   function Event_Contribution return Frames.Pixel_Value
+   function Event_Contribution return Sample_Value
      with
        Pre => Package_Ready;
 
-   function Pixel_Min return Frames.Pixel_Value
+   function Pixel_Min return Sample_Value
      with
        Pre => Package_Ready;
 
-   function Pixel_Max return Frames.Pixel_Value
+   function Pixel_Max return Sample_Value
      with
        Pre => Package_Ready;
 

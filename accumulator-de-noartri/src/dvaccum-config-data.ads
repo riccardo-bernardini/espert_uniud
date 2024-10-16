@@ -1,7 +1,6 @@
 with DVAccum.Timestamps;
 
 private package DVAccum.Config.Data with SPARK_Mode is
-   use type Frames.Pixel_Value;
    use type Timestamps.Timestamp;
    use type Timestamps.Duration;
 
@@ -35,7 +34,7 @@ private package DVAccum.Config.Data with SPARK_Mode is
       record
          case Class is
             when Uniform =>
-               Level : Frames.Pixel_Value;
+               Level : Sample_Value;
 
             when External =>
                Filename : Unbounded_String;
@@ -107,12 +106,12 @@ private package DVAccum.Config.Data with SPARK_Mode is
 
 
    procedure Set (Field : Numeric_Field;
-                  Value : Frames.Pixel_Value)
+                  Value : Sample_Value)
      with
        Pre => not Is_Set (Field),
        Post => (Is_Set (Field) and then Get (Field) = Value);
 
-   function Get (Field : Numeric_Field) return Frames.Pixel_Value
+   function Get (Field : Numeric_Field) return Sample_Value
      with
        Pre => Is_Set (Field);
 

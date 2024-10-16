@@ -13,8 +13,8 @@ package body Dvaccum.Event_Processing is
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
                       Frame_Name     : Frame_Name_Generator;
-                      Event_Weight   : Frames.Pixel_Value;
-                      Offset         : Frames.Pixel_Value;
+                      Event_Weight   : Sample_Value;
+                      Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;
                       Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
@@ -29,14 +29,13 @@ package body Dvaccum.Event_Processing is
                               Segments      : Segment_Queues.Segment_Queue_Access)
       is
          use Segment_Queues;
-         use Frames;
 
-         function Pixel_Of (Ev : Events.Event_Type) return Frames.Point_Type
+         function Pixel_Of (Ev : Events.Event_Type) return Point_Type
          is ((Ev.X, Ev.Y));
-         No_Pixel : constant Frames.Point_Type := (X_Coordinate_Type'Last,
-                                                   Y_Coordinate_Type'Last);
+         No_Pixel : constant Point_Type := (Coord_X'Last,
+                                            Coord_Y'Last);
 
-         Current_Pixel : Frames.Point_Type := No_Pixel;
+         Current_Pixel : Point_Type := No_Pixel;
 
          Cursor           : Event_Index := Destination'First;
          Begin_Of_Segment : Event_Index;
@@ -74,11 +73,10 @@ package body Dvaccum.Event_Processing is
          Segments      : Segment_Queues.Segment_Queue_Access;
          Pixels        : Pixel_Buffers.Pixel_Buffer_Access;
          Filter        : Filters.Filter_Type;
-         Event_Weight  : Frames.Pixel_Value;
+         Event_Weight  : Sample_Value;
          N_Cpu         : System.Multiprocessors.CPU)
       is
          use System.Multiprocessors;
-         use Frames;
          use Filters;
 
          Scaled_Filter : constant Filters.Filter_Type := Event_Weight * Filter;
@@ -113,7 +111,7 @@ package body Dvaccum.Event_Processing is
 
       procedure Save_Frames (Frame_Name : Frame_Name_Generator;
                              Pixels     : Pixel_Buffers.Pixel_Buffer_Access;
-                             Offset     : Frames.Pixel_Value;
+                             Offset     : Sample_Value;
                              N_Cpu      : System.Multiprocessors.CPU)
       is
          -- use System.Multiprocessors;

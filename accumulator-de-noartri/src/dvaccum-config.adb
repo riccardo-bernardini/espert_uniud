@@ -56,7 +56,6 @@ package body DVAccum.Config with SPARK_Mode is
 
    procedure Parse_Command_Line (Report : out Parsing_Report) is
       use Sparked_Command_Line;
-      use type Frames.Pixel_Value;
 
       type Options is
         (
@@ -120,9 +119,7 @@ package body DVAccum.Config with SPARK_Mode is
       function Parse_First_Image_Spec (Spec : String)
                                        return Start_Image_Spec_Type
       is
-         use Frames;
-
-         function Uniform_Image (Level : Pixel_Value) return Start_Image_Spec_Type
+         function Uniform_Image (Level : Sample_Value) return Start_Image_Spec_Type
          is
          begin
             if Level > Get (Max) or Level < Get (Min) then
@@ -165,10 +162,10 @@ package body DVAccum.Config with SPARK_Mode is
             return Uniform_Image (Get (Neutral));
 
          elsif Patterns.Is_Float (Spec) then
-            return Uniform_Image (Pixel_Value'Value (Spec));
+            return Uniform_Image (Sample_Value'Value (Spec));
 
          elsif Begin_With (Spec, "uniform:") or Begin_With (Spec, "constant:") then
-            return Uniform_Image (Pixel_Value'Value (Tail (Spec)));
+            return Uniform_Image (Sample_Value'Value (Tail (Spec)));
 
          elsif Begin_With (Spec, "file:") then
             return Image_File (Tail (Spec));
@@ -215,7 +212,6 @@ package body DVAccum.Config with SPARK_Mode is
 
       declare
          use Timestamps;
-         use Frames;
 
          Parsed_Options : constant Parsed_CL := Parse_CL (Option_Specs);
       begin
@@ -225,9 +221,9 @@ package body DVAccum.Config with SPARK_Mode is
             return;
          end if;
 
-         Set (Data.Min, Pixel_Value'Value (Parsed_Options (Min)));
-         Set (Data.Max, Pixel_Value'Value (Parsed_Options (Max)));
-         Set (Data.Neutral, Pixel_Value'Value (Parsed_Options (Neutral)));
+         Set (Data.Min, Sample_Value'Value (Parsed_Options (Min)));
+         Set (Data.Max, Sample_Value'Value (Parsed_Options (Max)));
+         Set (Data.Neutral, Sample_Value'Value (Parsed_Options (Neutral)));
 
          Set (Data.Start_Time, Timestamp'(Value (Parsed_Options (Start_Time))));
 
@@ -241,7 +237,7 @@ package body DVAccum.Config with SPARK_Mode is
 
          Set (Data.Log_Progress, Parsed_Options (Log_Progress));
 
-         Set (Data.Event_Weigth, Pixel_Value'Value (Parsed_Options (Event_Weigth)));
+         Set (Data.Event_Weigth, Sample_Value'Value (Parsed_Options (Event_Weigth)));
 
          Set (Data.Filter_Spec, String'(Parsed_Options (Filter)));
 
@@ -402,13 +398,13 @@ package body DVAccum.Config with SPARK_Mode is
         & LF;
    end Long_Help_Text;
 
-   function Event_Contribution return Frames.Pixel_Value
+   function Event_Contribution return Sample_Value
    is (Get (Event_Weigth));
 
-   function Pixel_Min return Frames.Pixel_Value
+   function Pixel_Min return Sample_Value
    is (Get (Min));
 
-   function Pixel_Max return Frames.Pixel_Value
+   function Pixel_Max return Sample_Value
    is (Get (Max));
 
 

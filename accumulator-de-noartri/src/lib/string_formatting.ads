@@ -1,5 +1,6 @@
 with Ada.Containers.Indefinite_Doubly_Linked_Lists;
 with Ada.Characters.Handling;
+with Ada.Text_IO;
 
 use Ada;
 
@@ -10,12 +11,15 @@ package String_Formatting is
    function Parse_Format
      (Format              : String;
       Accepted_Directives : String := "";
-      Directive_Prefix    : Character := '%') return Parsed_Format
+      Directive_Prefix    : Character := '%')
+      return Parsed_Format
      with
        Pre => Characters.Handling.Is_Special (Directive_Prefix);
 
    Parsing_Error : exception;
 
+   procedure Dump (Item : Parsed_Format;
+                   To   : Text_Io.File_Type := Text_IO.Standard_Output);
 
    type Provider_Function is
      access function (Directive : Character;

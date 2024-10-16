@@ -4,6 +4,31 @@ with Ada.Strings.Maps.Constants;
 
 package body String_Formatting is
 
+   procedure Dump (Item : Parsed_Format;
+                   To   : Text_Io.File_Type := Text_IO.Standard_Output)
+   is
+      use Ada.Text_Io;
+
+      procedure Dump (Item : Format_Segment)
+      is
+      begin
+         case Item.Class is
+            when Text =>
+               Put_Line (File => To,
+                         item => """" & Item.Value & """");
+
+            when Directive =>
+               Put_Line (File => To,
+                         Item => "(" & Item.Label & "," & Item.Parameter & ")");
+
+         end case;
+      end Dump;
+   begin
+      for Segment of Item.Segments loop
+         Dump (Segment);
+      end loop;
+   end Dump;
+
    ------------------
    -- Parse_Format --
    ------------------

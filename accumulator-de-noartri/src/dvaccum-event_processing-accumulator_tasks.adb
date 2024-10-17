@@ -66,7 +66,7 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
                Index := Natural ((Ev.T - Parameters.From) / Step);
 
                Result (Index) := Result (Index) +
-                 Sample_Value (Integer'(Ev.Weight));
+                 Sample_Value (Integer (Ev.Weight));
             end loop;
          end return;
       end Collate;

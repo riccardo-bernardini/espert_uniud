@@ -25,9 +25,6 @@ package body DVAccum.Config with SPARK_Mode is
    use type Timestamps.Timestamp;
 
 
-   function Strip_Spaces (S : String) return String
-   is (Fixed.Trim (Source => S,
-                   Side   => Both));
 
    function Is_A_Tty (Descriptor : C.Int) return Boolean
    is
@@ -390,7 +387,7 @@ package body DVAccum.Config with SPARK_Mode is
         & LF
         & "radix: used to generate the filenames of the frames." & LF
         & "'" & Frame_Number_Marker & "' is replaced by the frame number" & LF
-        & "(" & Strip_Spaces (Frame_Number_Default_Width'Image) & " digits"
+        & "(" & Patterns.Strip_Spaces (Frame_Number_Default_Width'Image) & " digits"
         & " left padded with '" & Frame_Number_Padding_Char & "')" & LF
         & LF
         & "event-filename: optional, the file with the camera events." & LF

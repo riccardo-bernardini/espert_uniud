@@ -23,7 +23,7 @@ package Dvaccum.Event_Processing is
    type Frame_Name_Generator is
      access function (Frame : Frame_Index) return String;
 
-   procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
+   procedure Process (Event_Sequence : Event_Io.Event_Sequence;
                       Frame_Name     : Frame_Name_Generator;
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;

@@ -11,7 +11,7 @@ use System;
 package body Dvaccum.Event_Processing is
    type Ev_Access is access Event_Array;
 
-   procedure Process (Event_Sequence : Event_Io.Event_Sequences.Set;
+   procedure Process (Event_Sequence : Event_Io.Event_Sequence;
                       Frame_Name     : Frame_Name_Generator;
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;
@@ -24,7 +24,7 @@ package body Dvaccum.Event_Processing is
                       Initial_Image  : Frames.Image_Type)
    is
 
-      procedure Fill_Storage (Source        : Event_Io.Event_Sequences.Set;
+      procedure Fill_Storage (Source        : Event_Io.Event_Sequence;
                               Destination   : Ev_Access;
                               Segments      : Segment_Queues.Segment_Queue_Access)
       is
@@ -39,8 +39,11 @@ package body Dvaccum.Event_Processing is
 
          Cursor           : Event_Index := Destination'First;
          Begin_Of_Segment : Event_Index;
+         Ev               : Events.Event_Type;
       begin
-         for Ev of Source loop
+         for Pos in Source.All_Events loop
+            Ev := Event_Io.Element (Pos);
+
             if Current_Pixel = No_Pixel then
                Begin_Of_Segment := Cursor;
                Current_Pixel := Pixel_Of (Ev);

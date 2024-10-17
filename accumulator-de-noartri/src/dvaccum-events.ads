@@ -2,17 +2,14 @@ with DVAccum.Timestamps;
 use  DVAccum.Timestamps;
 
 package DVAccum.Events is
-
-
-
-   type Weight_Type is (Increase, Decrease);
+   type Event_Weight is new Float;
 
    type Event_Type is tagged private;
 
    function New_Event (T      : Timestamp;
                        X      : Coord_X;
                        Y      : Coord_Y;
-                       Weight : Weight_Type)
+                       Weight : Event_Weight)
                        return Event_Type;
 
    procedure Translate (Event   : in out Event_Type;
@@ -25,8 +22,6 @@ package DVAccum.Events is
        Pre => T (Event) >= Zero + Delta_T,
        Post => T (Translate'Result) = T (Event)-Delta_T;
 
-   procedure Rectify (Item : in out Event_Type);
-
 
    function T (Event : Event_Type) return Timestamp;
    function X (Event : Event_Type) return Coord_X;
@@ -34,9 +29,7 @@ package DVAccum.Events is
 
    function Position (Event : Event_Type) return Point_Type;
 
-   function Weight (Event : Event_Type) return Weight_Type;
-
-   function Weight (Event : Event_Type) return Integer;
+   function Weight (Event : Event_Type) return Event_Weight;
 
    function Image (Event : Event_Type) return String;
 
@@ -49,13 +42,13 @@ private
          T      : Timestamp;
          X      : Coord_X;
          Y      : Coord_Y;
-         Weight : Weight_Type;
+         Weight : Event_Weight;
       end record;
 
    function New_Event (T      : Timestamp;
                        X      : Coord_X;
                        Y      : Coord_Y;
-                       Weight : Weight_Type)
+                       Weight : Event_Weight)
                        return Event_Type
    is (Event_Type'(T      => T,
                    X      => X,
@@ -71,13 +64,8 @@ private
    function Y (Event : Event_Type) return Coord_Y
    is (Event.Y);
 
-   function Weight (Event : Event_Type) return Weight_Type
+   function Weight (Event : Event_Type) return Event_Weight
    is (Event.Weight);
 
-
-   function Weight (Event : Event_Type) return Integer
-   is (case Event.Weight is
-          when Increase => 1,
-          when Decrease => -1);
 
 end DVAccum.Events;

@@ -44,10 +44,4 @@ package body Dvaccum.Events is
        & Event.Weight'Image
        & "]");
 
-   procedure Rectify (Item : in out Event_Type)
-   is
-   begin
-      Item.Weight := Increase;
-   end Rectify;
-
 end Dvaccum.events;

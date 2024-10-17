@@ -3,9 +3,9 @@ pragma Ada_2012;
 with Ada.Containers;
 
 with Ada.Strings.Fixed;
+with Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
 
-with Ada.Characters.Handling;
 
 with Ada.Streams.Stream_IO;
 
@@ -13,34 +13,26 @@ with Tokenize;
 
 use Ada;
 use Ada.Strings;
+use Ada.Strings.Unbounded;
+
+with Patterns;
 
 package body DVAccum.Event_Io is
+
    type Counter is mod 2 ** 64;
 
    type Line_Type is (Comment, Header, Data);
 
-   function Get_Extension (Filename : String) return String
-   is (if Filename'Length > 4 and then Filename (Filename'Last - 3) = '.'
-       then
-          Characters.Handling.To_Lower (Fixed.Tail (Filename, 4))
-       else
-          "");
 
-   function Chomp (S : String) return String
-   is
-      use Ada.Strings.Maps.Constants;
+   function First_Time (Sequence : Event_Sequence)return Timestamps.Timestamp
+   is (Sequence.Meta.Min_Timestamp);
 
-      Last : constant Natural := Fixed.Index (Source => S,
-                                              Set    => Control_Set,
-                                              Test   => Outside,
-                                              Going  => Backward);
-   begin
-      return S (S'First .. Last);
-   end Chomp;
+   function Last_Time (Sequence : Event_Sequence)return Timestamps.Timestamp
+   is (Sequence.Meta.Max_Timestamp);
 
-   function Strip_Spaces (S : String) return String
-   is (Fixed.Trim (Source => Chomp (S),
-                   Side   => Both));
+
+   function Is_Empty (Sequence : Event_Sequence) return Boolean
+   is (Sequence.Events.Is_Empty);
 
 
    function Type_Of (Line : String) return Line_Type
@@ -48,7 +40,7 @@ package body DVAccum.Event_Io is
       use Ada.Strings.Maps.Constants;
       use type Ada.Strings.Maps.Character_Set;
 
-      Stripped : constant String := Strip_Spaces (Line);
+      Stripped : constant String := Patterns.Strip_Spaces (Line);
    begin
       if Stripped = "" or else Stripped (Stripped'First) = '#' then
          return Comment;
@@ -64,15 +56,55 @@ package body DVAccum.Event_Io is
       return Header;
    end Type_Of;
 
+   procedure Set_Metadata (Sequence : in out Event_Sequence;
+                           Metadata : in     Metadata_Maps.Map)
+   is
+      -------------
+      -- Get_Int --
+      -------------
+
+      function Get_Int (key : String) return Integer
+      is
+         K : constant Metadata_Key := Metadata_Key (Key);
+      begin
+         if not Metadata.Contains (K) then
+            raise Bad_Event_Stream
+              with "Missing " & Key & " metadata";
+         end if;
+
+         declare
+            Val : constant Metadata_Value := Metadata (K);
+         begin
+            if not Patterns.Is_Integer (string (Val)) then
+               raise Bad_Event_Stream
+                 with "Bad integer as value of " & Key;
+            end if;
+
+            return Integer'Value (String (Val));
+         end;
+      end Get_Int;
+
+      N_Rows : constant Positive := Get_Int("sizeY");
+      N_Cols : constant Positive := Get_Int("sizeX");
+
+   begin
+      Sequence.Meta := Sequence_Metadata'
+        (Min_Timestamp => T (Sequence.Events.First_Element),
+         Max_Timestamp => T (Sequence.Events.Last_Element),
+         N_Rows        => N_Rows,
+         N_Cols        => N_Cols,
+         Map           => Metadata);
+   end Set_Metadata;
    ------------------------
    -- Read_Event_Stream --
    ------------------------
 
    procedure Read_CSV_Event_Stream
      (Input                  : in     Ada.Text_IO.File_Type;
-      Events                 :    out Event_Sequences.Set;
-      Metadata               :    out Sequence_Metadata;
-      Rectify                : in     Boolean)
+      Events                 : in out Event_Sequence;
+      On_Positive_Event      : in     Event_Weight;
+      On_Negative_Event      : in     Event_Weight;
+      Offset                 : in     Timestamps.Duration)
    is
       use Ada.Text_Io;
 
@@ -87,28 +119,28 @@ package body DVAccum.Event_Io is
          use type Ada.Containers.Count_Type;
 
          use Tokenize;
-         use DVaccum.Events;
+         use Timestamps;
 
          Fields : constant Token_List := Split (To_Be_Splitted => Line,
                                                 Separator      => ',');
 
-         Weight : Weight_Type;
+         Weight : Event_Weight;
       begin
          if Fields.Length /= 4 then
             raise Bad_Event_Stream with Line;
          end if;
 
          if Fields (4) = "0" then
-            Weight := Decrease;
+            Weight := On_Negative_Event;
 
          elsif Fields (4) = "1" then
-            Weight := Increase;
+            Weight := On_Positive_Event;
 
          else
             raise Bad_Event_Stream;
          end if;
 
-         return New_Event (T      => DVaccum.Timestamps.Value (Fields (1)),
+         return New_Event (T      => Value (Fields (1))+Offset,
                            X      => Coord_X'Value (Fields (2)),
                            Y      => Coord_Y'Value (Fields (3)),
                            Weight => Weight);
@@ -226,8 +258,8 @@ package body DVAccum.Event_Io is
                         Status := Looking_For_Key;
 
                         Metadata.Insert
-                          (Key      => Metadata_Key (Key),
-                           New_Item => Metadata_Value (Value));
+                          (Key      => Metadata_Key (To_String (Key)),
+                           New_Item => Metadata_Value (To_String (Value)));
 
                         Key := Null_Unbounded_String;
                         Value := Null_Unbounded_String;
@@ -247,23 +279,24 @@ package body DVAccum.Event_Io is
 
          if Value /= Null_Unbounded_String then
             Metadata.Insert
-              (Key      => Metadata_Key (Key),
-               New_Item => Metadata_Value (Value));
+              (Key      => Metadata_Key (To_String (Key)),
+               New_Item => Metadata_Value (To_String (Value)));
          end if;
       end Read_Metadata;
 
       Header_Seen        : Boolean := False;
       Previous_Timestamp : Timestamps.Timestamp := Timestamps.Minus_Infinity;
+      Metadata           : Metadata_Maps.Map;
    begin
       while not End_Of_File (Input) loop
          declare
-            Line : constant String := Strip_Spaces (Get_Line (Input));
+            Line : constant String := Patterns.Strip_Spaces (Get_Line (Input));
          begin
             --  Put_Line (Type_Of (Line)'Image);
             case Type_Of (Line) is
                when Comment =>
                   if not Header_Seen then
-                     Read_Metadata (Metadata.Map, Line);
+                     Read_Metadata (Metadata, Line);
                   end if;
 
                when Header =>
@@ -279,15 +312,10 @@ package body DVAccum.Event_Io is
                   end if;
 
                   declare
-                     use Dvaccum.Events;
                      use Timestamps;
 
-                     Event : Event_Type := Parse_Data_Line (Line);
+                     Event : constant Event_Type := Parse_Data_Line (Line);
                   begin
-                     if Rectify then
-                        DVAccum.Events.Rectify (Event);
-                     end if;
-
                      if not Events.Is_Empty
                        and then Previous_Timestamp > T (Event)
                      then
@@ -296,11 +324,13 @@ package body DVAccum.Event_Io is
 
                      Previous_Timestamp := T (Event);
 
-                     Events.Insert (Event);
+                     Events.Events.Insert (Event);
                   end;
             end case;
          end;
       end loop;
+
+      Set_Metadata (Events, Metadata);
    end Read_CSV_Event_Stream;
 
    ------------------------------
@@ -308,17 +338,22 @@ package body DVAccum.Event_Io is
    ------------------------------
 
    procedure Read_Binary_Event_Stream
-     (Filename : in     String;
-      Events   :    out Event_Sequences.Set;
-      Metadata :    out Sequence_Metadata;
-      Rectify  : in     Boolean)
+     (Filename          : in     String;
+      Events            :    out Event_Sequences.Set;
+      Metadata          :    out Sequence_Metadata;
+      On_Positive_Event : in     Event_Weight;
+      On_Negative_Event : in     Event_Weight;
+      Offset            : in     Timestamps.Duration)
    is
+      pragma Unreferenced (On_Positive_Event, On_Negative_Event, Offset);
       use Ada.Streams.Stream_IO;
-      use Dvaccum.Events;
       use Event_Sequences;
 
       Input_File : File_Type;
    begin
+      pragma Compile_Time_Warning (True, "Outdated.  Do not use");
+      raise Program_Error;
+
       Open (File => Input_File,
             Mode => In_File,
             Name => Filename);
@@ -334,12 +369,8 @@ package body DVAccum.Event_Io is
 
          for I in 1 .. N_Events loop
             declare
-               Ev : Event_Type := Event_Type'Input (Input_Stream);
+               Ev : constant Event_Type := Event_Type'Input (Input_Stream);
             begin
-               if Rectify then
-                  DVAccum.Events.Rectify (Ev);
-               end if;
-
                Events.Include (Ev);
             end;
          end loop;
@@ -365,63 +396,96 @@ package body DVAccum.Event_Io is
    -- Read_Event_Stream --
    -----------------------
 
-   procedure Read_Events
-     (Filename : in     String;
-      Events   :    out Event_Sequences.Set;
-      Metadata :    out Sequence_Metadata;
-      Rectify  : in     Boolean)
-   is
-      Extension : constant String := Get_Extension (Filename);
-
-   begin
-      if Filename = "-" then
-         Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
-                                Events   => Events,
-                                Metadata => Metadata,
-                                Rectify  => Rectify);
-
-      elsif Extension = ".csv" or Extension = "" then
-         declare
-            use Ada.Text_IO;
-
-            File : Ada.Text_IO.File_Type;
-         begin
-            Open (File     => File,
-                  Mode     => In_File,
-                  Name     => Filename);
-
-            Read_CSV_Event_Stream (Input    => Ada.Text_IO.Standard_Input,
-                                   Events   => Events,
-                                   Metadata => Metadata,
-                                   Rectify  => Rectify);
-
-            Close (File);
-         end;
-
-      elsif Extension = ".evt" then
-         Read_Binary_Event_Stream (Filename => Filename,
-                                   Events   => Events,
-                                   Metadata => Metadata,
-                                   Rectify  => Rectify);
-
-      else
-         raise Bad_Event_Stream
-           with "Unrecognized extension '" & Extension & "'";
-      end if;
-   end Read_Events;
+   --  procedure Read_Events
+   --    (Filename          : in     String;
+   --     Events            :    out Event_Sequences.Set;
+   --     Metadata          :    out Sequence_Metadata;
+   --     On_Positive_Event : in     Event_Weight;
+   --     On_Negative_Event : in     Event_Weight;
+   --     Offset            : in     Timestamps.Duration)
+   --  is
+   --     Extension : constant String := Get_Extension (Filename);
+   --
+   --  begin
+   --     if Filename = "-" then
+   --        Read_CSV_Event_Stream (Input             => Ada.Text_IO.Standard_Input,
+   --                               Events            => Events,
+   --                               On_Negative_Event => On_Negative_Event,
+   --                               On_Positive_Event => On_Positive_Event,
+   --                               Offset            => Offset);
+   --
+   --     elsif Extension = ".csv" or Extension = "" then
+   --        declare
+   --           use Ada.Text_IO;
+   --
+   --           File : Ada.Text_IO.File_Type;
+   --        begin
+   --           Open (File     => File,
+   --                 Mode     => In_File,
+   --                 Name     => Filename);
+   --
+   --           Read_CSV_Event_Stream (Input             => File,
+   --                                  Events            => Events,
+   --                                  Metadata          => Metadata,
+   --                                  On_Negative_Event => On_Negative_Event,
+   --                                  On_Positive_Event => On_Positive_Event,
+   --                                  Offset            => Offset);
+   --
+   --           Close (File);
+   --        end;
+   --
+   --     elsif Extension = ".evt" then
+   --        raise Program_Error
+   --          with "Binary event files unimplemented";
+   --
+   --        Read_Binary_Event_Stream (Filename          => Filename,
+   --                                  Events            => Events,
+   --                                  Metadata          => Metadata,
+   --                                  On_Negative_Event => On_Negative_Event,
+   --                                  On_Positive_Event => On_Positive_Event,
+   --                                  Offset            => Offset);
+   --
+   --     else
+   --        raise Bad_Event_Stream
+   --          with "Unrecognized extension '" & Extension & "'";
+   --     end if;
+   --  end Read_Events;
 
    ----------
    -- Dump --
    ----------
 
-   procedure Dump (What : Event_Sequences.Set;
+   procedure Dump (What  : Event_Sequence;
                    Where : Ada.Text_IO.File_Type := Ada.Text_IO.Standard_Error)
    is
    begin
-      for Ev of What loop
+      for Ev of What.Events loop
          Ada.Text_IO.Put_Line (File => Where,
                                Item => Events.Image (Ev));
       end loop;
    end Dump;
+
+
+   function First (Item : Event_Iterator) return Event_Cursor
+   is (Item.First);
+
+   ----------
+   -- Next --
+   ----------
+
+   function Next (Item : Event_Iterator;
+                  Cursor : Event_Cursor)
+                  return Event_Cursor
+   is
+   begin
+      return Result : Event_Cursor := Cursor do
+         Event_Sequences.Next (Result.Cursor);
+      end return;
+   end Next;
+
+   function All_Events
+     (Item : Event_Sequence)
+      return Event_Sequence_Iterators.Forward_Iterator'Class
+   is (Event_Iterator'(First => (Cursor => Item.Events.First)));
 
 end DVAccum.Event_Io;

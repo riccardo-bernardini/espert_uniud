@@ -48,6 +48,8 @@ package DVAccum.Timestamps is
 
    function To_Duration (Seconds : Float) return Duration;
 
+   function Duration_In_Microsec (Microseconds : Integer) return Duration;
+
    function To_Duration (T : Timestamp) return Duration
      with
        Pre => Is_Finite (T),
@@ -157,6 +159,10 @@ private
 
    function To_Duration (Seconds : Float) return Duration
    is (Duration (Seconds * Timestamps_Per_Second));
+
+   function Duration_In_Microsec (Microseconds : Integer) return Duration
+   is (Duration (Microseconds));
+
 
    function To_Timestamp (Seconds : Float) return Timestamp
    is ((T       => Timestamp_Value (Seconds * Timestamps_Per_Second),

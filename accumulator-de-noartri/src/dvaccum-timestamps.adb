@@ -1,5 +1,6 @@
 --  with Ada.Text_IO; use Ada.Text_IO;
 with Dvaccum.Time_Syntax;
+with Ada.Strings.Equal_Case_Insensitive;
 
 package body DVAccum.Timestamps is
    use type Time_Syntax.Time_In_Microseconds;
@@ -94,6 +95,14 @@ package body DVAccum.Timestamps is
       Relative : Boolean;
       Value    : Time_In_Microseconds;
    begin
+      if Ada.Strings.Equal_Case_Insensitive (S, "inf") then
+         return Infinity;
+
+      elsif Ada.Strings.Equal_Case_Insensitive (s, "-inf") then
+         return Minus_Infinity;
+
+      end if;
+
       Parse_Time (Input    => S,
                   Success  => Success,
                   Relative => Relative,

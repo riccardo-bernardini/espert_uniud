@@ -17,17 +17,18 @@ private package DVAccum.Config.Data with SPARK_Mode is
       Min,
       Max,
       Neutral,
-      Sampling_Period,
-      Start_Time,
-      Stop_Time,
       Positive_Value,
       Negative_Value,
       Event_Weigth,
-
+      -- Timestamp fields
+      Start_Time,
+      Stop_Time,
+      -- Duration
+      Sampling_Period,
       -- Integer fields
       Oversampling,
       N_Tasks,
-      -- Boolean fields.  Old fields have been removed
+      -- Fake Boolean field.  Old fields have been removed
       Boolean_Placekeeper
      );
 
@@ -49,13 +50,13 @@ private package DVAccum.Config.Data with SPARK_Mode is
 
    subtype Numeric_Field is Configuration_Field range Min .. Event_Weigth;
 
-   subtype Integer_Field is Configuration_Field range Oversampling .. N_Tasks;
-
-   subtype Boolean_Field is Configuration_Field range Boolean_Placekeeper .. Boolean_Placekeeper;
+   subtype Timestamp_Field is Configuration_Field range Start_Time .. Stop_Time;
 
    subtype Duration_Field is Configuration_Field range Sampling_Period .. Sampling_Period;
 
-   subtype Timestamp_Field is Configuration_Field range Start_Time .. Stop_Time;
+   subtype Integer_Field is Configuration_Field range Oversampling .. N_Tasks;
+
+   subtype Boolean_Field is Configuration_Field range Boolean_Placekeeper .. Boolean_Placekeeper;
 
    function Is_Set (Field : Configuration_Field) return Boolean;
 

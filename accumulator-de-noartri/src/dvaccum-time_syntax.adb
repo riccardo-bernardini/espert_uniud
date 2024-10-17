@@ -28,6 +28,7 @@ package body DVAccum.Time_Syntax is
                          Value    : out Time_In_Microseconds)
    is
       use Gnat.Regpat;
+      use ada.Strings.Fixed;
 
       Time_Regexp : constant Pattern_Matcher :=
                       Compile ("^ *(@\+)?"
@@ -101,8 +102,6 @@ package body DVAccum.Time_Syntax is
          end if;
 
          declare
-            use Ada.Strings.Fixed;
-
             Padded : constant Unit_Name := ((2 - Unit'Length) * " ") & Unit;
          begin
             for Table_Entry of Unit_Table loop

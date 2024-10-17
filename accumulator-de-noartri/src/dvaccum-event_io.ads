@@ -6,6 +6,7 @@ with Ada.Text_IO;
 
 with DVAccum.Events;
 with DVAccum.Timestamps;
+with Ada.Strings.Unbounded; use Ada.Strings.Unbounded;
 
 package DVAccum.Event_Io is
    use DVAccum.Events;
@@ -42,6 +43,8 @@ package DVAccum.Event_Io is
    function All_Events
      (Item : Event_Sequence)
       return Event_Sequence_Iterators.Forward_Iterator'Class;
+
+   function Source_File_Name (Item : Event_Sequence) return String;
 
    --  procedure Read_Events
    --    (Filename          : in     String;
@@ -83,6 +86,7 @@ private
          N_Rows        : Positive;
          N_Cols        : Positive;
          Map           : Metadata_Maps.Map;
+         Source        : Unbounded_String;
       end record;
 
    function First_Time (Metadata : Sequence_Metadata)

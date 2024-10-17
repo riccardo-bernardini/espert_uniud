@@ -3,7 +3,6 @@ pragma Ada_2012;
 with Ada.Containers;
 
 with Ada.Strings.Fixed;
-with Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
 
 
@@ -13,7 +12,6 @@ with Tokenize;
 
 use Ada;
 use Ada.Strings;
-use Ada.Strings.Unbounded;
 
 with Patterns;
 
@@ -33,6 +31,9 @@ package body DVAccum.Event_Io is
 
    function Is_Empty (Sequence : Event_Sequence) return Boolean
    is (Sequence.Events.Is_Empty);
+
+   function Source_File_Name (Item : Event_Sequence) return String
+   is (To_String (Item.Meta.Source));
 
 
    function Type_Of (Line : String) return Line_Type
@@ -57,7 +58,8 @@ package body DVAccum.Event_Io is
    end Type_Of;
 
    procedure Set_Metadata (Sequence : in out Event_Sequence;
-                           Metadata : in     Metadata_Maps.Map)
+                           Metadata : in     Metadata_Maps.Map;
+                           Filename : in     String)
    is
       -------------
       -- Get_Int --
@@ -93,7 +95,8 @@ package body DVAccum.Event_Io is
          Max_Timestamp => T (Sequence.Events.Last_Element),
          N_Rows        => N_Rows,
          N_Cols        => N_Cols,
-         Map           => Metadata);
+         Map           => Metadata,
+         Source        => To_Unbounded_String (Filename));
    end Set_Metadata;
    ------------------------
    -- Read_Event_Stream --
@@ -330,7 +333,9 @@ package body DVAccum.Event_Io is
          end;
       end loop;
 
-      Set_Metadata (Events, Metadata);
+      Set_Metadata (Sequence => Events,
+                    Metadata => Metadata,
+                    Filename => Ada.Text_IO.Name (Input));
    end Read_CSV_Event_Stream;
 
    ------------------------------
@@ -391,6 +396,7 @@ package body DVAccum.Event_Io is
 
       Close (Input_File);
    end Read_Binary_Event_Stream;
+   pragma Unreferenced (Read_Binary_Event_Stream);
 
    -----------------------
    -- Read_Event_Stream --

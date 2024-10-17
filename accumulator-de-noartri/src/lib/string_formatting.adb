@@ -4,6 +4,31 @@ with Ada.Strings.Maps.Constants;
 
 package body String_Formatting is
 
+   procedure Dump (Item : Parsed_Format;
+                   To   : Text_Io.File_Type := Text_IO.Standard_Output)
+   is
+      use Ada.Text_Io;
+
+      procedure Dump (Item : Format_Segment)
+      is
+      begin
+         case Item.Class is
+            when Text =>
+               Put_Line (File => To,
+                         item => """" & Item.Value & """");
+
+            when Directive =>
+               Put_Line (File => To,
+                         Item => "(" & Item.Label & "," & Item.Parameter & ")");
+
+         end case;
+      end Dump;
+   begin
+      for Segment of Item.Segments loop
+         Dump (Segment);
+      end loop;
+   end Dump;
+
    ------------------
    -- Parse_Format --
    ------------------
@@ -21,8 +46,9 @@ package body String_Formatting is
       End_Of_Input : constant Character := Character'Val (0);
 
       Accepted_Set : constant Strings.Maps.Character_Set :=
-                       (if Accepted_Directives'Length = 0 then
-                                          Strings.Maps.Constants.Special_Set
+                       (if Accepted_Directives'Length = 0
+                        then
+                           Strings.Maps.Constants.Letter_Set
                         else
                            Strings.Maps.To_Set (Accepted_Directives));
 
@@ -111,7 +137,7 @@ package body String_Formatting is
                   Append_Directive (Current_Char, Buffer);
 
                   Status := In_Text;
-
+                  Buffer := Null_Unbounded_String;
                else
                   Buffer := Buffer & Current_Char;
                end if;

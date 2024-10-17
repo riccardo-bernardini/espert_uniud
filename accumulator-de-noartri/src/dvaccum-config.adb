@@ -68,6 +68,8 @@ package body DVAccum.Config with SPARK_Mode is
          Min,
          Max,
          Neutral,
+         Positive_Value,
+         Negative_Value,
          Event_Weigth
         );
 
@@ -90,7 +92,9 @@ package body DVAccum.Config with SPARK_Mode is
                         Min                  => Option ("min [0.0]"),
                         Max                  => Option ("max [255.0]"),
                         Neutral              => Option ("neutral [0.0]"),
-                        Event_Weigth         => Option ("gain|weight [1.0]")
+                        Event_Weigth         => Option ("gain|weight [1.0]"),
+                        Positive_Value       => Option ("pos|positive [1.0]"),
+                        Negative_Value       => Option ("neg|negative [-1.0]")
                        );
 
 
@@ -240,6 +244,10 @@ package body DVAccum.Config with SPARK_Mode is
 
          Set (Data.Oversampling, Integer'Value (Parsed_Options (Oversampling)));
 
+         Set (Data.Positive_Value, Sample_Value'Value (Parsed_Options (Positive_Value)));
+
+         Set (Data.Negative_Value, Sample_Value'Value (Parsed_Options (Negative_Value)));
+
          if not Parsed_Options.Is_Defined (Parallel) then
             Set (Data.N_Tasks, Integer (System.Multiprocessors.Number_Of_CPUs));
          else
@@ -263,6 +271,20 @@ package body DVAccum.Config with SPARK_Mode is
                                 Message => Null_Unbounded_String);
    end Parse_Command_Line;
 
+
+   ---------------------------
+   -- Positive_Event_Weight --
+   ---------------------------
+
+   function Positive_Event_Weight return Sample_Value
+   is (Data.Get (Positive_Value));
+
+   ---------------------------
+   -- Negative_Event_Weight --
+   ---------------------------
+
+   function Negative_Event_Weight return Sample_Value
+   is (Data.Get (Negative_Value));
 
    ------------------------------
    -- Number_Of_Parallel_Tasks --

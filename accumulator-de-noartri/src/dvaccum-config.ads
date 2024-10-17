@@ -95,6 +95,14 @@ package Dvaccum.Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
+   function Positive_Event_Weight return Sample_Value
+     with
+       Pre => Package_Ready;
+
+   function Negative_Event_Weight return Sample_Value
+     with
+       Pre => Package_Ready;
+
    function Verbosity_Level return Verbosity
      with
        Pre => Package_Ready;

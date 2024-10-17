@@ -20,7 +20,10 @@ private package DVAccum.Config.Data with SPARK_Mode is
       Sampling_Period,
       Start_Time,
       Stop_Time,
+      Positive_Value,
+      Negative_Value,
       Event_Weigth,
+
       -- Integer fields
       Oversampling,
       N_Tasks,

@@ -1,9 +1,13 @@
 with Ada.Text_IO;                  use Ada.Text_IO;
 with Ada.Strings.Unbounded;        use Ada.Strings.Unbounded;
+
+with String_Formatting;
+
 with DVAccum.Config;
 with DVAccum.Event_Io;
 with DVAccum.Event_Processing;
 with DVAccum.Timestamps;
+with DVAccum.Frame_Name_Generators;
 
 with DVAccum.Split_Filename;
 with Dvaccum.Filters;
@@ -13,11 +17,15 @@ procedure DVAccum.Main is
 
    function Source_Filename (N : Positive) return String
      with
-       Pre => N <= Config.N_Inputs;
+       Pre =>
+         Config.Package_Ready
+         and then N <= Config.N_Inputs;
 
    function Time_Offset (N : Positive) return Timestamps.Duration
      with
-       Pre => N <= Config.N_Inputs;
+       Pre =>
+         Config.Package_Ready
+         and then N <= Config.N_Inputs;
 
 
    function Source_Filename (N : Positive) return String
@@ -38,7 +46,7 @@ begin
    pragma Assert (Config.Package_Ready);
 
    declare
-      use Split_Filename;
+      use Frame_Name_Generators;
       use type Timestamps.Duration;
 
       Start_Time : Timestamps.Timestamp := Config.Start_At;
@@ -50,6 +58,9 @@ begin
       Filter : constant Filters.Filter_Type :=
                  Filters.Parse (Descr    => Config.Filter_Description,
                                 Sampling => Timestamps.To_Seconds (Fine_Sampling));
+
+      Frame_Filename_Format : constant String_Formatting.Parsed_Format :=
+                                String_Formatting.Parse_Format (Config.Frame_Filename_Template);
 
       Sequences : array (1 .. Config.N_Inputs) of Event_Io.Event_Sequence;
       Input : File_Type;
@@ -74,7 +85,8 @@ begin
       for N in Sequences'Range loop
          Event_Processing.Process
            (Event_Sequence => Sequences (N),
-            Frame_Name     => Frame_Name_Generators.Create (Source_Filename (N)),
+            Frame_Name     => New_Generator (Format   => Frame_Filename_Format,
+                                             Basename => Source_Filename (N)),
             Event_Weight   => Config.Event_Contribution,
             Offset         => 0.0,
             Filter         => Filter,

@@ -1,10 +1,8 @@
 pragma Ada_2012;
-with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
 
 with Ada.Numerics.Elementary_Functions;
-with Ada.Integer_Text_IO;
 
 
 package body String_Formatting is
@@ -34,8 +32,9 @@ package body String_Formatting is
       end loop;
    end Dump;
 
-   function Space_Needed (Datum : Integer;
-                          Basis : Positive)
+   function Space_Needed (Datum            : Integer;
+                          Basis            : Base_Type;
+                          Add_Postive_Sign : Boolean)
                           return Positive
    is
       use Ada.Numerics.Elementary_Functions;
@@ -47,30 +46,23 @@ package body String_Formatting is
       end if;
 
       Result := Positive (Float'Ceiling
-                          (Log (X    => Float (abs Datum),
+                          (Log (X    => Float (abs Datum + 1),
                                 Base => Float (Basis))));
 
-      if Datum < 0 then
+      if Datum < 0 or Add_Postive_Sign then
          Result := Result + 1;
-      end if;
-
-      if Basis < 10 then
-         Result := Result + 3;
-
-      elsif Basis > 10 then
-         Result := Result + 4;
-
       end if;
 
       return Result;
    end Space_Needed;
+
    ------------------------
    -- C_Style_Formatting --
    ------------------------
 
    function C_Style_Formatting (Datum     : Integer;
                                 Parameter : String;
-                                Basis     : Positive := 10)
+                                Basis     : Base_Type := 10)
                                 return String
    is
       type C_Flags is
@@ -84,33 +76,45 @@ package body String_Formatting is
                  Left_Adjust  => '-',
                  Always_Sign  => '+');
 
-      function To_String (Datum : Natural; Base : Positive)
-                          return Unbounded_String
+      function To_String (Datum            : Integer;
+                          Base             : Base_Type;
+                          Add_Postive_Sign : Boolean)
+                          return String
       is
-         use Ada.Strings;
-
-         function Strip_Extra (X : String) return String
-         is (Fixed.Trim (X, Both));
-
-
-         Buffer : String (1 .. Space_Needed (abs Datum, Base));
+         D      : constant String (1 .. 16) := "0123456789ABCDEF";
       begin
          if Datum = 0 then
-            return To_Unbounded_String ("0");
+            return "0";
          end if;
 
-         Integer_Text_IO.Put
-           (To   => Buffer,
-            Item => Datum,
-            Base => Basis);
+         return Result : String (1 .. Space_Needed (Datum, Base)) := (others => '#')
+         do
+            declare
+               Buffer : Natural := abs Datum;
+               Cursor : Natural := Result'Last;
+            begin
+               while Buffer > 0 loop
+                  Result (Cursor) := D (Buffer mod Base + 1);
+                  Buffer := Buffer / Base;
+                  Cursor := Cursor - 1;
+               end loop;
 
-         return To_Unbounded_String (Strip_Extra (Buffer));
+               if Datum < 0 then
+                  Result (Cursor) := '-';
+
+               elsif Add_Postive_Sign then
+                  Result (Cursor) := '+';
+
+               end if;
+            end;
+         end return;
+
       end To_String;
 
-      Present : C_Flag_Parsing.Flag_Array;
-      First : Positive;
+      Present    : C_Flag_Parsing.Flag_Array;
+      First      : Positive;
       Field_Size : Positive;
-      Ignored : Natural;
+      Ignored    : Natural;
    begin
       C_Flag_Parsing.Extract_Flags
         (Input          => Parameter,
@@ -127,12 +131,10 @@ package body String_Formatting is
                                   Space_Needed (Datum, Basis));
 
       declare
-         Buffer : Unbounded_String :=
-                    (if Datum < 0 then "" else "-")
-                  & To_String (abs Datum, Basis);
+         Buffer : String := To_String (Datum, Basis);
       begin
          pragma Compile_Time_Warning (True, "riprendi da qua");
-         return To_String (Buffer)	;
+         return Buffer	;
       end;
    end C_Style_Formatting;
 

@@ -67,9 +67,11 @@ package String_Formatting is
                     Provider : Provider_Interface'Class)
                     return String;
 
+   subtype Base_Type is Integer range 2 .. 16;
+
    function C_Style_Formatting (Datum     : Integer;
                                 Parameter : String;
-                                Basis     : Positive := 10)
+                                Basis     : Base_Type := 10)
                                 return String;
 
    procedure Parse_Precision (Input : String;

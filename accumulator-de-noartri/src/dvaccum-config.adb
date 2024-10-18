@@ -303,6 +303,13 @@ package body DVAccum.Config with SPARK_Mode is
    function Frame_Filename_Template  return String
    is (Data.Get (Data.Output_Filename_Template));
 
+   ------------------------
+   -- Filter_Description --
+   ------------------------
+
+   function Filter_Description return String
+   is (Data.Get (Data.Filter_Spec));
+
    --------------
    -- N_Inputs --
    --------------

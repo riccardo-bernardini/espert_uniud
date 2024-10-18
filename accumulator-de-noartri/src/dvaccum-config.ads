@@ -1,4 +1,5 @@
 with DVAccum.Frames;
+with DVAccum.Events;
 with DVAccum.Timestamps;
 
 with System.Multiprocessors;
@@ -28,13 +29,13 @@ package Dvaccum.Config with SPARK_Mode is
        Pre => not Package_Ready,
        Post => (Report.Status = Success) = Package_Ready;
 
-
-   type Negative_Event_Action is
-     (
-      Keep,
-      Rectify,
-      Clip
-     );
+   --
+   --  type Negative_Event_Action is
+   --    (
+   --     Keep,
+   --     Rectify,
+   --     Clip
+   --    );
 
    type Verbosity is
      (
@@ -95,11 +96,15 @@ package Dvaccum.Config with SPARK_Mode is
      with
        Pre => Package_Ready;
 
-   function Positive_Event_Weight return Sample_Value
+   function Positive_Event_Weight return Events.Event_Weight
      with
        Pre => Package_Ready;
 
-   function Negative_Event_Weight return Sample_Value
+   function Negative_Event_Weight return Events.Event_Weight
+     with
+       Pre => Package_Ready;
+
+   function Filter_Description return String
      with
        Pre => Package_Ready;
 

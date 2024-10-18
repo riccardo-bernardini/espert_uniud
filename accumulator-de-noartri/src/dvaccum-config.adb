@@ -276,14 +276,14 @@ package body DVAccum.Config with SPARK_Mode is
    -- Positive_Event_Weight --
    ---------------------------
 
-   function Positive_Event_Weight return Sample_Value
+   function Positive_Event_Weight return Events.Event_Weight
    is (Data.Get (Positive_Value));
 
    ---------------------------
    -- Negative_Event_Weight --
    ---------------------------
 
-   function Negative_Event_Weight return Sample_Value
+   function Negative_Event_Weight return Events.Event_Weight
    is (Data.Get (Negative_Value));
 
    ------------------------------

@@ -28,6 +28,11 @@ package DVAccum.Event_Io is
    function Is_Empty (Sequence : Event_Sequence)
                       return Boolean;
 
+   function N_Rows (Sequence : Event_Sequence)
+                    return Positive;
+
+   function N_Cols (Sequence : Event_Sequence)
+                    return Positive;
    type Event_Cursor is private;
 
    function Has_Element (Item : Event_Cursor) return Boolean;
@@ -132,4 +137,11 @@ private
 
    function Element (Item : Event_Cursor) return Event_Type
    is (Event_Sequences.Element (Item.Cursor));
+
+   function N_Rows (Sequence : Event_Sequence) return Positive
+   is (Sequence.Meta.N_Rows);
+
+   function N_Cols (Sequence : Event_Sequence) return Positive
+   is (Sequence.Meta.N_Cols);
+
 end DVAccum.Event_Io;

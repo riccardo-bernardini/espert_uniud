@@ -28,7 +28,6 @@ package Dvaccum.Event_Processing is
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;
-                      Origin_Shift   : Timestamps.Duration;
                       From           : Timestamps.Timestamp;
                       To             : Timestamps.Timestamp;
                       Frame_Duration : Timestamps.Duration;

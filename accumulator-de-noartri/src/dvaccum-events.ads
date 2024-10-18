@@ -2,7 +2,7 @@ with DVAccum.Timestamps;
 use  DVAccum.Timestamps;
 
 package DVAccum.Events is
-   type Event_Weight is new Float;
+   subtype Event_Weight is Sample_Value;
 
    type Event_Type is tagged private;
 

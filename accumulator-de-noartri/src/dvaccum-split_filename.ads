@@ -16,7 +16,7 @@
 with DVAccum.Timestamps;
 
 package Dvaccum.Split_Filename is
-   function Offest_Of (Filename : String) return Timestamps.Duration
+   function Offset_Of (Filename : String) return Timestamps.Duration
      with
        Pre => Filename /= "";
 

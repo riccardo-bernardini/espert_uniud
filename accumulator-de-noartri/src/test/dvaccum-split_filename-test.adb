@@ -22,7 +22,7 @@ begin
       begin
          Put_Line ("'" & S & "', "
                    & "'" & True_Filename (S) & "', "
-                   & Timestamps.Image (Offest_Of (S)));
+                   & Timestamps.Image (Offset_Of (S)));
       end;
    end loop;
 end Dvaccum.Split_Filename.Test;

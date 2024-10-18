@@ -60,7 +60,7 @@ package body Dvaccum.Split_Filename is
    -- Offest_Of --
    ---------------
 
-   function Offest_Of (Filename : String) return Timestamps.Duration
+   function Offset_Of (Filename : String) return Timestamps.Duration
    is
       use Timestamps;
 
@@ -72,8 +72,7 @@ package body Dvaccum.Split_Filename is
          return Duration_In_Microsec
            (Integer'Value (Filename (Split .. Filename'Last)));
       end if;
-   end Offest_Of;
-
+   end Offset_Of;
    -------------------
    -- True_Filename --
    -------------------

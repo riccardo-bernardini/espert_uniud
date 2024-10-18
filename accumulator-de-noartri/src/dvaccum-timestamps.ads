@@ -45,6 +45,7 @@ package DVAccum.Timestamps is
    function Image (X         : Duration;
                    With_Unit : Boolean := False) return String;
 
+   function To_Seconds (X : Duration) return Float;
 
    function To_Duration (Seconds : Float) return Duration;
 

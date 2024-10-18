@@ -94,7 +94,6 @@ package body Dvaccum.Filters is
    function Make_Atom (Num, Den : Coefficients)
                        return Filter_Atom
    is
-      use Ada.Text_IO;
 
       Max_Deg : constant Natural := Natural'Max (Num'Last, Den'Last);
 

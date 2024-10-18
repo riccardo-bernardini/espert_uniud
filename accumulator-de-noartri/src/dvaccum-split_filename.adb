@@ -15,11 +15,11 @@ package body Dvaccum.Split_Filename is
      with
        Post =>
          Split_Point'Result = 0
-         or (Split_Point'Result < Filename'Last
-             and Split_Point'Result > Filename'First
-             and Is_In (Filename (Split_Point'Result), Sign)
-             and (for all I in Split_Point'Result + 1 .. Filename'Last =>
-                          Is_In (Filename (I), Decimal_Digit_Set)));
+         or else (Split_Point'Result < Filename'Last
+                  and Split_Point'Result > Filename'First
+                  and Is_In (Filename (Split_Point'Result), Sign)
+                  and (for all I in Split_Point'Result + 1 .. Filename'Last =>
+                               Is_In (Filename (I), Decimal_Digit_Set)));
 
 
    -----------------

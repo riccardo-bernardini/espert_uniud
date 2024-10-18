@@ -20,11 +20,15 @@ package Dvaccum.Event_Processing is
    --  to save a frame.  If Frame=No_Frame the function can return
    --  any value since it will not be used.
    --
-   type Frame_Name_Generator is
-     access function (Frame : Frame_Index) return String;
+   type Frame_Name_Generator is interface;
+
+   function Make_Name (Object : Frame_Name_Generator;
+                       Frame  : Frame_Index)
+                       return String
+   is abstract;
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequence;
-                      Frame_Name     : Frame_Name_Generator;
+                      Frame_Name     : Frame_Name_Generator'Class;
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;

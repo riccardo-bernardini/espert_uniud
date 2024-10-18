@@ -36,11 +36,14 @@ package String_Formatting is
       Counter   : Positive)
       return String is abstract;
 
-   function Expand (Format              : String;
-                    Provider            : Provider_Function;
-                    Accepted_Directives : String := "";
-                    Directive_Prefix    : Character := '%')
-                    return String
+   function Expand
+     (Format              : String;
+      Provider            : access function (Directive : Character;
+                                             Parameter : String;
+                                             Counter   : Positive) return String;
+      Accepted_Directives : String := "";
+      Directive_Prefix    : Character := '%')
+      return String
      with
        Pre => Characters.Handling.Is_Special (Directive_Prefix);
 
@@ -53,13 +56,20 @@ package String_Formatting is
        Pre => Characters.Handling.Is_Special (Directive_Prefix);
 
 
-   function Expand (Format   : Parsed_Format;
-                    Provider : Provider_Function)
-                    return String;
+   function Expand
+     (Format   : Parsed_Format;
+      Provider : access function (Directive : Character;
+                                  Parameter : String;
+                                  Counter   : Positive) return String)
+      return String;
 
    function Expand (Format   : Parsed_Format;
                     Provider : Provider_Interface'Class)
                     return String;
+
+   function C_Style_Formatting (Datum     : Integer;
+                                Parameter : String)
+                                return String;
 
    procedure Parse_Precision (Input : String;
                               Size  : out Positive;

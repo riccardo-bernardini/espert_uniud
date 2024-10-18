@@ -1,6 +1,11 @@
 pragma Ada_2012;
+with Ada.Strings.Fixed;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
+
+with Ada.Numerics.Elementary_Functions;
+with Ada.Integer_Text_IO;
+
 
 package body String_Formatting is
 
@@ -15,7 +20,7 @@ package body String_Formatting is
          case Item.Class is
             when Text =>
                Put_Line (File => To,
-                         item => """" & Item.Value & """");
+                         Item => """" & Item.Value & """");
 
             when Directive =>
                Put_Line (File => To,
@@ -28,6 +33,109 @@ package body String_Formatting is
          Dump (Segment);
       end loop;
    end Dump;
+
+   function Space_Needed (Datum : Integer;
+                          Basis : Positive)
+                          return Positive
+   is
+      use Ada.Numerics.Elementary_Functions;
+
+      Result : Positive;
+   begin
+      if Datum = 0 then
+         return 1;
+      end if;
+
+      Result := Positive (Float'Ceiling
+                          (Log (X    => Float (abs Datum),
+                                Base => Float (Basis))));
+
+      if Datum < 0 then
+         Result := Result + 1;
+      end if;
+
+      if Basis < 10 then
+         Result := Result + 3;
+
+      elsif Basis > 10 then
+         Result := Result + 4;
+
+      end if;
+
+      return Result;
+   end Space_Needed;
+   ------------------------
+   -- C_Style_Formatting --
+   ------------------------
+
+   function C_Style_Formatting (Datum     : Integer;
+                                Parameter : String;
+                                Basis     : Positive := 10)
+                                return String
+   is
+      type C_Flags is
+        (Zero_Padding, Left_Adjust, Always_Sign);
+
+      package C_Flag_Parsing is
+        new Flag_Parsing (C_Flags);
+
+      Names : constant C_Flag_Parsing.Flag_Names :=
+                (Zero_Padding => '0',
+                 Left_Adjust  => '-',
+                 Always_Sign  => '+');
+
+      function To_String (Datum : Natural; Base : Positive)
+                          return Unbounded_String
+      is
+         use Ada.Strings;
+
+         function Strip_Extra (X : String) return String
+         is (Fixed.Trim (X, Both));
+
+
+         Buffer : String (1 .. Space_Needed (abs Datum, Base));
+      begin
+         if Datum = 0 then
+            return To_Unbounded_String ("0");
+         end if;
+
+         Integer_Text_IO.Put
+           (To   => Buffer,
+            Item => Datum,
+            Base => Basis);
+
+         return To_Unbounded_String (Strip_Extra (Buffer));
+      end To_String;
+
+      Present : C_Flag_Parsing.Flag_Array;
+      First : Positive;
+      Field_Size : Positive;
+      Ignored : Natural;
+   begin
+      C_Flag_Parsing.Extract_Flags
+        (Input          => Parameter,
+         Names          => Names,
+         Present        => Present,
+         First_Non_Flag => First);
+
+      Parse_Precision
+        (Input => Parameter (First .. Parameter'Last),
+         Size  => Field_Size,
+         Prec  => Ignored);
+
+      Field_Size := Positive'Max (Field_Size,
+                                  Space_Needed (Datum, Basis));
+
+      declare
+         Buffer : Unbounded_String :=
+                    (if Datum < 0 then "" else "-")
+                  & To_String (abs Datum, Basis);
+      begin
+         pragma Compile_Time_Warning (True, "riprendi da qua");
+         return To_String (Buffer)	;
+      end;
+   end C_Style_Formatting;
+
 
    ------------------
    -- Parse_Format --
@@ -326,7 +434,7 @@ package body String_Formatting is
 
          for I in Input'Range loop
             declare
-               Flag : Flags;
+               Flag  : Flags;
                Found : Boolean;
             begin
                Find_Flag (C     => Input (I),
@@ -334,7 +442,7 @@ package body String_Formatting is
                           Flag  => Flag);
 
                if Found then
-                 Present (Flag) := True;
+                  Present (Flag) := True;
                else
                   First_Non_Flag := I;
                   return;

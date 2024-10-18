@@ -68,7 +68,8 @@ package String_Formatting is
                     return String;
 
    function C_Style_Formatting (Datum     : Integer;
-                                Parameter : String)
+                                Parameter : String;
+                                Basis     : Positive := 10)
                                 return String;
 
    procedure Parse_Precision (Input : String;

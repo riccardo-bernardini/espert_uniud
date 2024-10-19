@@ -99,20 +99,29 @@ package body String_Formatting is
       end To_String;
 
       Present    : C_Flag_Parsing.Flag_Array;
-      First      : Positive;
-      Field_Size : Positive;
-      Ignored    : Natural;
+      Field_Size : Natural;
+      Ignored    : Natural := 0;
    begin
-      C_Flag_Parsing.Extract_Flags
-        (Input          => Parameter,
-         Names          => Names,
-         Present        => Present,
-         First_Non_Flag => First);
 
-      Parse_Precision
-        (Input => Parameter (First .. Parameter'Last),
-         Size  => Field_Size,
-         Prec  => Ignored);
+
+      if Parameter = "" then
+         Present := (others => False);
+         Field_Size := 0;
+
+      else
+         declare
+            Prec : constant String :=
+                     C_Flag_Parsing.Parse_Flags
+                       (Input          => Parameter,
+                        Names          => Names,
+                        Present        => Present);
+         begin
+            Parse_Precision
+              (Input => Prec,
+               Size  => Field_Size,
+               Prec  => Ignored);
+         end;
+      end if;
 
       declare
          use Ada.Strings.Fixed;
@@ -134,7 +143,7 @@ package body String_Formatting is
             return Sign & Core;
 
          else
-            if Present(Left_Adjust) then
+            if Present (Left_Adjust) then
                return Sign & Core & (Padding * ' ');
 
             elsif Present (Zero_Padding) then
@@ -360,11 +369,19 @@ package body String_Formatting is
    ---------------------
 
    procedure Parse_Precision
-     (Input : String; Size : out Positive; Prec : out Natural)
+     (Input : String;
+      Size  : out Natural;
+      Prec  : out Natural)
    is
       Dot_Position : Natural := 0;
       Dot_Seen     : Boolean := False;
    begin
+      if Input = "" then
+         Size := 0;
+         Prec := 0;
+         return;
+      end if;
+
       for I in Input'Range loop
          case Input (I) is
             when '0' .. '9' =>
@@ -385,7 +402,7 @@ package body String_Formatting is
                end if;
 
             when others => raise Parsing_Error
-                 with "Bad charaters in precision spec '" & Input & "'";
+                 with "Bad characters in precision spec '" & Input & "'";
          end case;
       end loop;
 
@@ -412,10 +429,10 @@ package body String_Formatting is
    end Parse_Precision;
 
    package body Flag_Parsing is
-      procedure Extract_Flags (Input          : String;
-                               Names          : Flag_Names;
-                               Present        : out Flag_Array;
-                               First_Non_Flag : out Positive)
+      function Parse_Flags (Input          : String;
+                            Names          : Flag_Names;
+                            Present        : out Flag_Array)
+                            return String
       is
          procedure Find_Flag (C     : Character;
                               Found : out Boolean;
@@ -436,6 +453,7 @@ package body String_Formatting is
                if Names (F) = C then
                   Found := True;
                   Flag := F;
+                  return;
                end if;
             end loop;
 
@@ -458,14 +476,13 @@ package body String_Formatting is
                if Found then
                   Present (Flag) := True;
                else
-                  First_Non_Flag := I;
-                  return;
+                  return Input (I .. Input'Last);
                end if;
             end;
          end loop;
 
-         First_Non_Flag := Input'Last + 1;
-      end Extract_Flags;
+         return "";
+      end Parse_Flags;
    end Flag_Parsing;
 
    -------------

@@ -71,7 +71,7 @@ package String_Formatting is
                                 return String;
 
    procedure Parse_Precision (Input : String;
-                              Size  : out Positive;
+                              Size  : out Natural;
                               Prec  : out Natural);
 
    generic
@@ -81,10 +81,10 @@ package String_Formatting is
 
       type Flag_Array is array (Flags) of Boolean;
 
-      procedure Extract_Flags (Input          : String;
-                               Names          : Flag_Names;
-                               Present        : out Flag_Array;
-                               First_Non_Flag : out Positive);
+      function Parse_Flags (Input          : String;
+                            Names          : Flag_Names;
+                            Present        : out Flag_Array)
+                            return String;
    end Flag_Parsing;
 private
    type Callback_Based_Provider (Callback : Provider_Function) is

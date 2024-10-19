@@ -2,7 +2,7 @@ with ada.text_io;  use ada.text_io;
 
 procedure String_Formatting.Test is
    Q : constant Parsed_Format :=
-         Parse_Format ("gigi puro=%d 03=%03d +=%+d -=[%-5d] + %01f paperino");
+         Parse_Format ("gigi puro=%d 03=[%03d] +=[%+d] -=[%-5d] +5=[%+5d] 5=[%5d] %01f paperino");
 
    type Zz is new Provider_Interface  with null record;
 
@@ -32,5 +32,6 @@ procedure String_Formatting.Test is
    R : zz;
 begin
    Dump (Q);
+   Put_Line ("--------");
    Put_Line (Expand (Q, R));
 end String_Formatting.Test;

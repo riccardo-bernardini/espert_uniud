@@ -39,7 +39,6 @@ package body DVAccum.Config.Data with SPARK_Mode is
          Timestamp_Fields        : Timestamp_Field_Array;
          Duration_Fields         : Duration_Field_Array;
          Boolean_Fields          : Boolean_Field_Array;
-         On_Negative_Event       : Negative_Event_Action;
       end record;
 
    Config_Data : Config_Data_Record;

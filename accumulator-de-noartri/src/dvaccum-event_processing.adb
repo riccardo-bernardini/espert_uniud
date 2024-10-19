@@ -12,7 +12,7 @@ package body Dvaccum.Event_Processing is
    type Ev_Access is access Event_Array;
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequence;
-                      Frame_Name     : Frame_Name_Generator;
+                      Frame_Name     : Frame_Name_Generators.Abstract_Generator'Class;
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;
@@ -111,7 +111,7 @@ package body Dvaccum.Event_Processing is
       -- Save_Frames --
       -----------------
 
-      procedure Save_Frames (Frame_Name : Frame_Name_Generator;
+      procedure Save_Frames (Frame_Name : Frame_Name_Generators.Abstract_Generator'Class;
                              Pixels     : Pixel_Buffers.Pixel_Buffer_Access;
                              Offset     : Sample_Value;
                              N_Cpu      : System.Multiprocessors.CPU)
@@ -131,7 +131,7 @@ package body Dvaccum.Event_Processing is
                         new Parameter_Record'(Last_X        => Initial_Image'Last (1),
                                               Last_Y        => Initial_Image'Last (2),
                                               Pixels        => Pixels,
-                                              Frame_Name    => Frame_Name,
+                                              Frame_Name    => Generator_Holders.To_Holder (Frame_Name),
                                               Offset        => Offset,
                                               Initial_Image => Initial_Image);
       begin

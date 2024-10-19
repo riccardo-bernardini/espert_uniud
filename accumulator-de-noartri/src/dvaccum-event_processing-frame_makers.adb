@@ -10,7 +10,7 @@ package body Dvaccum.Event_Processing.Frame_Makers is
                              Parameters.Pixels.Next_Unprocessed_Frame;
 
             Filename : constant String :=
-                         Parameters.Frame_Name (Frame_Number);
+                         Parameters.Frame_Name.Element.Make_Name (Frame_Number);
 
             Frame : Frames.Image_Type := Parameters.Initial_Image;
          begin

@@ -6,7 +6,6 @@ with Ada.Strings.Fixed;
 with Ada.Strings.Maps.Constants;
 
 
-with Ada.Streams.Stream_IO;
 
 with Tokenize;
 
@@ -17,7 +16,6 @@ with Patterns;
 
 package body DVAccum.Event_Io is
 
-   type Counter is mod 2 ** 64;
 
    type Line_Type is (Comment, Header, Data);
 
@@ -342,61 +340,61 @@ package body DVAccum.Event_Io is
    -- Read_Binary_Event_Stream --
    ------------------------------
 
-   procedure Read_Binary_Event_Stream
-     (Filename          : in     String;
-      Events            :    out Event_Sequences.Set;
-      Metadata          :    out Sequence_Metadata;
-      On_Positive_Event : in     Event_Weight;
-      On_Negative_Event : in     Event_Weight;
-      Offset            : in     Timestamps.Duration)
-   is
-      pragma Unreferenced (On_Positive_Event, On_Negative_Event, Offset);
-      use Ada.Streams.Stream_IO;
-      use Event_Sequences;
-
-      Input_File : File_Type;
-   begin
-      pragma Compile_Time_Warning (True, "Outdated.  Do not use");
-      raise Program_Error;
-
-      Open (File => Input_File,
-            Mode => In_File,
-            Name => Filename);
-
-
-      declare
-         Input_Stream : constant Stream_Access := Stream (Input_File);
-         N_Events     : constant Counter := Counter'Input (Input_Stream);
-         N_Metadata   : constant Counter := Counter'Input (Input_Stream);
-      begin
-         Events.Clear;
-         Metadata.Map.Clear;
-
-         for I in 1 .. N_Events loop
-            declare
-               Ev : constant Event_Type := Event_Type'Input (Input_Stream);
-            begin
-               Events.Include (Ev);
-            end;
-         end loop;
-
-         for I in 1 .. N_Metadata loop
-            declare
-               Name : constant Metadata_Key :=
-                        Metadata_Key'Input (Input_Stream);
-
-               Value : constant Metadata_Value :=
-                         Metadata_Value'Input (Input_Stream);
-            begin
-               Metadata.Map.Include (Key      => Name,
-                                     New_Item => Value);
-            end;
-         end loop;
-      end;
-
-      Close (Input_File);
-   end Read_Binary_Event_Stream;
-   pragma Unreferenced (Read_Binary_Event_Stream);
+   --  procedure Read_Binary_Event_Stream
+   --    (Filename          : in     String;
+   --     Events            :    out Event_Sequences.Set;
+   --     Metadata          :    out Sequence_Metadata;
+   --     On_Positive_Event : in     Event_Weight;
+   --     On_Negative_Event : in     Event_Weight;
+   --     Offset            : in     Timestamps.Duration)
+   --  is
+   --     pragma Unreferenced (On_Positive_Event, On_Negative_Event, Offset);
+   --     use Ada.Streams.Stream_IO;
+   --     use Event_Sequences;
+   --
+   --     Input_File : File_Type;
+   --  begin
+   --     pragma Compile_Time_Warning (True, "Outdated.  Do not use");
+   --     raise Program_Error;
+   --
+   --     Open (File => Input_File,
+   --           Mode => In_File,
+   --           Name => Filename);
+   --
+   --
+   --     declare
+   --        Input_Stream : constant Stream_Access := Stream (Input_File);
+   --        N_Events     : constant Counter := Counter'Input (Input_Stream);
+   --        N_Metadata   : constant Counter := Counter'Input (Input_Stream);
+   --     begin
+   --        Events.Clear;
+   --        Metadata.Map.Clear;
+   --
+   --        for I in 1 .. N_Events loop
+   --           declare
+   --              Ev : constant Event_Type := Event_Type'Input (Input_Stream);
+   --           begin
+   --              Events.Include (Ev);
+   --           end;
+   --        end loop;
+   --
+   --        for I in 1 .. N_Metadata loop
+   --           declare
+   --              Name : constant Metadata_Key :=
+   --                       Metadata_Key'Input (Input_Stream);
+   --
+   --              Value : constant Metadata_Value :=
+   --                        Metadata_Value'Input (Input_Stream);
+   --           begin
+   --              Metadata.Map.Include (Key      => Name,
+   --                                    New_Item => Value);
+   --           end;
+   --        end loop;
+   --     end;
+   --
+   --     Close (Input_File);
+   --  end Read_Binary_Event_Stream;
+   --  pragma Unreferenced (Read_Binary_Event_Stream);
 
    -----------------------
    -- Read_Event_Stream --

@@ -1,14 +1,20 @@
+with Ada.Containers.Indefinite_Holders;
+
 with DVAccum.Event_Processing.Pixel_Buffers;
 with DVAccum.Frames;    use DVAccum.Frames;
+with DVAccum.Frame_Name_Generators;  use DVAccum.Frame_Name_Generators;
 
 private
 package Dvaccum.Event_Processing.Frame_Makers is
+   package Generator_Holders is
+     new Ada.Containers.Indefinite_Holders (Abstract_Generator'Class);
+
    type Parameter_Record (Last_X : Coord_X;
                           Last_Y : Coord_Y)
    is
       record
          Pixels        : Pixel_Buffers.Pixel_Buffer_Access;
-         Frame_Name    : Frame_Name_Generator;
+         Frame_Name    : Generator_Holders.Holder;
          Offset        : Sample_Value;
          Initial_Image : Image_Type (Coord_X'First .. Last_X,
                                      Coord_Y'First .. Last_Y);

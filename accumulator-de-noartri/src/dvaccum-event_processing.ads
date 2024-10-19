@@ -4,31 +4,12 @@ with DVAccum.Event_IO;
 with DVAccum.Timestamps;
 with DVAccum.Events;
 with DVAccum.Filters;
+with DVAccum.Frame_Name_Generators;
 
 package Dvaccum.Event_Processing is
 
-   type Frame_Index is private;
-
-   No_Frame : constant Frame_Index;
-
-   function To_Int (X : Frame_Index) return Natural
-     with
-       Pre => X /= No_Frame;
-
-   --
-   --  Frame_Name_Generator returns the name of the file used
-   --  to save a frame.  If Frame=No_Frame the function can return
-   --  any value since it will not be used.
-   --
-   type Frame_Name_Generator is interface;
-
-   function Make_Name (Object : Frame_Name_Generator;
-                       Frame  : Frame_Index)
-                       return String
-   is abstract;
-
    procedure Process (Event_Sequence : Event_Io.Event_Sequence;
-                      Frame_Name     : Frame_Name_Generator'Class;
+                      Frame_Name     : Frame_Name_Generators.Abstract_Generator'Class;
                       Event_Weight   : Sample_Value;
                       Offset         : Sample_Value;
                       Filter         : Filters.Filter_Type;
@@ -38,16 +19,6 @@ package Dvaccum.Event_Processing is
                       Oversampling   : Positive;
                       Initial_Image  : Frames.Image_Type);
 private
-   type Frame_Index is range -1 .. Integer'Last;
-
-   subtype Valid_Frame_Index is
-     Frame_Index range Frame_Index'First + 1 .. Frame_Index'Last;
-
-   No_Frame : constant Frame_Index := Frame_Index'First;
-
-   function To_Int (X : Frame_Index) return Natural
-   is (Natural (X));
-
    subtype Event_Index is Positive;
 
    type Event_Array is

@@ -16,6 +16,10 @@ package body DVAccum.Timestamps is
 
    function To_Relative_Timestamp (V : Time_Syntax.Time_In_Microseconds) return Timestamp
    is (T => Timestamp_Value (V), Infinite => False, Relative => True);
+
+   function To_Seconds (X : Duration) return Float
+   is (Float (X) / Timestamps_Per_Second);
+
    ------------------------
    -- Is_Valid_Timestamp --
    ------------------------

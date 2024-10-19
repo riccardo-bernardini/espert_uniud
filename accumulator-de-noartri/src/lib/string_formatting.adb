@@ -1,6 +1,7 @@
 pragma Ada_2012;
 with Ada.Strings.Unbounded;    use Ada.Strings.Unbounded;
 with Ada.Strings.Maps.Constants;
+with Ada.Strings.Fixed;
 
 with Ada.Numerics.Elementary_Functions;
 
@@ -32,9 +33,8 @@ package body String_Formatting is
       end loop;
    end Dump;
 
-   function Space_Needed (Datum            : Integer;
-                          Basis            : Base_Type;
-                          Add_Postive_Sign : Boolean)
+   function Space_Needed (Datum            : Natural;
+                          Basis            : Base_Type)
                           return Positive
    is
       use Ada.Numerics.Elementary_Functions;
@@ -48,10 +48,6 @@ package body String_Formatting is
       Result := Positive (Float'Ceiling
                           (Log (X    => Float (abs Datum + 1),
                                 Base => Float (Basis))));
-
-      if Datum < 0 or Add_Postive_Sign then
-         Result := Result + 1;
-      end if;
 
       return Result;
    end Space_Needed;
@@ -76,12 +72,11 @@ package body String_Formatting is
                  Left_Adjust  => '-',
                  Always_Sign  => '+');
 
-      function To_String (Datum            : Integer;
-                          Base             : Base_Type;
-                          Add_Postive_Sign : Boolean)
+      function To_String (Datum            : Natural;
+                          Base             : Base_Type)
                           return String
       is
-         D      : constant String (1 .. 16) := "0123456789ABCDEF";
+         D : constant String (1 .. 16) := "0123456789ABCDEF";
       begin
          if Datum = 0 then
             return "0";
@@ -98,14 +93,6 @@ package body String_Formatting is
                   Buffer := Buffer / Base;
                   Cursor := Cursor - 1;
                end loop;
-
-               if Datum < 0 then
-                  Result (Cursor) := '-';
-
-               elsif Add_Postive_Sign then
-                  Result (Cursor) := '+';
-
-               end if;
             end;
          end return;
 
@@ -127,14 +114,36 @@ package body String_Formatting is
          Size  => Field_Size,
          Prec  => Ignored);
 
-      Field_Size := Positive'Max (Field_Size,
-                                  Space_Needed (Datum, Basis));
-
       declare
-         Buffer : String := To_String (Datum, Basis);
+         use Ada.Strings.Fixed;
+
+         Sign : constant String := (if Datum < 0 then
+                                       "-"
+                                    elsif Present (Always_Sign) then
+                                       "+"
+                                    else
+                                       "");
+
+         Core : constant String := To_String (Datum, Basis);
+
+         Tot_Length : constant Positive := Core'Length + Sign'Length;
+
+         Padding : constant Integer := Field_Size - Tot_Length;
       begin
-         pragma Compile_Time_Warning (True, "riprendi da qua");
-         return Buffer	;
+         if Padding <= 0 then
+            return Sign & Core;
+
+         else
+            if Present(Left_Adjust) then
+               return Sign & Core & (Padding * ' ');
+
+            elsif Present (Zero_Padding) then
+               return Sign & (Padding * '0') & Core;
+
+            else
+               return (Padding * ' ') & Sign & Core;
+            end if;
+         end if;
       end;
    end C_Style_Formatting;
 
@@ -280,7 +289,8 @@ package body String_Formatting is
      (Format              : String;
       Provider            : Provider_Function;
       Accepted_Directives : String := "";
-      Directive_Prefix    : Character := '%') return String
+      Directive_Prefix    : Character := '%')
+      return String
    is
    begin
       return Expand (Parse_Format (Format, Accepted_Directives, Directive_Prefix),
@@ -307,7 +317,9 @@ package body String_Formatting is
    ------------
 
    function Expand
-     (Format : Parsed_Format; Provider : Provider_Function) return String
+     (Format   : Parsed_Format;
+      Provider : Provider_Function)
+      return String
    is
    begin
       return Expand (Format,

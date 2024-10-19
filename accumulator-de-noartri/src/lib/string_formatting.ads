@@ -38,9 +38,7 @@ package String_Formatting is
 
    function Expand
      (Format              : String;
-      Provider            : access function (Directive : Character;
-                                             Parameter : String;
-                                             Counter   : Positive) return String;
+      Provider            : Provider_Function;
       Accepted_Directives : String := "";
       Directive_Prefix    : Character := '%')
       return String
@@ -58,9 +56,7 @@ package String_Formatting is
 
    function Expand
      (Format   : Parsed_Format;
-      Provider : access function (Directive : Character;
-                                  Parameter : String;
-                                  Counter   : Positive) return String)
+      Provider : Provider_Function)
       return String;
 
    function Expand (Format   : Parsed_Format;

@@ -253,6 +253,8 @@ package body String_Formatting is
 
                   Status := In_Text;
 
+                  Buffer := Null_Unbounded_String;
+
                else
                   Append_Text (Buffer);
 

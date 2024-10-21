@@ -259,6 +259,10 @@ package body DVAccum.Config with SPARK_Mode is
          end if;
       end;
 
+      if not Is_All_Set then
+         Dump_Unset;
+      end if;
+
       pragma Assert (Is_All_Set);
 
       Report := Parsing_Report'(Status  => Success,

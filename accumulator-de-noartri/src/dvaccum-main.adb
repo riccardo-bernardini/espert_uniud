@@ -1,6 +1,7 @@
 with Ada.Text_IO;                  use Ada.Text_IO;
 with Ada.Strings.Unbounded;        use Ada.Strings.Unbounded;
 with Ada.Command_Line;
+with Ada.Exceptions;
 
 with String_Formatting;
 
@@ -32,7 +33,15 @@ procedure DVAccum.Main is
 
 
    function Source_Filename (N : Positive) return String
-   is (Split_Filename.True_Filename (Config.Input_Filename (N)));
+   is
+      F : constant String := Config.Input_Filename (N);
+   begin
+      if F = "-" then
+         return "/dev/stdin";
+      else
+         return Split_Filename.True_Filename (F);
+      end if;
+   end Source_Filename;
 
    function Time_Offset (N : Positive) return Timestamps.Duration
    is (Split_Filename.Offset_Of (Config.Input_Filename (N)));
@@ -121,4 +130,7 @@ begin
    end;
 
    Command_Line.Set_Exit_Status (Command_Line.Success);
+exception
+   when E : Event_Io.Bad_Event_Stream =>
+      Put_Line (Exceptions.Exception_Message (E));
 end DVAccum.Main;

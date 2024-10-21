@@ -1,6 +1,7 @@
 pragma Ada_2012;
 
 with Ada.Containers.Indefinite_Vectors;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body DVAccum.Config.Data with SPARK_Mode is
    package String_Vectors is
@@ -14,7 +15,7 @@ package body DVAccum.Config.Data with SPARK_Mode is
 
    type Numeric_Field_Array is array (Numeric_Field) of Sample_Value;
 
-   type Boolean_Field_Array is array (Boolean_Field) of Boolean;
+   --  type Boolean_Field_Array is array (Boolean_Field) of Boolean;
 
    type Duration_Field_Array is array (Duration_Field) of Timestamps.Duration;
 
@@ -38,19 +39,38 @@ package body DVAccum.Config.Data with SPARK_Mode is
          Integer_Fields          : Integer_Field_Array;
          Timestamp_Fields        : Timestamp_Field_Array;
          Duration_Fields         : Duration_Field_Array;
-         Boolean_Fields          : Boolean_Field_Array;
       end record;
 
    Config_Data : Config_Data_Record;
+
+
+   procedure Dump_Unset
+   is
+   begin
+      for F in Configuration_Field loop
+         if not Set_Fields (F) then
+            Put_Line (Standard_Error, F'Image);
+         end if;
+      end loop;
+   end Dump_Unset;
 
    procedure Add_Input_Filename (Filename : String)
    is
    begin
       Config_Data.Input_Filenames.Append (Filename);
+      Set_Fields (Input_Filename) := True;
    end Add_Input_Filename;
 
    function N_Inputs return Natural
-   is (Natural (Config_Data.Input_Filenames.Length));
+   is
+   begin
+      if False then
+         Put_Line (Is_Set (Input_Filename)'Image);
+         Put_Line (Config_Data.Input_Filenames.Length'Image);
+      end if;
+
+      return Natural (Config_Data.Input_Filenames.Length);
+   end N_Inputs;
 
    function Get_Input_Filename (N : Positive) return String
    is (Config_Data.Input_Filenames (N));
@@ -214,22 +234,22 @@ package body DVAccum.Config.Data with SPARK_Mode is
    is (Config_Data.Duration_Fields (Field));
 
 
-   ---------
-   -- Set --
-   ---------
-
-   procedure Set (Field : Boolean_Field; Value : Boolean) is
-   begin
-      Config_Data.Boolean_Fields (Field) := Value;
-      Is_Set (Field);
-   end Set;
-
-   ---------
-   -- Get --
-   ---------
-
-   function Get (Field : Boolean_Field) return Boolean
-   is (Config_Data.Boolean_Fields (Field));
+   --  ---------
+   --  -- Set --
+   --  ---------
+   --
+   --  procedure Set (Field : Boolean_Field; Value : Boolean) is
+   --  begin
+   --     Config_Data.Boolean_Fields (Field) := Value;
+   --     Is_Set (Field);
+   --  end Set;
+   --
+   --  ---------
+   --  -- Get --
+   --  ---------
+   --
+   --  function Get (Field : Boolean_Field) return Boolean
+   --  is (Config_Data.Boolean_Fields (Field));
 
 
 begin

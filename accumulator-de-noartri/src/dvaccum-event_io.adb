@@ -109,6 +109,16 @@ package body DVAccum.Event_Io is
    is
       use Ada.Text_Io;
 
+      procedure Die (Msg : String)
+      is
+      begin
+         raise Bad_Event_Stream
+           with
+             Msg &
+             " at line " & Line (Input)'Image
+           & " of file " & Name (Input);
+      end Die;
+
       function Parse_Data_Line (Line : String)
                                 return DVaccum.Events.Event_Type
         with
@@ -128,7 +138,7 @@ package body DVAccum.Event_Io is
          Weight : Event_Weight;
       begin
          if Fields.Length /= 4 then
-            raise Bad_Event_Stream with Line;
+            Die ("Wrong # of fields in event line: " & Line);
          end if;
 
          if Fields (4) = "0" then
@@ -138,7 +148,7 @@ package body DVAccum.Event_Io is
             Weight := On_Positive_Event;
 
          else
-            raise Bad_Event_Stream;
+            Die ("Bad event sign on line " & Line);
          end if;
 
          return New_Event (T      => Value (Fields (1))+Offset,
@@ -302,14 +312,14 @@ package body DVAccum.Event_Io is
 
                when Header =>
                   if Header_Seen then
-                     raise Bad_Event_Stream with "Double header";
+                     Die ("Double header");
                   end if;
 
                   Header_Seen := True;
 
                when Data =>
                   if not Header_Seen then
-                     raise Bad_Event_Stream with "Missing header";
+                     Die ("Missing header");
                   end if;
 
                   declare
@@ -320,7 +330,7 @@ package body DVAccum.Event_Io is
                      if not Events.Is_Empty
                        and then Previous_Timestamp > T (Event)
                      then
-                        raise Bad_Event_Stream with "Non monotonic timestamps";
+                        Die ("Non monotonic timestamps");
                      end if;
 
                      Previous_Timestamp := T (Event);

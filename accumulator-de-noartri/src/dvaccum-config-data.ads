@@ -27,10 +27,8 @@ private package DVAccum.Config.Data with SPARK_Mode is
       Sampling_Period,
       -- Integer fields
       Oversampling,
-      N_Tasks,
-      -- Fake Boolean field.  Old fields have been removed
-      Boolean_Placekeeper
-     );
+      N_Tasks
+      );
 
    type Start_Image_Class is (Uniform, External);
 
@@ -56,13 +54,14 @@ private package DVAccum.Config.Data with SPARK_Mode is
 
    subtype Integer_Field is Configuration_Field range Oversampling .. N_Tasks;
 
-   subtype Boolean_Field is Configuration_Field range Boolean_Placekeeper .. Boolean_Placekeeper;
+   --  subtype Boolean_Field is Configuration_Field range Boolean_Placekeeper .. Boolean_Placekeeper;
 
    function Is_Set (Field : Configuration_Field) return Boolean;
 
    function Is_All_Set return Boolean
    is (for all F in Configuration_Field => Is_Set (F));
 
+   procedure Dump_Unset;
 
    procedure Add_Input_Filename (Filename : String)
      with
@@ -155,13 +154,13 @@ private package DVAccum.Config.Data with SPARK_Mode is
      with
        Pre => Is_Set (Field);
 
-   procedure Set (Field : Boolean_Field;
-                  Value : Boolean)
-     with
-       Pre => not Is_Set (Field),
-       Post => Is_Set (Field) and then Get (Field) = Value;
-
-   function Get (Field : Boolean_Field) return Boolean
-     with
-       Pre => Is_Set (Field);
+   --  procedure Set (Field : Boolean_Field;
+   --                 Value : Boolean)
+   --    with
+   --      Pre => not Is_Set (Field),
+   --      Post => Is_Set (Field) and then Get (Field) = Value;
+   --
+   --  function Get (Field : Boolean_Field) return Boolean
+   --    with
+   --      Pre => Is_Set (Field);
 end DVAccum.Config.Data;

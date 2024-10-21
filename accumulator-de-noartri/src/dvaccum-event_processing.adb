@@ -146,25 +146,64 @@ package body Dvaccum.Event_Processing is
       Segments : constant Segment_Queues.Segment_Queue_Access :=
                    new Segment_Queues.Segment_Queue;
 
-      Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
-                 Pixel_Buffers.Create (-1, -1);
-
-
    begin
       Fill_Storage (Source      => Event_Sequence,
                     Destination => Event_Storage,
                     Segments    => Segments);
 
-      Accumulate (Event_Storage => Event_Storage,
-                  Segments      => Segments,
-                  Pixels        => Pixels,
-                  Filter        => Filter,
-                  Event_Weight  => Event_Weight,
-                  N_Cpu         => Config.Number_Of_Parallel_Tasks);
+      declare
+         use type Timestamps.Duration;
+         --
+         --  We need to find the number of frames that we are going to
+         --  generate.  Let D=Tstop-Tstart be the difference between the
+         --  start and stop timestamps.  Let also F the duration of a frame
+         --  and let S = F/M the oversampled sampling period (with M the
+         --  oversampling factor).
+         --
+         --  Let u: Z -> R be the signal to be accumulated. Sample
+         --  u(n) has the contributions of the events happening in the
+         --  interval I_n=[n*S, (n+1)*S).  Therefore, in order to have
+         --  u(n) /= 0 the intersection of I_n with [0, D] must be not empty
+         --  It is empty if it happend
+         --
+         --      (n+1)*S <= 0  or n*S > D
+         --
+         --  Therefore, it is not empty if
+         --
+         --       (n+1)*S > 0  and n*S <= D
+         --
+         --  which is equivalent to
+         --
+         --    -1 < n <= D/S     or equivalently 0 <= n <= floor(D/S)=L
+         --
+         --  If m is the number of a frame, it must be
+         --
+         --      0 <= M * m <= floor (D / S), that is 0 <= m <= floor(L/M)
+         --
+         Fine_Sampling : constant Timestamps.Duration :=
+                           Frame_Duration / Float (Oversampling);
 
-      Save_Frames (Frame_Name => Frame_Name,
-                   Pixels     => Pixels,
-                   Offset     => Offset,
-                   N_Cpu      => Config.Number_Of_Parallel_Tasks);
+         D : constant Timestamps.Duration := To - From;
+         L : constant Float := Float'Floor (D / Fine_Sampling);
+         N_Frames : constant Positive :=
+                      Positive (Float'Floor (L / Float (Oversampling)))+1;
+
+         Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
+                    Pixel_Buffers.Create (N_Frames => N_Frames,
+                                       N_Pixels => Integer (Segments.Size));
+
+      begin
+         Accumulate (Event_Storage => Event_Storage,
+                     Segments      => Segments,
+                     Pixels        => Pixels,
+                     Filter        => Filter,
+                     Event_Weight  => Event_Weight,
+                     N_Cpu         => Config.Number_Of_Parallel_Tasks);
+
+         Save_Frames (Frame_Name => Frame_Name,
+                      Pixels     => Pixels,
+                      Offset     => Offset,
+                      N_Cpu      => Config.Number_Of_Parallel_Tasks);
+      end;
    end Process;
 end Dvaccum.Event_Processing;

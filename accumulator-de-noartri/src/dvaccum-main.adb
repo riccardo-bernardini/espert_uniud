@@ -1,5 +1,6 @@
 with Ada.Text_IO;                  use Ada.Text_IO;
 with Ada.Strings.Unbounded;        use Ada.Strings.Unbounded;
+with Ada.Command_Line;
 
 with String_Formatting;
 
@@ -11,6 +12,8 @@ with DVAccum.Frame_Name_Generators;
 
 with DVAccum.Split_Filename;
 with Dvaccum.Filters;
+
+use Ada;
 
 procedure DVAccum.Main is
    use type Config.Parsing_Status;
@@ -41,6 +44,9 @@ begin
    if Report.Status /= Config.Success then
       Put_Line (Standard_Error,
                 "Error in initialization:" & To_String (Report.Message));
+
+      Command_Line.Set_Exit_Status (Command_Line.Failure);
+      return;
    end if;
 
    pragma Assert (Config.Package_Ready);
@@ -99,4 +105,6 @@ begin
                Size_Y  => Sequences (N).N_Rows));
       end loop;
    end;
+
+   Command_Line.Set_Exit_Status (Command_Line.Success);
 end DVAccum.Main;

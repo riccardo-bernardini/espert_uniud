@@ -52,7 +52,7 @@ package body DVAccum.Config with SPARK_Mode is
                      Frame_Rate           => Option ("framerate|frame-rate|fps") and Mandatory,
                      Output_Template      => Option ("output [%b-%d.png]"),
                      Log_Progress         => Option ("log-progress|log-to|progress|log []"),
-                     First_Image          => Option ("first-image|first [neutral:]"),
+                     First_Image          => Option ("first-image|first [:neutral:]"),
                      Start_Time           => Option ("start [0]"),
                      Stop_Time            => Option ("stop [inf]"),
                      Min                  => Option ("min [0.0]"),
@@ -143,26 +143,39 @@ package body DVAccum.Config with SPARK_Mode is
              Fixed.Head (What, Prefix'Length) = Prefix);
 
          function Tail (X : String) return String
+           with
+             Pre => X'Length > 2
+               and then X (X'First) = ':'
+               and then (for some C of X (X'First + 1 .. X'Last) => C = ':');
+
+         function Tail (X : String) return String
          is
-            Pos : constant Natural := Ada.Strings.Fixed.Index (X, ":");
          begin
-            if Pos = 0 then
-               raise Constraint_Error;
+            if X'Length <= 2 or X (X'First) /= ':' then
+               raise Program_Error;
             end if;
 
-            return X (Pos + 1 .. X'Last);
+            declare
+              Pos : constant Natural := Fixed.Index (X (X'First + 1 .. X'Last), ":");
+            begin
+               if Pos = 0 then
+                  raise Program_Error;
+               end if;
+
+               return X (Pos + 1 .. X'Last);
+            end;
          end Tail;
       begin
-         if Spec = "" or Spec = "uniform:" then
+         if Spec = "" or Spec = ":uniform:" or Spec = ":neutral:" then
             return Uniform_Image (Get (Neutral));
 
          elsif Patterns.Is_Float (Spec) then
             return Uniform_Image (Sample_Value'Value (Spec));
 
-         elsif Begin_With (Spec, "uniform:") or Begin_With (Spec, "constant:") then
+         elsif Begin_With (Spec, ":uniform:") or Begin_With (Spec, ":constant:") then
             return Uniform_Image (Sample_Value'Value (Tail (Spec)));
 
-         elsif Begin_With (Spec, "file:") then
+         elsif Begin_With (Spec, ":file:") then
             return Image_File (Tail (Spec));
 
          else

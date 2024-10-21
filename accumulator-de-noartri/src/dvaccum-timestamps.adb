@@ -1,3 +1,5 @@
+with Ada.Characters.Handling;
+
 --  with Ada.Text_IO; use Ada.Text_IO;
 with Dvaccum.Time_Syntax;
 with Ada.Strings.Equal_Case_Insensitive;
@@ -16,6 +18,7 @@ package body DVAccum.Timestamps is
 
    function To_Relative_Timestamp (V : Time_Syntax.Time_In_Microseconds) return Timestamp
    is (T => Timestamp_Value (V), Infinite => False, Relative => True);
+   pragma Unreferenced (To_Relative_Timestamp);
 
    function To_Seconds (X : Duration) return Float
    is (Float (X) / Timestamps_Per_Second);
@@ -26,16 +29,20 @@ package body DVAccum.Timestamps is
 
    function Is_Valid_Timestamp (Spec : String) return Boolean
    is
+      use Ada.Characters.Handling;
+
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_Syntax.Time_In_Microseconds;
    begin
+      if To_Lower (Spec) = "inf" or To_Lower (Spec) = "-inf" then
+         return True;
+      end if;
+
       Time_Syntax.Parse_Time (Input    => Spec,
                               Success  => Success,
-                              Relative => Relative,
                               Value    => Value);
 
-      return Success and then (Relative or Value >= 0);
+      return Success;
    end Is_Valid_Timestamp;
 
    -----------------------
@@ -45,14 +52,12 @@ package body DVAccum.Timestamps is
    function Is_Valid_Duration (Spec : String) return Boolean
    is
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_Syntax.Time_In_Microseconds;
    begin
       --  Put_Line ("valid duration """ & Spec & """");
 
       Time_Syntax.Parse_Time (Input    => Spec,
                               Success  => Success,
-                              Relative => Relative,
                               Value    => Value);
 
       --  Put_Line ("Success  : " & (if Success then "Yes" else "No"));
@@ -60,7 +65,7 @@ package body DVAccum.Timestamps is
       --  Put_Line ("Relative : " & (if Relative then "Yes" else "No"));
       --  Put_Line ("Value    : " & Value'Image);
 
-      return Success and then not Relative;
+      return Success;
    end Is_Valid_Duration;
 
    -----------
@@ -72,15 +77,13 @@ package body DVAccum.Timestamps is
       use Time_Syntax;
 
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_In_Microseconds;
    begin
       Parse_Time (Input    => S,
                   Success  => Success,
-                  Relative => Relative,
                   Value    => Value);
 
-      if not (Success and then not Relative) then
+      if not Success then
          raise Constraint_Error;
       end if;
 
@@ -96,7 +99,6 @@ package body DVAccum.Timestamps is
       use Time_Syntax;
 
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_In_Microseconds;
    begin
       if Ada.Strings.Equal_Case_Insensitive (S, "inf") then
@@ -109,17 +111,13 @@ package body DVAccum.Timestamps is
 
       Parse_Time (Input    => S,
                   Success  => Success,
-                  Relative => Relative,
                   Value    => Value);
 
       if not Success then
          raise Constraint_Error;
       end if;
 
-      return (if Relative then
-                 To_Relative_Timestamp (Value)
-              else
-                 To_Timestamp (Value));
+      return To_Timestamp (Value);
    end Value;
 
 

@@ -84,4 +84,25 @@ package body String_Vectors is
       return V.Elements (Index);
    end Element;
 
+
+   ----------
+   -- Join --
+   ----------
+
+   function Join (V : Vector; Glue : String) return String
+   is
+      Result : Unbounded_String;
+   begin
+      for I in First_Index (V) .. Last_Index (V) loop
+         Result := Result & Element (V, I);
+
+         if I < Last_Index (V) then
+            Result := Result & Glue;
+         end if;
+      end loop;
+
+      return To_String (Result);
+   end Join;
+
+
 end String_Vectors;

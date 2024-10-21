@@ -32,6 +32,8 @@ package String_Vectors is
      with
        Pre => Index >= First_Index (V) and Index <= Last_Index (V);
 
+   function Join (V : Vector; Glue : String) return String;
+
 private
    type String_Array is array (Positive range <>) of Unbounded_String;
 

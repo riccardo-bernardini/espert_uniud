@@ -17,13 +17,51 @@ with DVAccum.Config.Syntax;  use DVAccum.Config.Syntax;
 with DVAccum.Config.Data;    use DVAccum.Config.Data;
 
 with Patterns;
---  with Event_Sequences;
---  with Event_Streams;
-
 
 package body DVAccum.Config with SPARK_Mode is
    use type Timestamps.Timestamp;
+   type Options is
+     (
+      Filter,
+      Oversampling,
+      Parallel,
+      Frame_Rate,
+      Output_Template,
+      Log_Progress,
+      First_Image,
+      Start_Time,
+      Stop_Time,
+      Min,
+      Max,
+      Neutral,
+      Positive_Value,
+      Negative_Value,
+      Event_Weigth
+     );
 
+   package CL_Parser is
+     new Generic_Command_Line_Parser (Options);
+
+   use CL_Parser;
+
+   Option_Specs : constant CL_Parser.CLI_Syntax :=
+                    (
+                     Filter               => Option ("filter") and Mandatory,
+                     Oversampling         => Option ("oversampling|over [1]"),
+                     Parallel             => Option ("n-tasks|parallel"),
+                     Frame_Rate           => Option ("framerate|frame-rate|fps") and Mandatory,
+                     Output_Template      => Option ("output [%b-%d.png]"),
+                     Log_Progress         => Option ("log-progress|log-to|progress|log []"),
+                     First_Image          => Option ("first-image|first [neutral:]"),
+                     Start_Time           => Option ("start [0]"),
+                     Stop_Time            => Option ("stop [inf]"),
+                     Min                  => Option ("min [0.0]"),
+                     Max                  => Option ("max [255.0]"),
+                     Neutral              => Option ("neutral [0.0]"),
+                     Event_Weigth         => Option ("gain|weight [1.0]"),
+                     Positive_Value       => Option ("pos|positive [1.0]"),
+                     Negative_Value       => Option ("neg|negative [-1.0]")
+                    );
 
 
    function Is_A_Tty (Descriptor : C.Int) return Boolean
@@ -53,50 +91,6 @@ package body DVAccum.Config with SPARK_Mode is
 
    procedure Parse_Command_Line (Report : out Parsing_Report) is
       use Sparked_Command_Line;
-
-      type Options is
-        (
-         Filter,
-         Oversampling,
-         Parallel,
-         Frame_Rate,
-         Output_Template,
-         Log_Progress,
-         First_Image,
-         Start_Time,
-         Stop_Time,
-         Min,
-         Max,
-         Neutral,
-         Positive_Value,
-         Negative_Value,
-         Event_Weigth
-        );
-
-      package CL_Parser is
-        new Generic_Command_Line_Parser (Options);
-
-      use CL_Parser;
-
-      Option_Specs : constant CL_Parser.CLI_Syntax :=
-                       (
-                        Filter               => Option ("filter") and Mandatory,
-                        Oversampling         => Option ("oversampling|over [1]"),
-                        Parallel             => Option ("n-tasks|parallel"),
-                        Frame_Rate           => Option ("framerate|frame-rate|fps") and Mandatory,
-                        Output_Template      => Option ("output [%b-%d.png]"),
-                        Log_Progress         => Option ("log-progress|log-to|progress|log []"),
-                        First_Image          => Option ("first-image|first [neutral:]"),
-                        Start_Time           => Option ("start [0]"),
-                        Stop_Time            => Option ("stop [inf]"),
-                        Min                  => Option ("min [0.0]"),
-                        Max                  => Option ("max [255.0]"),
-                        Neutral              => Option ("neutral [0.0]"),
-                        Event_Weigth         => Option ("gain|weight [1.0]"),
-                        Positive_Value       => Option ("pos|positive [1.0]"),
-                        Negative_Value       => Option ("neg|negative [-1.0]")
-                       );
-
 
       function Help_Asked return Boolean
       is (Argument_Count = 0 or else
@@ -150,7 +144,7 @@ package body DVAccum.Config with SPARK_Mode is
 
          function Tail (X : String) return String
          is
-            Pos : constant Natural := ada.Strings.Fixed.Index (X, ":");
+            Pos : constant Natural := Ada.Strings.Fixed.Index (X, ":");
          begin
             if Pos = 0 then
                raise Constraint_Error;
@@ -391,9 +385,40 @@ package body DVAccum.Config with SPARK_Mode is
 
 
    function Short_Help_Text return String
-   is ("Usage: "
-       & Sparked_Command_Line.Command_Name
-       & " memory-spec  sampling  radix  [event-filename] [first-image]");
+   is
+      ----------
+      -- Join --
+      ----------
+
+      function Join (V    : CL_Parser.String_Vectors.Vector;
+                     Glue : String)
+                     return String
+      is
+         Result : Unbounded_String;
+      begin
+         for I in V.First_Index .. V.Last_Index loop
+            Result := Result & V (I);
+
+            if I < V.Last_Index then
+               Result := Result & Glue;
+            end if;
+         end loop;
+
+         return To_String (Result);
+      end Join;
+
+
+      use Ada.Characters.Latin_9;
+   begin
+      return
+        "Usage: "
+        & Sparked_Command_Line.Command_Name
+        & "options..."
+        & LF
+        & LF
+        & "Accepted options:"
+        & LF & "   " & Join (Help_Lines (Option_Specs), LF & "   ");
+   end Short_Help_Text;
 
    function Long_Help_Text return String
    is

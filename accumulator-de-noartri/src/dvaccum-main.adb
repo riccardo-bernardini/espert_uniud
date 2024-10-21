@@ -41,13 +41,27 @@ procedure DVAccum.Main is
 begin
    Config.Parse_Command_Line (Report);
 
-   if Report.Status /= Config.Success then
-      Put_Line (Standard_Error,
-                "Error in initialization:" & To_String (Report.Message));
+   case Report.Status is
+      when Config.Success =>
+         null;
 
-      Command_Line.Set_Exit_Status (Command_Line.Failure);
-      return;
-   end if;
+      when Config.Bad_Command_Line =>
+         Put_Line (Standard_Error,
+                   "CLI Error: " & To_String (Report.Message));
+
+         Put_Line (Standard_Error, Config.Short_Help_Text);
+
+         Command_Line.Set_Exit_Status (Command_Line.Failure);
+         return;
+
+      when Config.Full_Help_Asked =>
+
+         Put_Line (Standard_Error, Config.Long_Help_Text);
+
+         Command_Line.Set_Exit_Status (Command_Line.Success);
+         return;
+
+   end case;
 
    pragma Assert (Config.Package_Ready);
 

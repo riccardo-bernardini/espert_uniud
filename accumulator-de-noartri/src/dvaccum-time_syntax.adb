@@ -6,15 +6,13 @@ package body DVAccum.Time_Syntax is
    function Parse_Time_Spec (Spec : String) return Time_In_Microseconds
    is
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_In_Microseconds;
    begin
       Parse_Time (Input    => Spec,
                   Success  => Success,
-                  Relative => Relative,
                   Value    => Value);
 
-      if (not Success) or else (Relative or Value < 0) then
+      if (not Success) then
          raise Constraint_Error with "Bad time spec";
       end if;
 
@@ -24,15 +22,13 @@ package body DVAccum.Time_Syntax is
 
    procedure Parse_Time (Input    : String;
                          Success  : out Boolean;
-                         Relative : out Boolean;
                          Value    : out Time_In_Microseconds)
    is
       use Gnat.Regpat;
       use ada.Strings.Fixed;
 
       Time_Regexp : constant Pattern_Matcher :=
-                      Compile ("^ *(@\+)?"
-                               & "([0-9_]+)"
+                      Compile ("^ *([0-9_]+)"
                                & "(\.[0-9_]+(?:[eE][-+]?[0-9_]+)?)?"
                                & " *"
                                & "([a-z]+)? *$");
@@ -40,10 +36,9 @@ package body DVAccum.Time_Syntax is
       Matches     : Match_Array (0 .. Paren_Count (Time_Regexp));
 
       All_Regexp         : constant := 0;
-      Relative_Section   : constant := 1;
-      Integer_Section    : constant := 2;
-      Fractional_Section : constant := 3;
-      Unit_Section       : constant := 4;
+      Integer_Section    : constant := 1;
+      Fractional_Section : constant := 2;
+      Unit_Section       : constant := 3;
 
       function Section (N : Integer) return String
       is (Input (Matches (N).First .. Matches (N).Last))
@@ -129,14 +124,11 @@ package body DVAccum.Time_Syntax is
         or else (Found (Fractional_Section)  and not Found (Unit_Section))
       then
          Success := False;
-         Relative := False;
          Value := 0;
          return;
       end if;
 
       pragma Assert (Matches (Integer_Section) /= No_Match);
-
-      Relative := Found (Relative_Section);
 
       if not Found (Unit_Section) then
          --
@@ -164,15 +156,13 @@ package body DVAccum.Time_Syntax is
    function Is_Valid_Time (Spec : String) return Boolean
    is
       Success  : Boolean;
-      Relative : Boolean;
       Value    : Time_In_Microseconds;
    begin
       Parse_Time (Input    => Spec,
                   Success  => Success,
-                  Relative => Relative,
                   Value    => Value);
 
-      return Success and then (not Relative and Value >= 0);
+      return Success;
    end Is_Valid_Time;
    pragma Unreferenced (Is_Valid_Time);
 

@@ -48,6 +48,7 @@ package body Generic_Command_Line_Parser is
 
          function Current_Tail return String
          is (Source (Cursor .. Source'Last));
+         pragma Unreferenced (Current_Tail);
 
          Accumulator : Unbounded_String;
 
@@ -81,7 +82,7 @@ package body Generic_Command_Line_Parser is
       begin
          Clear (Names);
 
-         Help_Line := Null_Unbounded_String;
+         Help_Line := To_Unbounded_String (Source);
          Status := Reading_Name;
          Default_Found := False;
          Default := Null_Unbounded_String;
@@ -186,7 +187,7 @@ package body Generic_Command_Line_Parser is
                raise Bad_Option_Name with Source;
 
             when Documentation =>
-               Help_Line := To_Unbounded_String (Current_Tail);
+               Help_Line := To_Unbounded_String (Source); --Current_Tail);
          end case;
       end Parse_Option_Names;
 
@@ -552,11 +553,17 @@ package body Generic_Command_Line_Parser is
    function Help_Lines (Syntax : CLI_Syntax)
                         return String_Vectors.Vector
    is
+      Prefix : constant String := " --";
+
+      function Mandatory_Label (Descr : Option_Spec) return String
+      is (if Descr.On_Missing = Die then " (mandatory)" else "");
    begin
       return Result  : String_Vectors.Vector do
          for Descr of Syntax loop
             if Descr.Doc /= Null_Unbounded_String then
-               Result.Append (To_String (Descr.Doc));
+               Result.Append (Prefix &
+                                To_String (Descr.Doc) &
+                                Mandatory_Label (Descr));
             end if;
          end loop;
       end return;

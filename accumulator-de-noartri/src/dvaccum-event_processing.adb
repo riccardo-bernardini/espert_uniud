@@ -7,6 +7,7 @@ with DVAccum.Config;
 with System.Multiprocessors;
 
 use System;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Dvaccum.Event_Processing is
    type Ev_Access is access Event_Array;
@@ -102,8 +103,9 @@ package body Dvaccum.Event_Processing is
                              Frame_Duration  => Frame_Duration,
                              Oversampling    => Oversampling);
       begin
+         Put_Line("N. Cpu=" & N_Cpu'Image);
          for I in Accumulators'Range loop
-            Accumulators (I) := new Accumulator_Tasks.Accumulator (Parameters);
+            Accumulators (I) := new Accumulator_Tasks.Accumulator (I, Parameters);
          end loop;
       end Accumulate;
 

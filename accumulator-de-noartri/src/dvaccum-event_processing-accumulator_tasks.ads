@@ -1,6 +1,11 @@
+with System.Multiprocessors;
+
 with DVAccum.Event_Processing.Segment_Queues;
 with DVAccum.Event_Processing.Pixel_Buffers;
 with DVAccum.Filters;
+
+use System;
+
 private
 package Dvaccum.Event_Processing.Accumulator_Tasks is
    type Parameter_Record is
@@ -18,5 +23,5 @@ package Dvaccum.Event_Processing.Accumulator_Tasks is
    type Parameter_Access is
      access constant Parameter_Record;
 
-   task type Accumulator (Parameters : Parameter_Access);
+   task type Accumulator (ID : Multiprocessors.CPU; Parameters : Parameter_Access);
 end Dvaccum.Event_Processing.Accumulator_Tasks;

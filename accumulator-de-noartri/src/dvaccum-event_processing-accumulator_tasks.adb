@@ -1,9 +1,16 @@
+with Ada.Exceptions;
+
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Dvaccum.Event_Processing.Accumulator_Tasks is
    task body Accumulator is
       use Segment_Queues;
       use Pixel_Buffers;
 
+      procedure Stampa (X : String) is
+      begin
+         Put_Line ("[" & ID'Image & "]  " & X);
+      end Stampa;
       function Subsample (Data : Filters.Signal)
                           return Pixel_History
       is
@@ -33,17 +40,25 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
          Buffer : Event_Array (0 .. Stop - Start + 1);
          Cursor : Natural := Buffer'First;
       begin
+         Stampa ("EXTRACT from:" & Timestamps.Image (Parameters.From)
+                 & " to:" & Timestamps.Image (Parameters.To)
+                 & "start, stop: " & Start'Image& " " & Stop'Image);
+
          for I in Start .. Stop loop
+            Stampa ("EXTRACT  I=" & I'Image & " "& Parameters.Events (I).Image);
+
             if
               Parameters.Events (I).T >= Parameters.From and
               Parameters.Events (I).T <= Parameters.To
             then
+               Stampa ("EXTRACT " & I'Image & "->" & Parameters.Events (I).Image);
+
                Buffer (Cursor) := Parameters.Events (I);
                Cursor := Cursor + 1;
             end if;
          end loop;
 
-         return Buffer;
+         return Buffer (Buffer'First .. Cursor - 1);
       end Extract_Segment;
 
       function Collate (Segment : Event_Array) return Filters.Signal
@@ -57,10 +72,17 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
 
          Index : Natural;
       begin
+
+         Stampa ("b1" & Segment'First'Image & ", " & Segment'Last'Image);
          return Result : Filters.Signal (0 .. N_Samples - 1) := (others => 0.0)
          do
+      Stampa("b2");
             for Ev of Segment loop
+               Stampa (Ev.Image);
+               Stampa ("b3" & Timestamps.Image (Ev.T) & ", " & Timestamps.Image (Parameters.From));
+
                Index := Natural ((Ev.T - Parameters.From) / Step);
+     Stampa("b4");
 
                Result (Index) := Result (Index) +
                  Sample_Value (Integer (Ev.Weight));
@@ -72,9 +94,13 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
 
       Filter : Filters.Filter_Type := Parameters.Filter;
    begin
+      Stampa("a1");
       loop
+
+      Stampa("a2");
          Parameters.Segments.Next_Segment (Working_Segment);
 
+      Stampa("a3");
          exit when Working_Segment = No_Segment;
 
          declare
@@ -85,8 +111,13 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
             Recovered : constant Filters.Signal := Filters.Apply (Filter, Signal);
             Result    : constant Pixel_History  := Subsample (Recovered);
          begin
+
+      Stampa("a4");
             Store (Result, Working_Segment.Location);
          end;
       end loop;
+   exception
+      when E : others =>
+         Stampa ("Bum!" & Ada.Exceptions.Exception_Information(E));
    end Accumulator;
 end Dvaccum.Event_Processing.Accumulator_Tasks;

@@ -60,11 +60,17 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
      array (Natural range <>) of Sample_Value;
 
    function Create (N_Frames, N_Pixels : Positive)
-                    return Pixel_Buffer_Access;
+                    return Pixel_Buffer_Access
+     with
+       Post => Create'Result.N_Frames = N_Frames;
+
+   function N_Frames (Buffer : Pixel_Buffer) return Positive;
 
    procedure Store (Buffer : in out Pixel_Buffer;
                     Pixel  : Point_Type;
-                    Data   : Pixel_History);
+                    Data   : Pixel_History)
+     with
+       Pre => Data'Length = Buffer.N_Frames;
 
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
                                     return Frame_Index;
@@ -151,5 +157,9 @@ private
       end record;
 
    overriding procedure Finalize (Object : in out Pixel_Buffer);
+
+
+   function N_Frames (Buffer : Pixel_Buffer) return Positive
+   is (Buffer.N_Frames);
 
 end Dvaccum.Event_Processing.Pixel_Buffers;

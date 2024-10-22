@@ -1,6 +1,7 @@
 pragma Ada_2012;
 
 with Ada.Unchecked_Deallocation;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Dvaccum.Event_Processing.Pixel_Buffers is
 
@@ -82,6 +83,14 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
          Start : constant Positive := Index_Of (Buffer, Position, 0);
    --                Natural (Position) * Buffer.N_Frames + Buffer.Samples'First;
       begin
+         Put_Line ("GG"
+                   & "start=" & Start'Image
+                   & " len=" & Data'Length'Image
+                   & " first=" & Buffer.Samples'First'Image
+                   & " last=" & Buffer.Samples'Last'Image
+                   & " start+len=" & Positive'Image (Start + Data'Length)
+                  );
+
          Buffer.Samples (Start .. Start + Data'Length - 1) := Data;
       end;
    end Store;

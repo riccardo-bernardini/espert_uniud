@@ -191,7 +191,7 @@ package body Dvaccum.Event_Processing is
 
          Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
                     Pixel_Buffers.Create (N_Frames => N_Frames,
-                                       N_Pixels => Integer (Segments.Size));
+                                          N_Pixels => Integer (Segments.Size));
 
       begin
          Accumulate (Event_Storage => Event_Storage,

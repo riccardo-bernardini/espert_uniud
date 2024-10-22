@@ -154,6 +154,7 @@ private
          Samples         : Sample_Array_Access;
          Allocator       : Pixel_Allocator_Access;
          Frame_Dispenser : Frame_Dispenser_Access;
+         Store_Call      : Positive;
       end record;
 
    overriding procedure Finalize (Object : in out Pixel_Buffer);

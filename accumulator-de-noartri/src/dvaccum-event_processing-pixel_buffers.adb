@@ -38,7 +38,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       use Ada.Finalization;
 
       Pixels  : constant Pixel_List_Access :=
-                  new Pixel_List (1 .. Pixel_Index (N_Pixels));
+                  new Pixel_List
+                    (Pixel_Index'First .. Pixel_Index (N_Pixels)+Pixel_Index'First - 1);
 
       Samples : constant Sample_Array_Access :=
                   new Sample_Array (1 .. N_Frames * N_Pixels);
@@ -49,6 +50,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       Frame_Dispenser : constant Frame_Dispenser_Access :=
                           new Frame_Number_Dispenser (N_Frames);
    begin
+      Put_Line ("npixel=" & N_Pixels'Image
+                & " nframes=" & N_Frames'Image
+                & " last=" & Samples'Last'Image);
       return new Pixel_Buffer'
         (Limited_Controlled
          with
@@ -56,6 +60,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
          Samples                => Samples,
          Allocator              => Allocator,
          Frame_Dispenser        => Frame_Dispenser,
+         Store_Call             => 1,
          N_Frames               => N_Frames);
    end Create;
 
@@ -63,7 +68,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
                       position : Pixel_Index;
                       Frame    : Frame_Index)
                       return Natural
-   is (Natural (Position) * Buffer.N_Frames + Natural (Frame) + Buffer.Samples'First);
+   is (Natural (Position - Pixel_Index'First) * Buffer.N_Frames
+       + Natural (Frame - Valid_Frame_Index'First)
+       + Buffer.Samples'First);
 
    -----------
    -- Store --
@@ -76,8 +83,14 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    is
       Position : Pixel_Index;
    begin
+
       Buffer.Allocator.Next_Free_Entry (Position);
       Buffer.Pixels (Position) := Pixel;
+
+      Put_Line ("CALL N." & Buffer.Store_Call'Image
+                & " position=" & Position'Image & " " & Pixel_Index'First'Image);
+      Buffer.Store_Call := Buffer.Store_Call + 1;
+
 
       declare
          Start : constant Positive := Index_Of (Buffer, Position, 0);
@@ -167,6 +180,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       procedure Next_Free_Entry (Index : out Pixel_Index)
       is
       begin
+         Put_Line ("NEXT FREE first-free=" & First_Free'Image);
+
          if First_Free > Table'Last then
             raise Constraint_Error;
          end if;

@@ -1,8 +1,12 @@
+with System.Multiprocessors;
+
 with Ada.Containers.Indefinite_Holders;
 
 with DVAccum.Event_Processing.Pixel_Buffers;
 with DVAccum.Frames;    use DVAccum.Frames;
 with DVAccum.Frame_Name_Generators;  use DVAccum.Frame_Name_Generators;
+
+use System;
 
 private
 package Dvaccum.Event_Processing.Frame_Makers is
@@ -23,5 +27,6 @@ package Dvaccum.Event_Processing.Frame_Makers is
    type Parameter_Access is
      access constant Parameter_Record;
 
-   task type Frame_Maker (Parameters : Parameter_Access);
+   task type Frame_Maker (ID         : Multiprocessors.CPU;
+                          Parameters : Parameter_Access);
 end Dvaccum.Event_Processing.Frame_Makers;

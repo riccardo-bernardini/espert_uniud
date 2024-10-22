@@ -1,6 +1,14 @@
+with Ada.Exceptions;
+with Ada.Text_IO; use Ada.Text_IO;
 
 package body Dvaccum.Event_Processing.Frame_Makers is
+
+
    task body Frame_Maker is
+      procedure Stampa (X : String) is
+      begin
+         Put_Line ("[Frame Maker N. " & ID'Image & "]  " & X);
+      end Stampa;
    begin
       loop
          declare
@@ -27,9 +35,14 @@ package body Dvaccum.Event_Processing.Frame_Makers is
             end loop;
 
             Frames.Save (Filename => Filename,
-                         Image    => frame,
+                         Image    => Frame,
                          Format   => Frames.PNG);
          end;
       end loop;
+
+   exception
+      when E : others =>
+         Stampa ("Bum!" & Ada.Exceptions.Exception_Information (E));
+
    end Frame_Maker;
 end Dvaccum.Event_Processing.Frame_Makers;

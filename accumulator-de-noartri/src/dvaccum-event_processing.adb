@@ -138,7 +138,7 @@ package body Dvaccum.Event_Processing is
                                               Initial_Image => Initial_Image);
       begin
          for I in Makers'Range loop
-            Makers (I) := new Frame_Maker (Parameters);
+            Makers (I) := new Frame_Maker (I, Parameters);
          end loop;
       end Save_Frames;
 

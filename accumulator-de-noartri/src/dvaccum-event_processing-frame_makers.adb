@@ -9,13 +9,15 @@ package body Dvaccum.Event_Processing.Frame_Makers is
       begin
          Put_Line ("[Frame Maker N. " & ID'Image & "]  " & X);
       end Stampa;
+
+      Frame_Number : Frame_Index;
+
    begin
-      loop
+      Frame_Number := Parameters.Pixels.Next_Unprocessed_Frame;
+
+      while Frame_Number /= No_Frame loop
          declare
             use Pixel_Buffers;
-
-            Frame_Number : constant Frame_Index :=
-                             Parameters.Pixels.Next_Unprocessed_Frame;
 
             Filename : constant String :=
                          Parameters.Frame_Name.Element.Make_Name (Frame_Number);
@@ -38,6 +40,8 @@ package body Dvaccum.Event_Processing.Frame_Makers is
                          Image    => Frame,
                          Format   => Frames.PNG);
          end;
+
+         Frame_Number := Parameters.Pixels.Next_Unprocessed_Frame;
       end loop;
 
    exception

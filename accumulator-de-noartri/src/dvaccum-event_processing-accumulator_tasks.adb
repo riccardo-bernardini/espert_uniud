@@ -82,6 +82,8 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
 
                Index := Natural ((Ev.T - Parameters.From) / Step);
 
+               Stampa (Index'Image & " " & Result'Last'Image);
+
                Result (Index) := Result (Index) +
                  Sample_Value (Integer (Ev.Weight));
             end loop;

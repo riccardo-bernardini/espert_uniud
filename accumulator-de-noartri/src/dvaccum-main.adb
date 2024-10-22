@@ -19,6 +19,8 @@ use Ada;
 procedure DVAccum.Main is
    use type Config.Parsing_Status;
 
+   Bad_Parameters : exception;
+
    function Source_Filename (N : Positive) return String
      with
        Pre =>
@@ -107,9 +109,33 @@ begin
             On_Negative_Event => Config.Negative_Event_Weight,
             Offset            => Time_Offset (N));
 
+         Put_Line (N'Image
+                   & "  " & Timestamps.Image (Stop_Time)
+                   & ", " & Timestamps.Image (Start_Time)
+                   & "  " & Timestamps.Image (Sequences (N).First_Time)
+                   & ", " & Timestamps.Image (Sequences (N).Last_Time));
+
          Start_Time := Timestamps.Max (Start_Time, Sequences (N).First_Time);
          Stop_Time  := Timestamps.Min (Stop_Time,  Sequences (N).Last_Time);
+
+         Put_Line (N'Image
+                   & "  " & Timestamps.Image (Stop_Time)
+                   & ", " & Timestamps.Image (Start_Time));
       end loop;
+
+      if Config.Frame_Period > Stop_Time - Start_Time then
+         Put_Line (Timestamps.Image (Stop_Time) & " - " & Timestamps.Image (Start_Time)
+                   & "="& Timestamps.Image (Stop_Time - Start_Time)
+                   & "<" & Timestamps.Image (Config.Frame_Period));
+
+         raise Bad_Parameters
+           with "Not enough data to make a frame";
+      end if;
+
+      Put_Line ("from  " & Timestamps.Image (start_Time)
+                & " to " & Timestamps.Image (Stop_Time));
+
+      Put_Line ("delta=  " & Timestamps.Image (Stop_Time - Start_Time));
 
       for N in Sequences'Range loop
          Event_Processing.Process
@@ -133,4 +159,9 @@ begin
 exception
    when E : Event_Io.Bad_Event_Stream =>
       Put_Line (Exceptions.Exception_Message (E));
+      Command_Line.Set_Exit_Status (Command_Line.Failure);
+
+   when E : Bad_Parameters =>
+      Put_Line (Exceptions.Exception_Message (E));
+      Command_Line.Set_Exit_Status (Command_Line.Failure);
 end DVAccum.Main;

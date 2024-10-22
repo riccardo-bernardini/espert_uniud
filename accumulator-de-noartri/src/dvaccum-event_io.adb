@@ -55,15 +55,17 @@ package body DVAccum.Event_Io is
       return Header;
    end Type_Of;
 
-   procedure Set_Metadata (Sequence : in out Event_Sequence;
-                           Metadata : in     Metadata_Maps.Map;
-                           Filename : in     String)
+   procedure Set_Metadata (Sequence      : in out Event_Sequence;
+                           Metadata      : in     Metadata_Maps.Map;
+                           Min_Timestamp : in Timestamps.Timestamp;
+                           Max_Timestamp : in Timestamps.Timestamp;
+                           Filename      : in     String)
    is
       -------------
       -- Get_Int --
       -------------
 
-      function Get_Int (key : String) return Integer
+      function Get_Int (Key : String) return Integer
       is
          K : constant Metadata_Key := Metadata_Key (Key);
       begin
@@ -75,7 +77,7 @@ package body DVAccum.Event_Io is
          declare
             Val : constant Metadata_Value := Metadata (K);
          begin
-            if not Patterns.Is_Integer (string (Val)) then
+            if not Patterns.Is_Integer (String (Val)) then
                raise Bad_Event_Stream
                  with "Bad integer as value of " & Key;
             end if;
@@ -84,13 +86,13 @@ package body DVAccum.Event_Io is
          end;
       end Get_Int;
 
-      N_Rows : constant Positive := Get_Int("sizeY");
-      N_Cols : constant Positive := Get_Int("sizeX");
+      N_Rows : constant Positive := Get_Int ("sizeY");
+      N_Cols : constant Positive := Get_Int ("sizeX");
 
    begin
       Sequence.Meta := Sequence_Metadata'
-        (Min_Timestamp => T (Sequence.Events.First_Element),
-         Max_Timestamp => T (Sequence.Events.Last_Element),
+        (Min_Timestamp => Min_Timestamp,
+         Max_Timestamp => Max_Timestamp,
          N_Rows        => N_Rows,
          N_Cols        => N_Cols,
          Map           => Metadata,
@@ -297,6 +299,7 @@ package body DVAccum.Event_Io is
 
       Header_Seen        : Boolean := False;
       Previous_Timestamp : Timestamps.Timestamp := Timestamps.Minus_Infinity;
+      Min_Timestamp      : Timestamps.Timestamp := Timestamps.Infinity;
       Metadata           : Metadata_Maps.Map;
    begin
       while not End_Of_File (Input) loop
@@ -327,23 +330,27 @@ package body DVAccum.Event_Io is
 
                      Event : constant Event_Type := Parse_Data_Line (Line);
                   begin
-                     if not Events.Is_Empty
-                       and then Previous_Timestamp > T (Event)
-                     then
-                        Die ("Non monotonic timestamps");
+                     if Events.Is_Empty then
+                        Min_Timestamp := T (Event);
+                     else
+                        if  Previous_Timestamp > T (Event) then
+                           Die ("Non monotonic timestamps");
+                        end if;
                      end if;
 
-                     Previous_Timestamp := T (Event);
-
                      Events.Events.Insert (Event);
+
+                     Previous_Timestamp := T (Event);
                   end;
             end case;
          end;
       end loop;
 
-      Set_Metadata (Sequence => Events,
-                    Metadata => Metadata,
-                    Filename => Ada.Text_IO.Name (Input));
+      Set_Metadata (Sequence      => Events,
+                    Metadata      => Metadata,
+                    Min_Timestamp => Min_Timestamp,
+                    Max_Timestamp => Previous_Timestamp,
+                    Filename      => Ada.Text_IO.Name (Input));
    end Read_CSV_Event_Stream;
 
    ------------------------------
@@ -487,7 +494,7 @@ package body DVAccum.Event_Io is
    -- Next --
    ----------
 
-   function Next (Item : Event_Iterator;
+   function Next (Item   : Event_Iterator;
                   Cursor : Event_Cursor)
                   return Event_Cursor
    is

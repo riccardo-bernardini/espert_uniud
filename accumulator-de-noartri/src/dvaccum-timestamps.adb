@@ -154,4 +154,22 @@ package body DVAccum.Timestamps is
        Infinite => False,
        Relative => False);
 
+
+   function ">" (X, Y : Duration) return Boolean
+   is (Duration_Value (X) > Duration_Value (Y));
+
+   function ">=" (X, Y : Duration) return Boolean
+   is (not (X < Y));
+
+   function "<" (X, Y : Duration) return Boolean
+   is (Y > X);
+
+   function "<=" (X, Y : Duration) return Boolean
+   is (not (X > Y));
+
+   function Max (X, Y : Duration) return Duration
+   is (if X > Y then X else Y);
+
+   function Min (X, Y : Duration) return Duration
+   is (if X < Y then X else Y);
 end DVAccum.Timestamps;

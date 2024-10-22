@@ -152,7 +152,6 @@ package body Dvaccum.Event_Processing is
                     Segments    => Segments);
 
       declare
-         use type Timestamps.Duration;
          --
          --  We need to find the number of frames that we are going to
          --  generate.  Let D=Tstop-Tstart be the difference between the
@@ -180,13 +179,13 @@ package body Dvaccum.Event_Processing is
          --
          --      0 <= M * m <= floor (D / S), that is 0 <= m <= floor(L/M)
          --
-         Fine_Sampling : constant Timestamps.Duration :=
-                           Frame_Duration / Float (Oversampling);
+         --  Fine_Sampling : constant Timestamps.Duration :=
+         --                    Frame_Duration / Float (Oversampling);
 
          D : constant Timestamps.Duration := To - From;
-         L : constant Float := Float'Floor (D / Fine_Sampling);
+         --  L : constant Float := Float'Floor (D / Fine_Sampling);
          N_Frames : constant Positive :=
-                      Positive (Float'Floor (L / Float (Oversampling)))+1;
+                      Positive (Float'Floor (D / Frame_Duration)) + 1;
 
          Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
                     Pixel_Buffers.Create (N_Frames => N_Frames,

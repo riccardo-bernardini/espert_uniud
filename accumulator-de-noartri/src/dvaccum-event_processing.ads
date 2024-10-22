@@ -7,6 +7,7 @@ with DVAccum.Filters;
 with DVAccum.Frame_Name_Generators;
 
 package Dvaccum.Event_Processing is
+   use Timestamps;
 
    procedure Process (Event_Sequence : Event_Io.Event_Sequence;
                       Frame_Name     : Frame_Name_Generators.Abstract_Generator'Class;
@@ -17,7 +18,9 @@ package Dvaccum.Event_Processing is
                       To             : Timestamps.Timestamp;
                       Frame_Duration : Timestamps.Duration;
                       Oversampling   : Positive;
-                      Initial_Image  : Frames.Image_Type);
+                      Initial_Image  : Frames.Image_Type)
+     with
+       Pre => Frame_Duration <= To - From;
 private
    subtype Event_Index is Positive;
 

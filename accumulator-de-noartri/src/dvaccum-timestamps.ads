@@ -83,8 +83,22 @@ package DVAccum.Timestamps is
    function Max (X, Y : Timestamp) return Timestamp;
 
    function Min (X, Y : Timestamp) return Timestamp;
+
+   function ">" (X, Y : Duration) return Boolean;
+
+   function ">=" (X, Y : Duration) return Boolean;
+
+   function "<" (X, Y : Duration) return Boolean;
+
+   function "<=" (X, Y : Duration) return Boolean;
+
+   function Max (X, Y : Duration) return Duration;
+
+   function Min (X, Y : Duration) return Duration;
+
 private
-   type Duration is range -2 ** 63 .. 2 ** 63 - 1;
+   type Duration_Value is range -2 ** 63 .. 2 ** 63 - 1;
+   type Duration is new Duration_Value;
    type Timestamp_Value is mod 2 ** 64;
 
    type Timestamp is

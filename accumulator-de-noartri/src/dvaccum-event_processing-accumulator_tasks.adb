@@ -29,7 +29,6 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
       function Extract_Segment (Start, Stop : Natural)
                                 return Event_Array
       is
-         use type Timestamps.Timestamp;
 
          Buffer : Event_Array (0 .. Stop - Start + 1);
          Cursor : Natural := Buffer'First;
@@ -49,8 +48,6 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
 
       function Collate (Segment : Event_Array) return Filters.Signal
       is
-         use Timestamps;
-
          Step : constant Timestamps.Duration :=
                   Parameters.Frame_Duration / Float (Parameters.Oversampling);
 

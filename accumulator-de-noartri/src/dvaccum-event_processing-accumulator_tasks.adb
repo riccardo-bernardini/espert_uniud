@@ -73,16 +73,14 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
          Index : Natural;
       begin
 
-         Stampa ("b1" & Segment'First'Image & ", " & Segment'Last'Image);
+         Stampa ("b1" & N_Samples'Image);
          return Result : Filters.Signal (0 .. N_Samples - 1) := (others => 0.0)
          do
-      Stampa("b2");
             for Ev of Segment loop
                Stampa (Ev.Image);
                Stampa ("b3" & Timestamps.Image (Ev.T) & ", " & Timestamps.Image (Parameters.From));
 
                Index := Natural ((Ev.T - Parameters.From) / Step);
-     Stampa("b4");
 
                Result (Index) := Result (Index) +
                  Sample_Value (Integer (Ev.Weight));

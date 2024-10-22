@@ -82,7 +82,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
          Start : constant Positive := Index_Of (Buffer, Position, 0);
    --                Natural (Position) * Buffer.N_Frames + Buffer.Samples'First;
       begin
-         Buffer.Samples (Start .. Start + Data'Length) := Data;
+         Buffer.Samples (Start .. Start + Data'Length - 1) := Data;
       end;
    end Store;
 

@@ -33,7 +33,7 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
      access Pixel_Buffer;
 
 
-   type Pixel_Index is private;
+   type Pixel_Index is new Positive;
 
    type Pixel_Descriptor is
       record
@@ -56,21 +56,34 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
                          return Pixel_Iterators.Forward_Iterator'Class;
 
 
-   type Pixel_History is
-     array (Natural range <>) of Sample_Value;
 
    function Create (N_Frames, N_Pixels : Positive)
                     return Pixel_Buffer_Access
      with
-       Post => Create'Result.N_Frames = N_Frames;
+       Post =>
+         Create'Result.N_Frames = N_Frames
+         and Create'Result.N_Pixels = N_Pixels
+         and Create'Result.Pixel_Still_Free = N_Pixels;
+
 
    function N_Frames (Buffer : Pixel_Buffer) return Positive;
+   function Last_Frame (Buffer : Pixel_Buffer) return Frame_Index;
+
+   function N_Pixels (Buffer : Pixel_Buffer) return Positive;
+   function Last_Pixel (Buffer : Pixel_Buffer) return Pixel_Index;
+   function Pixel_Still_Free (Buffer : Pixel_Buffer) return Natural;
+
+
+   type Pixel_History is
+     array (Natural range <>) of Sample_Value;
 
    procedure Store (Buffer : in out Pixel_Buffer;
                     Pixel  : Point_Type;
                     Data   : Pixel_History)
      with
-       Pre => Data'Length = Buffer.N_Frames;
+       Pre =>
+         Data'Length = Buffer.N_Frames
+         and Buffer.Pixel_Still_Free > 0;
 
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
                                     return Frame_Index;
@@ -78,7 +91,11 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
    function Value (Buffer : Pixel_Buffer;
                    Pixel  : Pixel_Index;
                    Time   : Frame_Index)
-                   return Sample_Value;
+                   return Sample_Value
+     with
+       Pre => Time in Valid_Frame_Index
+       and then Time <= Buffer.Last_Frame
+       and then Pixel <= Buffer.Last_Pixel;
 
 private
    --
@@ -94,8 +111,6 @@ private
    --  * A first unused location, marking the beginning of the free area
    --  * The next frame to be produced
    --
-   type Pixel_Index is new Natural;
-
 
    type Pixel_List is
      array (Pixel_Index range <>) of Point_Type;
@@ -125,6 +140,8 @@ private
    protected type Pixel_Table_Allocator (Table : Pixel_List_Access)
    is
       procedure Next_Free_Entry (Index : out Pixel_Index);
+
+      function Free_Entries return Natural;
    private
       First_Free : Pixel_Index := Table'First;
    end Pixel_Table_Allocator;
@@ -150,6 +167,7 @@ private
    with
       record
          N_Frames        : Positive;
+         N_Pixels        : Positive;
          Pixels          : Pixel_List_Access;
          Samples         : Sample_Array_Access;
          Allocator       : Pixel_Allocator_Access;
@@ -162,5 +180,19 @@ private
 
    function N_Frames (Buffer : Pixel_Buffer) return Positive
    is (Buffer.N_Frames);
+
+   function N_Pixels (Buffer : Pixel_Buffer) return Positive
+   is (Buffer.N_Pixels);
+
+   function Last_Frame (Buffer : Pixel_Buffer) return Frame_Index
+   is (Frame_Index (Buffer.N_Frames - 1) + Frame_Index'First);
+
+
+   function Last_Pixel (Buffer : Pixel_Buffer) return Pixel_Index
+   is (Pixel_Index (Buffer.N_Pixels - 1) + Pixel_Index'First);
+
+   function Pixel_Still_Free (Buffer : Pixel_Buffer) return Natural
+   is (Buffer.Allocator.Free_Entries);
+
 
 end Dvaccum.Event_Processing.Pixel_Buffers;

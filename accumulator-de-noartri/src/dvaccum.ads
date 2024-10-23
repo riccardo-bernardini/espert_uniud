@@ -10,15 +10,6 @@ type Sample_Value is new Float;
          Y : Coord_Y;
       end record;
 
-   type Frame_Index is private;
-
-   No_Frame : constant Frame_Index;
-
-   function To_Int (X : Frame_Index) return Natural
-     with
-       Pre => X /= No_Frame;
-
-private
    type Frame_Index is range -1 .. Integer'Last;
 
    subtype Valid_Frame_Index is
@@ -26,7 +17,29 @@ private
 
    No_Frame : constant Frame_Index := Frame_Index'First;
 
-   function To_Int (X : Frame_Index) return Natural
-   is (Natural (X));
+
+--  private
+--     type Frame_Index ;
+--
+--     No_Frame : constant Frame_Index := Frame_Index'First;
+--
+--     First_Frame_Index : constant Frame_Index := Valid_Frame_Index'First;
+--
+--     function To_Int (X : Frame_Index) return Natural
+--     is (Natural (X));
+--
+--
+--     function "<" (L, R : Frame_Index) return Boolean
+--     is ((L /= No_Frame and R /= No_Frame and Integer (L) < Integer (R)));
+--
+--     function "<=" (L, R : Frame_Index) return Boolean
+--     is ((L /= No_Frame and R /= No_Frame and Integer (L) <= Integer (R)));
+--
+--
+--     function ">" (L, R : Frame_Index) return Boolean
+--     is ((L /= No_Frame and R /= No_Frame and Integer (L) > Integer (R)));
+--
+--     function ">=" (L, R : Frame_Index) return Boolean
+--     is ((L /= No_Frame and R /= No_Frame and Integer (L) >= Integer (R)));
 
 end DVAccum;

@@ -61,7 +61,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
          Allocator              => Allocator,
          Frame_Dispenser        => Frame_Dispenser,
          Store_Call             => 1,
-         N_Frames               => N_Frames);
+         N_Frames               => N_Frames,
+         N_Pixels               => N_Pixels);
    end Create;
 
    function Index_Of (Buffer   : Pixel_Buffer;
@@ -189,6 +190,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
          Index := First_Free;
          First_Free := First_Free + 1;
       end Next_Free_Entry;
+
+      function Free_Entries return Natural
+      is (Natural (Table'Last - First_Free + 1));
    end Pixel_Table_Allocator;
 
    --------------

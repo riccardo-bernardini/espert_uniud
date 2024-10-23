@@ -79,5 +79,5 @@ private
                    X   : Natural;
                    Y   : Natural)
                    return Pixel_Index
-   is (Pixel_Index (X + Img.N_Cols * Y));
+   is (Pixel_Index (X + Img.N_Cols * Y)+Img.Pixels'First);
 end PNG_IO;

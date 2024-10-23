@@ -1,4 +1,5 @@
 pragma Ada_2012;
+with Ada.Text_IO; use Ada.Text_IO;
 with Interfaces.C.Strings;
 
 with Png_H;
@@ -29,8 +30,16 @@ package body Png_IO is
       X   : Natural;
       Y   : Natural)
       return Ref_Element
-   is (Ref_Element'(Data => Img.Pixels (Img.Index (X, Y))'Access));
+   is
+   begin
+      Put_Line ("1 -> " & Img.Pixels'First'image
+                & " .. " & Img.Pixels'Last'image
+                & " " & X'Image
+                & " " & Y'Image
+                & " " & pixel_index'Image (Img.Index (X, Y)));
 
+      return Ref_Element'(Data => Img.Pixels (Img.Index (X, Y))'Access);
+   end Ref;
    ------------
    -- Create --
    ------------
@@ -44,7 +53,7 @@ package body Png_IO is
       N_Pixel : constant Pixel_Index :=
                   Pixel_Index (Width) * Pixel_Index (Heigth);
 
-      Buffer  : constant Pixel_Array_Access := new Pixel_Array (1 .. N_Pixel);
+      Buffer  : constant Pixel_Array_Access := new Pixel_Array (0 .. N_Pixel);
    begin
       Buffer.all := (others => 0);
 

@@ -121,7 +121,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
                                     return Extended_Frame_Index
    is
-      Result : Frame_Index;
+      Result : Extended_Frame_Index;
    begin
       Buffer.Frame_Dispenser.Next_Frame (Result);
 

@@ -185,13 +185,14 @@ package body Dvaccum.Event_Processing is
          --                    Frame_Duration / Float (Oversampling);
 
          D : constant Timestamps.Duration := To - From;
-         --  L : constant Float := Float'Floor (D / Fine_Sampling);
-         N_Frames : constant Positive :=
-                      Positive (Float'Floor (D / Frame_Duration)) + 1;
+
+         Last_Frame : constant Frame_Index :=
+                      Frame_Index (Float'Floor (D / Frame_Duration));
 
          Pixels : constant Pixel_Buffers.Pixel_Buffer_Access :=
-                    Pixel_Buffers.Create (N_Frames => N_Frames,
-                                          N_Pixels => Integer (Segments.Size));
+                    Pixel_Buffers.Create (First_Frame => 0,
+                                          Last_Frame  => Last_Frame,
+                                          N_Pixels   => Integer (Segments.Size));
 
       begin
          Accumulate (Event_Storage => Event_Storage,

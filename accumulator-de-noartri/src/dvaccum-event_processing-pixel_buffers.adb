@@ -32,10 +32,14 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- Create --
    ------------
 
-   function Create (N_Frames, N_Pixels : Positive)
+   function Create (First_Frame : Frame_Index;
+                    Last_Frame  : Frame_Index;
+                    N_Pixels    : Positive)
                     return Pixel_Buffer_Access
    is
       use Ada.Finalization;
+
+      N_Frames : constant Positive := Natural (Last_Frame - First_Frame) + 1;
 
       Pixels  : constant Pixel_List_Access :=
                   new Pixel_List
@@ -48,7 +52,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
                     new Pixel_Table_Allocator (Pixels);
 
       Frame_Dispenser : constant Frame_Dispenser_Access :=
-                          new Frame_Number_Dispenser (N_Frames);
+                          new Frame_Number_Dispenser (First_Frame, Last_Frame);
    begin
       Put_Line ("npixel=" & N_Pixels'Image
                 & " nframes=" & N_Frames'Image
@@ -56,13 +60,14 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       return new Pixel_Buffer'
         (Limited_Controlled
          with
-           Pixels                 => Pixels,
-         Samples                => Samples,
-         Allocator              => Allocator,
-         Frame_Dispenser        => Frame_Dispenser,
-         Store_Call             => 1,
-         N_Frames               => N_Frames,
-         N_Pixels               => N_Pixels);
+           Pixels           => Pixels,
+         Samples          => Samples,
+         Allocator        => Allocator,
+         Frame_Dispenser  => Frame_Dispenser,
+         Store_Call       => 1,
+         First_Frame      => First_Frame,
+         Last_Frame       => Last_Frame,
+         N_Pixels         => N_Pixels);
    end Create;
 
    function Index_Of (Buffer   : Pixel_Buffer;
@@ -70,7 +75,7 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
                       Frame    : Frame_Index)
                       return Natural
    is (Natural (Position - Pixel_Index'First) * Buffer.N_Frames
-       + Natural (Frame - Valid_Frame_Index'First)
+       + Natural (Frame - Buffer.First_Frame)
        + Buffer.Samples'First);
 
    -----------
@@ -113,7 +118,8 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
    -- Next_Unprocessed_Frame --
    ----------------------------
 
-   function Next_Unprocessed_Frame (Buffer : Pixel_Buffer) return Frame_Index
+   function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
+                                    return Extended_Frame_Index
    is
       Result : Frame_Index;
    begin
@@ -160,9 +166,9 @@ package body Dvaccum.Event_Processing.Pixel_Buffers is
       -- Next_Frame --
       ----------------
 
-      procedure Next_Frame (N : out Frame_Index) is
+      procedure Next_Frame (N : out Extended_Frame_Index) is
       begin
-         if Next > Frame_Index (N_Frames) then
+         if Next > Last_Frame then
             N := No_Frame;
          else
             N := Next;

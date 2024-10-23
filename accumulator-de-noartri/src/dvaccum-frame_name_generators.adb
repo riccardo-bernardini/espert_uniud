@@ -27,7 +27,7 @@ package body Dvaccum.Frame_Name_Generators is
       case Directive is
          when 'd' =>
             return String_Formatting.C_Style_Formatting
-              (Datum     => To_Int (provider.Frame_Number),
+              (Datum     => Integer (provider.Frame_Number),
                Parameter => Parameter);
 
          when 'b' =>

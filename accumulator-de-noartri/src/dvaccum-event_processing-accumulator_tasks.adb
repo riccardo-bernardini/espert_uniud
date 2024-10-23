@@ -11,6 +11,7 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
       begin
          Put_Line ("[" & ID'Image & "]  " & X);
       end Stampa;
+
       function Subsample (Data : Filters.Signal)
                           return Pixel_History
       is
@@ -66,21 +67,20 @@ package body Dvaccum.Event_Processing.Accumulator_Tasks is
          Step : constant Timestamps.Duration :=
                   Parameters.Frame_Duration / Float (Parameters.Oversampling);
 
-         N_Samples : constant Positive :=
-                       Positive ((Parameters.To - Parameters.From) / Step);
+         Last_Time : constant Positive :=
+                       Positive (Float'Floor ((Parameters.To - Parameters.From) / Step));
 
 
          Index : Natural;
       begin
 
-         Stampa ("b1" & N_Samples'Image);
-         return Result : Filters.Signal (0 .. N_Samples - 1) := (others => 0.0)
+         return Result : Filters.Signal (0 .. Last_Time) := (others => 0.0)
          do
             for Ev of Segment loop
                Stampa (Ev.Image);
                Stampa ("b3" & Timestamps.Image (Ev.T) & ", " & Timestamps.Image (Parameters.From));
 
-               Index := Natural ((Ev.T - Parameters.From) / Step);
+               Index := Natural (Float'Floor ((Ev.T - Parameters.From) / Step));
 
                Stampa (Index'Image & " " & Result'Last'Image);
 

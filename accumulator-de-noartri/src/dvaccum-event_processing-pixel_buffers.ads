@@ -57,17 +57,22 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
 
 
 
-   function Create (N_Frames, N_Pixels : Positive)
+   function Create (First_Frame : Frame_Index;
+                    Last_Frame  : Frame_Index;
+                    N_Pixels    : Positive)
                     return Pixel_Buffer_Access
      with
+       Pre =>
+         Last_Frame >= First_Frame,
        Post =>
-         Create'Result.N_Frames = N_Frames
+           Create'Result.N_Frames = Positive (Last_Frame - First_Frame + 1)
          and Create'Result.N_Pixels = N_Pixels
          and Create'Result.Pixel_Still_Free = N_Pixels;
 
 
    function N_Frames (Buffer : Pixel_Buffer) return Positive;
    function Last_Frame (Buffer : Pixel_Buffer) return Frame_Index;
+   function First_Frame (Buffer : Pixel_Buffer) return Frame_Index;
 
    function N_Pixels (Buffer : Pixel_Buffer) return Positive;
    function Last_Pixel (Buffer : Pixel_Buffer) return Pixel_Index;
@@ -86,14 +91,14 @@ private package Dvaccum.Event_Processing.Pixel_Buffers is
          and Buffer.Pixel_Still_Free > 0;
 
    function Next_Unprocessed_Frame (Buffer : Pixel_Buffer)
-                                    return Frame_Index;
+                                    return Extended_Frame_Index;
 
    function Value (Buffer : Pixel_Buffer;
                    Pixel  : Pixel_Index;
                    Time   : Frame_Index)
                    return Sample_Value
      with
-       Pre => Time in Valid_Frame_Index
+       Pre => Time >= Buffer.First_Frame
        and then Time <= Buffer.Last_Frame
        and then Pixel <= Buffer.Last_Pixel;
 
@@ -149,11 +154,11 @@ private
    type Pixel_Allocator_Access is access Pixel_Table_Allocator;
 
 
-   protected type Frame_Number_Dispenser (N_Frames : Positive)
+   protected type Frame_Number_Dispenser (First_Frame, Last_Frame : Frame_Index)
    is
-      procedure Next_Frame (N : out Frame_Index);
+      procedure Next_Frame (N : out Extended_Frame_Index);
    private
-      Next : Frame_Index := 0;
+      Next : Frame_Index := First_Frame;
    end Frame_Number_Dispenser;
 
    type Frame_Dispenser_Access is access Frame_Number_Dispenser;
@@ -166,7 +171,8 @@ private
      new Finalization.Limited_Controlled
    with
       record
-         N_Frames        : Positive;
+         First_Frame     : Frame_Index;
+         Last_Frame      : Frame_Index;
          N_Pixels        : Positive;
          Pixels          : Pixel_List_Access;
          Samples         : Sample_Array_Access;
@@ -179,13 +185,16 @@ private
 
 
    function N_Frames (Buffer : Pixel_Buffer) return Positive
-   is (Buffer.N_Frames);
+   is (Natural (Buffer.Last_Frame - Buffer.First_Frame)+ 1);
 
    function N_Pixels (Buffer : Pixel_Buffer) return Positive
    is (Buffer.N_Pixels);
 
    function Last_Frame (Buffer : Pixel_Buffer) return Frame_Index
-   is (Frame_Index (Buffer.N_Frames - 1) + Frame_Index'First);
+   is (Buffer.Last_Frame);
+
+   function First_Frame (Buffer : Pixel_Buffer) return Frame_Index
+   is (Buffer.First_Frame);
 
 
    function Last_Pixel (Buffer : Pixel_Buffer) return Pixel_Index

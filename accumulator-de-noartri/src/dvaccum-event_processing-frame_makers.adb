@@ -10,12 +10,15 @@ package body Dvaccum.Event_Processing.Frame_Makers is
          Put_Line ("[Frame Maker N. " & ID'Image & "]  " & X);
       end Stampa;
 
-      Frame_Number : Frame_Index;
+      Frame_Number : Extended_Frame_Index;
 
    begin
       Frame_Number := Parameters.Pixels.Next_Unprocessed_Frame;
 
       while Frame_Number /= No_Frame loop
+
+         pragma Assert (Frame_Number in Frame_Index);
+
          declare
             use Pixel_Buffers;
 
